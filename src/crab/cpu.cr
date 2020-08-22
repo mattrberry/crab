@@ -1,27 +1,50 @@
 class CPU
-  @registers = Slice(UInt32).new 16
+  @r = Slice(Word).new 16
+  @pipeline = Deque(Word).new 2
 
   def initialize(@gba : GBA)
-    self.pc = 0x08000000
+    @r[15] = 0x08000000
   end
 
-  def pc : Word
-    @registers[15]
+  def fill_pipeline : Nil
+    while @pipeline.size < 2
+      puts "FETCH PC: #{hex_str @r[15]}, INSTR: #{hex_str @gba.bus.read_word @r[15]}, TYPE: #{Instr.from_hash hash_instr @gba.bus.read_word @r[15]}"
+      @pipeline << @gba.bus.read_word @r[15]
+      @r[15] &+= 4
+    end
   end
 
-  def pc=(pc : Word) : Nil
-    @registers[15] = pc
+  def clear_pipeline : Nil
+    @pipeline.clear
   end
 
   def tick : Nil
-    puts "PC: #{hex_str pc}, INSTRUCTION: #{hex_str @gba.bus.read_word pc}, TYPE: #{Instr.from_hash hash_instr @gba.bus.read_word pc}"
-    # puts hex_str @gba.bus.read_word pc
-    # puts hex_str hash_instr @gba.bus.read_word pc
-    # puts Instr.from_hash hash_instr @gba.bus.read_word pc
-    self.pc += 4
+    fill_pipeline
+    instr = @pipeline.shift
+    execute instr
   end
 
   def hash_instr(instr : Word) : Word
     ((instr >> 16) & 0x0FF0) | ((instr >> 4) & 0xF)
+  end
+
+  def execute(instr : Word) : Nil
+    cond = true
+    if cond
+      hash = hash_instr instr
+      instr_type = Instr.from_hash hash
+      case instr_type
+      when Instr::BRANCH
+        puts "EXECUTE BRANCH"
+        link = bit? instr, 24
+        offset = instr & 0xFFFFFF
+        offset = (~offset &+ 1).to_i32 if bit? offset, 23 # negative
+        offset <<= 2
+        @r[14] = @r[15] - 4 if link
+        @r[15] &+= offset
+        @pipeline.clear
+      else raise "Unimplemented execution of type: #{instr_type}"
+      end
+    end
   end
 end
