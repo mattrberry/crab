@@ -1,0 +1,13 @@
+name: crab
+version: 0.1.0
+
+authors:
+  - Matthew Berry <me@mattrb.com>
+
+targets:
+  crab:
+    main: src/crab.cr
+
+crystal: 0.35.1
+
+license: MIT
