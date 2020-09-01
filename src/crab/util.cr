@@ -6,6 +6,10 @@ def bit?(value : Int, bit : Int) : Bool
   (value >> bit) & 1 > 0
 end
 
+def bits(value : Int, range : Range) : Int
+  (value >> range.begin) & ((1 << range.size) - 1)
+end
+
 def set_bit(value : Int, bit : Int) : Nil
   value | 1 << bit
 end
