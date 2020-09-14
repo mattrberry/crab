@@ -2,18 +2,18 @@ def hex_str(n : UInt8 | UInt16 | UInt32 | UInt64) : String
   "0x#{n.to_s(16).rjust(sizeof(typeof(n)) * 2, '0').upcase}"
 end
 
-def bit?(value : Int, bit : Int) : Bool
-  (value >> bit) & 1 > 0
+macro bit?(value, bit)
+  ({{value}} & (1 << {{bit}}) > 0)
 end
 
-def bits(value : Int, range : Range) : Int
-  (value >> range.begin) & ((1 << range.size) - 1)
+macro bits(value, range)
+  ({{value}} >> ({{range}}).begin) & ((1 << ({{range}}).size) - 1)
 end
 
-def set_bit(value : Int, bit : Int) : Nil
-  value | 1 << bit
+macro set_bit(value, bit)
+  ({{value}} | 1 << {{bit}})
 end
 
-def clear_bit(value : Int, bit : Int) : Nil
-  value & ~(1 << bit)
+macro clear_bit(value, bit)
+  ({{value}} & ~(1 << {{bit}}))
 end
