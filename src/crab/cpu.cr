@@ -72,6 +72,25 @@ class CPU
     word >> bits | word << (32 - bits)
   end
 
+  def rotate_register(instr : Word) : Word
+    shift = bits(instr, 4..11)
+    reg = bits(instr, 0..3)
+    shift_type = bits(instr, 5..6)
+    shift_amount = if bit?(instr, 4)
+                     shift_register = bits(instr, 8..11)
+                     @r[shift_register] & 0xF
+                   else
+                     bits(instr, 7..11)
+                   end
+    case shift_type
+    when 0b00 then lsl(reg, shift_amount)
+    when 0b01 then lsr(reg, shift_amount)
+    when 0b10 then asr(reg, shift_amount)
+    when 0b11 then ror(reg, shift_amount)
+    else           raise "Impossible shift type: #{hex_str shift_type}"
+    end
+  end
+
   def hash_instr(instr : Word) : Word
     ((instr >> 16) & 0x0FF0) | ((instr >> 4) & 0xF)
   end
@@ -102,22 +121,7 @@ class CPU
                       imm = bits(instr, 0..7)
                       ror(imm, 2 * rotate)
                     else # Operand 2 is a register
-                      shift = bits(instr, 4..11)
-                      reg = bits(instr, 0..3)
-                      shift_type = bits(instr, 5..6)
-                      shift_amount = if bit?(instr, 4)
-                                       shift_register = bits(instr, 8..11)
-                                       @r[shift_register] & 0xF
-                                     else
-                                       bits(instr, 7..11)
-                                     end
-                      case shift_type
-                      when 0b00 then lsl(reg, shift_amount)
-                      when 0b01 then lsr(reg, shift_amount)
-                      when 0b10 then asr(reg, shift_amount)
-                      when 0b11 then ror(reg, shift_amount)
-                      else           raise "Impossible shift type: #{hex_str shift_type}"
-                      end
+                      rotate_register bits(instr, 0..11)
                     end
         case opcode
         when 0x0 then @r[rd] = rn & operand_2
