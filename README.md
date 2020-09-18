@@ -1,22 +1,18 @@
 # crab
 
-TODO: Write a description here
+A very rough start to a Game Boy Advance emulator in Crystal Lang. The long-term goal is simply playability of popular titles. The name of the project come from the emudev discord, where "crab" was suggested for "Crystal Advanced Boy." Close enough.
 
 ## Installation
 
-TODO: Write installation instructions here
+At the moment, a `shards install` is all that's required.
 
 ## Usage
 
-TODO: Write usage instructions here
-
-## Development
-
-TODO: Write development instructions here
+This is not in a functional state. As arm instructions are being implemented, you can print the trace by compiling with `-Dtrace` or print logs by compiling with `-Dlog`. Next, simply provide the executable with the path to your rom.
 
 ## Contributing
 
-1. Fork it (<https://github.com/your-github-user/crab/fork>)
+1. Fork it (<https://github.com/mattrberry/crab/fork>)
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
@@ -24,4 +20,4 @@ TODO: Write development instructions here
 
 ## Contributors
 
-- [your-name-here](https://github.com/your-github-user) - creator and maintainer
+- [Matthew Berry](https://github.com/mattrberry) - creator and maintainer
