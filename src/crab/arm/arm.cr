@@ -19,21 +19,21 @@ module ARM
 
   private def check_cond(cond : Word) : Bool
     case bits cond, 28..31
-    when 0x0 then bit?(@cpsr, 30)                                        # Z
-    when 0x1 then !bit?(@cpsr, 30)                                       # !Z
-    when 0x2 then bit?(@cpsr, 29)                                        # C
-    when 0x3 then !bit?(@cpsr, 29)                                       # !C
-    when 0x4 then bit?(@cpsr, 31)                                        # N
-    when 0x5 then !bit?(@cpsr, 31)                                       # !N
-    when 0x6 then bit?(@cpsr, 28)                                        # V
-    when 0x7 then !bit?(@cpsr, 28)                                       # !V
-    when 0x8 then bit?(@cpsr, 29) && !bit?(@cpsr, 30)                    # C && !Z
-    when 0x9 then !bit?(@cpsr, 29) || bit?(@cpsr, 30)                    # !C || Z
-    when 0xA then bit?(@cpsr, 31) == bit?(@cpsr, 28)                     # N == V
-    when 0xB then bit?(@cpsr, 31) != bit?(@cpsr, 28)                     # N != V
-    when 0xC then !bit?(@cpsr, 30) && bit?(@cpsr, 31) == bit?(@cpsr, 28) # !Z && N == V
-    when 0xD then bit?(@cpsr, 30) || bit?(@cpsr, 31) != bit?(@cpsr, 28)  # Z || N != V
-    when 0xE then true                                                   # always
+    when 0x0 then @cpsr.zero
+    when 0x1 then !@cpsr.zero
+    when 0x2 then @cpsr.carry
+    when 0x3 then !@cpsr.carry
+    when 0x4 then @cpsr.negative
+    when 0x5 then !@cpsr.negative
+    when 0x6 then @cpsr.overflow
+    when 0x7 then !@cpsr.overflow
+    when 0x8 then @cpsr.carry && !@cpsr.zero
+    when 0x9 then !@cpsr.carry || @cpsr.zero
+    when 0xA then @cpsr.negative == @cpsr.overflow
+    when 0xB then @cpsr.negative != @cpsr.overflow
+    when 0xC then !@cpsr.zero && @cpsr.negative == @cpsr.overflow
+    when 0xD then @cpsr.zero || @cpsr.negative != @cpsr.overflow
+    when 0xE then true
     else          raise "Cond 0xF is reserved"
     end
   end

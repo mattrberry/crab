@@ -3,8 +3,20 @@ require "./arm/*"
 class CPU
   include ARM
 
+  class PSR < BitField(UInt32)
+    bool negative
+    bool zero
+    bool carry
+    bool overflow
+    num reserved, 20
+    bool irq_disable
+    bool fiq_disable
+    bool thumb
+    num mode, 5
+  end
+
   @r = Slice(Word).new 16
-  @cpsr : UInt32 = 0
+  @cpsr : PSR
   @pipeline = Deque(Word).new 2
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
 
@@ -13,7 +25,7 @@ class CPU
     @r[1] = 0x000000EA
     @r[13] = 0x03007F00
     @r[15] = 0x08000000
-    @cpsr = 0x6000001F
+    @cpsr = PSR.new 0x6000001F
   end
 
   def fill_pipeline : Nil
@@ -40,6 +52,6 @@ class CPU
     @r.each do |reg|
       trace "#{hex_str reg, prefix: false} ", newline: false
     end
-    trace "cpsr: #{hex_str @cpsr, prefix: false} | #{hex_str instr, prefix: false}"
+    trace "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
   end
 end

@@ -19,9 +19,9 @@ module ARM
     when 0x2 then @r[rd] = rn &- operand_2
     when 0x3 then @r[rd] = operand_2 &- rn
     when 0x4 then @r[rd] = rn &+ operand_2
-    when 0x5 then @r[rd] = rn &+ operand_2 &+ (bit?(@cpsr, 29) ? 1 : 0)
-    when 0x6 then @r[rd] = rn &- operand_2 &+ (bit?(@cpsr, 29) ? 1 : 0) &- 1
-    when 0x7 then @r[rd] = operand_2 &- rn &+ (bit?(@cpsr, 29) ? 1 : 0) &- 1
+    when 0x5 then @r[rd] = rn &+ operand_2 &+ @cpsr.carry.to_unsafe
+    when 0x6 then @r[rd] = rn &- operand_2 &+ @cpsr.carry.to_unsafe &- 1
+    when 0x7 then @r[rd] = operand_2 &- rn &+ @cpsr.carry.to_unsafe &- 1
     when 0x8
     when 0x9
     when 0xA

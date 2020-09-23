@@ -1,3 +1,5 @@
+require "bitfield"
+
 require "./crab/gba"
 
 module Crab
