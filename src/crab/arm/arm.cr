@@ -72,7 +72,7 @@ module ARM
       elsif idx & 0b110000000000 == 0b000000000000
         lut[idx] = ->arm_data_processing(Word)
       else
-        lut[idx] = ->arm_unimplemented(Word)
+        lut[idx] = ->arm_unused(Word)
       end
     end
     lut

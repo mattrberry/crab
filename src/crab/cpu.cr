@@ -30,7 +30,7 @@ class CPU
 
   def fill_pipeline : Nil
     while @pipeline.size < 2
-      log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_word @r[15]}, type: #{Instr.from_hash hash_instr @gba.bus.read_word @r[15]}"
+      log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_word @r[15]}"
       @pipeline << @gba.bus.read_word @r[15]
       @r[15] &+= 4
     end
