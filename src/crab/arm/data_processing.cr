@@ -12,21 +12,21 @@ module ARM
                   rotate_register bits(instr, 0..11)
                 end
     case opcode
-    when 0x0 then res = @r[rd] = rn & operand_2
-    when 0x1 then res = @r[rd] = rn ^ operand_2
-    when 0x2 then res = @r[rd] = rn &- operand_2
-    when 0x3 then res = @r[rd] = operand_2 &- rn
-    when 0x4 then res = @r[rd] = rn &+ operand_2
-    when 0x5 then res = @r[rd] = rn &+ operand_2 &+ @cpsr.carry.to_unsafe
-    when 0x6 then res = @r[rd] = rn &- operand_2 &+ @cpsr.carry.to_unsafe &- 1
-    when 0x7 then res = @r[rd] = operand_2 &- rn &+ @cpsr.carry.to_unsafe &- 1
-    when 0x8 then res = rn & operand_2
-    when 0x9 then res = rn ^ operand_2
-    when 0xA then res = rn &- operand_2
-    when 0xB then res = rn &+ operand_2
-    when 0xC then res = @r[rd] = rn | operand_2
+    when 0x0 then res = @r[rd] = @r[rn] & operand_2
+    when 0x1 then res = @r[rd] = @r[rn] ^ operand_2
+    when 0x2 then res = @r[rd] = @r[rn] &- operand_2
+    when 0x3 then res = @r[rd] = operand_2 &- @r[rn]
+    when 0x4 then res = @r[rd] = @r[rn] &+ operand_2
+    when 0x5 then res = @r[rd] = @r[rn] &+ operand_2 &+ @cpsr.carry.to_unsafe
+    when 0x6 then res = @r[rd] = @r[rn] &- operand_2 &+ @cpsr.carry.to_unsafe &- 1
+    when 0x7 then res = @r[rd] = operand_2 &- @r[rn] &+ @cpsr.carry.to_unsafe &- 1
+    when 0x8 then res = @r[rn] & operand_2
+    when 0x9 then res = @r[rn] ^ operand_2
+    when 0xA then res = @r[rn] &- operand_2
+    when 0xB then res = @r[rn] &+ operand_2
+    when 0xC then res = @r[rd] = @r[rn] | operand_2
     when 0xD then res = @r[rd] = operand_2
-    when 0xE then res = @r[rd] = rn & ~operand_2
+    when 0xE then res = @r[rd] = @r[rn] & ~operand_2
     when 0xF then res = @r[rd] = ~operand_2
     else          raise "Unimplemented execution of data processing opcode: #{hex_str opcode}"
     end
