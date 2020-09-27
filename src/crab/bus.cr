@@ -21,6 +21,11 @@ class Bus
       (self[index + 3].to_u32 << 24)
   end
 
+  def read_half(index : Int) : Word
+    self[index].to_u32 |
+      (self[index + 1].to_u32 << 8)
+  end
+
   def []=(index : Int, value : Byte) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
     case index

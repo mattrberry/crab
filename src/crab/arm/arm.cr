@@ -62,7 +62,7 @@ module ARM
       elsif idx & 0b111001001001 == 0b000000001001
         # halfword data transfer register offset
       elsif idx & 0b111111111111 == 0b000100100001
-        # branch exchange
+        lut[idx] = ->arm_branch_exchange(Word)
       elsif idx & 0b111110111111 == 0b000100001001
         # single data swap
       elsif idx & 0b111110001111 == 0b000010001001
