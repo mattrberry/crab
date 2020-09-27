@@ -56,7 +56,7 @@ module ARM
       elsif idx & 0b111000000001 == 0b011000000001
         # undefined
       elsif idx & 0b110000000000 == 0b010000000000
-        # single data transfer
+        lut[idx] = ->arm_single_data_transfer(Word)
       elsif idx & 0b111001001001 == 0b000001001001
         # halfword data transfer immediate offset
       elsif idx & 0b111001001001 == 0b000000001001
@@ -107,10 +107,10 @@ module ARM
     word >> bits | word << (32 - bits)
   end
 
-  def rotate_register(instr : Word) : Word
+  def rotate_register(instr : Word, allow_register_shifts = true) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
-    shift_amount = if bit?(instr, 4)
+    shift_amount = if allow_register_shifts && bit?(instr, 4)
                      shift_register = bits(instr, 8..11)
                      # todo weird logic if bottom byte of reg > 31
                      @r[shift_register] & 0xFF

@@ -6,7 +6,7 @@ class Bus
   end
 
   def [](index : Int) : Byte
-    # puts "read #{hex_str index.to_u32}"
+    log "read #{hex_str index.to_u32}"
     case index
     when CARTRIDGE then @gba.cartridge[index - CARTRIDGE.begin]
     when UNUSED    then 0xFF
@@ -22,16 +22,16 @@ class Bus
   end
 
   def []=(index : Int, value : Byte) : Nil
-    # puts "write #{hex_str index.to_u32} -> #{hex_str value}"
+    log "write #{hex_str index.to_u32} -> #{hex_str value}"
     case index
     when CARTRIDGE then @gba.cartridge[index]
     when UNUSED    then nil
-    else                @todo[index] = value
+    else                raise "Unimplemented write ~ addr:#{hex_str index.to_u32}, val:#{value}"
     end
   end
 
   def []=(index : Int, value : Word) : Nil
-    # puts "write #{hex_str index.to_u32} -> #{hex_str value}"
+    log "write #{hex_str index.to_u32} -> #{hex_str value}"
     self[index] = 0xFF_u8 & (value >> 24)
     self[index] = 0xFF_u8 & (value >> 16)
     self[index] = 0xFF_u8 & (value >> 8)
