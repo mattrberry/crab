@@ -108,12 +108,12 @@ module ARM
   end
 
   def rotate_register(instr : Word) : Word
-    shift = bits(instr, 4..11)
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
     shift_amount = if bit?(instr, 4)
                      shift_register = bits(instr, 8..11)
-                     @r[shift_register] & 0xF
+                     # todo weird logic if bottom byte of reg > 31
+                     @r[shift_register] & 0xFF
                    else
                      bits(instr, 7..11)
                    end
@@ -124,5 +124,11 @@ module ARM
     when 0b11 then ror(reg, shift_amount)
     else           raise "Impossible shift type: #{hex_str shift_type}"
     end
+  end
+
+  def immediate_offset(instr : Word) : Word
+    rotate = bits(instr, 8..11)
+    imm = bits(instr, 0..7)
+    ror(imm, 2 * rotate)
   end
 end
