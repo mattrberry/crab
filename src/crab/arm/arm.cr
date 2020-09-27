@@ -69,6 +69,8 @@ module ARM
         # multiply long
       elsif idx & 0b111111001111 == 0b000000001001
         # multiply
+      elsif idx & 0b110110010000 == 0b000100000000
+        lut[idx] = ->arm_psr_transfer(Word)
       elsif idx & 0b110000000000 == 0b000000000000
         lut[idx] = ->arm_data_processing(Word)
       else
