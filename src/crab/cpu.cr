@@ -1,7 +1,9 @@
 require "./arm/*"
+require "./thumb/*"
 
 class CPU
   include ARM
+  include THUMB
 
   class PSR < BitField(UInt32)
     bool negative
@@ -19,6 +21,7 @@ class CPU
   @cpsr : PSR
   @pipeline = Deque(Word).new 2
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
+  getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
 
   def initialize(@gba : GBA)
     @r[0] = 0x08000000
@@ -51,13 +54,23 @@ class CPU
     fill_pipeline
     instr = @pipeline.shift
     print_state instr
-    arm_execute instr
+    if @cpsr.thumb
+      thumb_execute instr
+    else
+      arm_execute instr
+    end
   end
 
   def print_state(instr : Word) : Nil
-    @r.each do |reg|
-      trace "#{hex_str reg, prefix: false} ", newline: false
-    end
-    trace "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
+    {% if flag? :trace %}
+      @r.each do |reg|
+        trace "#{hex_str reg, prefix: false} ", newline: false
+      end
+      if @cpsr.thumb
+        trace "cpsr: #{hex_str @cpsr.value, prefix: false} |     #{hex_str instr.to_u16, prefix: false}"
+      else
+        trace "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
+      end
+    {% end %}
   end
 end
