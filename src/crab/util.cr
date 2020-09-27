@@ -7,7 +7,7 @@ macro bit?(value, bit)
 end
 
 macro bits(value, range)
-  ({{value}} >> ({{range}}).begin) & ((1 << ({{range}}).size) - 1)
+  ({{value}} >> {{range.begin}} & (1 << {{range.to_a.size}}) - 1)
 end
 
 macro set_bit(value, bit)
