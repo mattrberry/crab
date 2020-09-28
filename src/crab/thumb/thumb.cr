@@ -37,7 +37,7 @@ module THUMB
       elsif idx & 0b11111100 == 0b01000100
         # hi register operations / branch exchange
       elsif idx & 0b11111100 == 0b01000000
-        # alu operations
+        lut[idx] = ->thumb_alu_operations(Word)
       elsif idx & 0b11100000 == 0b00100000
         lut[idx] = ->thumb_move_compare_add_subtract(Word)
       elsif idx & 0b11111100 == 0b00011000
