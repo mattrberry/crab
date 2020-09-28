@@ -61,6 +61,47 @@ class CPU
     end
   end
 
+  def check_cond(cond : Word) : Bool
+    case bits cond, 28..31
+    when 0x0 then @cpsr.zero
+    when 0x1 then !@cpsr.zero
+    when 0x2 then @cpsr.carry
+    when 0x3 then !@cpsr.carry
+    when 0x4 then @cpsr.negative
+    when 0x5 then !@cpsr.negative
+    when 0x6 then @cpsr.overflow
+    when 0x7 then !@cpsr.overflow
+    when 0x8 then @cpsr.carry && !@cpsr.zero
+    when 0x9 then !@cpsr.carry || @cpsr.zero
+    when 0xA then @cpsr.negative == @cpsr.overflow
+    when 0xB then @cpsr.negative != @cpsr.overflow
+    when 0xC then !@cpsr.zero && @cpsr.negative == @cpsr.overflow
+    when 0xD then @cpsr.zero || @cpsr.negative != @cpsr.overflow
+    when 0xE then true
+    else          raise "Cond 0xF is reserved"
+    end
+  end
+
+  # Logical shift left
+  def lsl(word : Word, bits : Int) : Word
+    word << bits
+  end
+
+  # Logical shift right
+  def lsr(word : Word, bits : Int) : Word
+    word >> bits
+  end
+
+  # Arithmetic shift right
+  def asr(word : Word, bits : Int) : Word
+    word // (2 ** bits)
+  end
+
+  # Rotate right
+  def ror(word : Word, bits : Int) : Word
+    word >> bits | word << (32 - bits)
+  end
+
   def print_state(instr : Word) : Nil
     {% if flag? :trace %}
       @r.each do |reg|

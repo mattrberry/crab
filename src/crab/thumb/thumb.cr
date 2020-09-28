@@ -13,7 +13,7 @@ module THUMB
       elsif idx & 0b11111111 == 0b11011111
         # software interrupt
       elsif idx & 0b11110000 == 0b11010000
-        # conditional branch
+        lut[idx] = ->thumb_conditional_branch(Word)
       elsif idx & 0b11110000 == 0b11000000
         # multiple load/store
       elsif idx & 0b11110110 == 0b10110100

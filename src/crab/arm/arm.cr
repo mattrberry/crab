@@ -17,27 +17,6 @@ module ARM
     (instr >> 16 & 0x0FF0) | (instr >> 4 & 0xF)
   end
 
-  private def check_cond(cond : Word) : Bool
-    case bits cond, 28..31
-    when 0x0 then @cpsr.zero
-    when 0x1 then !@cpsr.zero
-    when 0x2 then @cpsr.carry
-    when 0x3 then !@cpsr.carry
-    when 0x4 then @cpsr.negative
-    when 0x5 then !@cpsr.negative
-    when 0x6 then @cpsr.overflow
-    when 0x7 then !@cpsr.overflow
-    when 0x8 then @cpsr.carry && !@cpsr.zero
-    when 0x9 then !@cpsr.carry || @cpsr.zero
-    when 0xA then @cpsr.negative == @cpsr.overflow
-    when 0xB then @cpsr.negative != @cpsr.overflow
-    when 0xC then !@cpsr.zero && @cpsr.negative == @cpsr.overflow
-    when 0xD then @cpsr.zero || @cpsr.negative != @cpsr.overflow
-    when 0xE then true
-    else          raise "Cond 0xF is reserved"
-    end
-  end
-
   def fill_lut : Slice(Proc(Word, Nil))
     lut = Slice(Proc(Word, Nil)).new 4096, ->arm_unimplemented(Word)
     4096.times do |idx|
@@ -89,26 +68,6 @@ module ARM
     puts "Unused instruction: #{hex_str instr}"
   end
 
-  # Logical shift left
-  def lsl(word : Word, bits : Int) : Word
-    word << bits
-  end
-
-  # Logical shift right
-  def lsr(word : Word, bits : Int) : Word
-    word >> bits
-  end
-
-  # Arithmetic shift right
-  def asr(word : Word, bits : Int) : Word
-    word // (2 ** bits)
-  end
-
-  # Rotate right
-  def ror(word : Word, bits : Int) : Word
-    word >> bits | word << (32 - bits)
-  end
-
   def rotate_register(instr : Word, allow_register_shifts = true) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
@@ -120,10 +79,10 @@ module ARM
                      bits(instr, 7..11)
                    end
     case shift_type
-    when 0b00 then lsl(reg, shift_amount)
-    when 0b01 then lsr(reg, shift_amount)
-    when 0b10 then asr(reg, shift_amount)
-    when 0b11 then ror(reg, shift_amount)
+    when 0b00 then lsl(@r[reg], shift_amount)
+    when 0b01 then lsr(@r[reg], shift_amount)
+    when 0b10 then asr(@r[reg], shift_amount)
+    when 0b11 then ror(@r[reg], shift_amount)
     else           raise "Impossible shift type: #{hex_str shift_type}"
     end
   end
