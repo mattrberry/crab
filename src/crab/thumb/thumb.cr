@@ -43,7 +43,7 @@ module THUMB
       elsif idx & 0b11111100 == 0b00011000
         # add/subtract
       elsif idx & 0b11100000 == 0b00000000
-        # move shifted register
+        lut[idx] = ->thumb_move_shifted_register(Word)
       end
     end
     lut
