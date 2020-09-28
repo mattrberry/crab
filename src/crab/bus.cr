@@ -1,6 +1,11 @@
 class Bus
-  CARTRIDGE = 0x08000000..0x0FFFFFFF
-  UNUSED    = 0x10000000..0xFFFFFFFF
+  WRAM_BOARD = 0x02000000..0x0203FFFF
+  WRAM_CHIP  = 0x03000000..0x03007FFF
+  CARTRIDGE  = 0x08000000..0x0FFFFFFF
+  UNUSED     = 0x10000000..0xFFFFFFFF
+
+  @wram_board = Bytes.new Bus::WRAM_BOARD.size
+  @wram_chip = Bytes.new Bus::WRAM_CHIP.size
 
   def initialize(@gba : GBA)
   end
@@ -8,9 +13,11 @@ class Bus
   def [](index : Int) : Byte
     log "read #{hex_str index.to_u32}"
     case index
-    when CARTRIDGE then @gba.cartridge[index - CARTRIDGE.begin]
-    when UNUSED    then 0xFF
-    else                0xFF
+    when WRAM_BOARD then @wram_board[index - WRAM_BOARD.begin]
+    when WRAM_CHIP  then @wram_chip[index - WRAM_CHIP.begin]
+    when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin]
+    when UNUSED     then 0xFF
+    else                 0xFF
     end.to_u8
   end
 
@@ -29,9 +36,11 @@ class Bus
   def []=(index : Int, value : Byte) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
     case index
-    when CARTRIDGE then @gba.cartridge[index]
-    when UNUSED    then nil
-    else                raise "Unimplemented write ~ addr:#{hex_str index.to_u32}, val:#{value}"
+    when WRAM_BOARD then @wram_board[index - WRAM_BOARD.begin] = value
+    when WRAM_CHIP  then @wram_chip[index - WRAM_CHIP.begin] = value
+    when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin] = value # todo is this meant to be writable?
+    when UNUSED     then nil
+    else                 raise "Unimplemented write ~ addr:#{hex_str index.to_u32}, val:#{value}"
     end
   end
 
