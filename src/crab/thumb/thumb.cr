@@ -41,7 +41,7 @@ module THUMB
       elsif idx & 0b11100000 == 0b00100000
         lut[idx] = ->thumb_move_compare_add_subtract(Word)
       elsif idx & 0b11111100 == 0b00011000
-        # add/subtract
+        lut[idx] = ->thumb_add_subtract(Word)
       elsif idx & 0b11100000 == 0b00000000
         lut[idx] = ->thumb_move_shifted_register(Word)
       end
