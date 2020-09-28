@@ -15,7 +15,7 @@ module THUMB
       elsif idx & 0b11110000 == 0b11010000
         lut[idx] = ->thumb_conditional_branch(Word)
       elsif idx & 0b11110000 == 0b11000000
-        # multiple load/store
+        lut[idx] = ->thumb_multiple_load_store(Word)
       elsif idx & 0b11110110 == 0b10110100
         # push/pop registers
       elsif idx & 0b11111111 == 0b10110000
