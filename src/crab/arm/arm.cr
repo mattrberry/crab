@@ -68,7 +68,7 @@ module ARM
     puts "Unused instruction: #{hex_str instr}"
   end
 
-  def rotate_register(instr : Word, allow_register_shifts = true) : Word
+  def rotate_register(instr : Word, set_conditions : Bool, allow_register_shifts = true) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
     shift_amount = if allow_register_shifts && bit?(instr, 4)
@@ -79,10 +79,10 @@ module ARM
                      bits(instr, 7..11)
                    end
     case shift_type
-    when 0b00 then lsl(@r[reg], shift_amount)
-    when 0b01 then lsr(@r[reg], shift_amount)
-    when 0b10 then asr(@r[reg], shift_amount)
-    when 0b11 then ror(@r[reg], shift_amount)
+    when 0b00 then lsl(@r[reg], shift_amount, set_conditions)
+    when 0b01 then lsr(@r[reg], shift_amount, set_conditions)
+    when 0b10 then asr(@r[reg], shift_amount, set_conditions)
+    when 0b11 then ror(@r[reg], shift_amount, set_conditions)
     else           raise "Impossible shift type: #{hex_str shift_type}"
     end
   end
@@ -90,6 +90,6 @@ module ARM
   def immediate_offset(instr : Word) : Word
     rotate = bits(instr, 8..11)
     imm = bits(instr, 0..7)
-    ror(imm, 2 * rotate)
+    ror(imm, 2 * rotate, false)
   end
 end

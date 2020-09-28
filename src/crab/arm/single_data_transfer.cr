@@ -10,7 +10,7 @@ module ARM
     rn = bits(instr, 16..19)
     rd = bits(instr, 12..15)
     operand_2 = if imm_flag # Operand 2 is a register (opposite of data procesing for some reason)
-                  rotate_register bits(instr, 0..11), allow_register_shifts: false
+                  rotate_register bits(instr, 0..11), set_conditions: false, allow_register_shifts: false
                 else # Operand 2 is an immediate offset
                   immediate_offset bits(instr, 0..11)
                 end

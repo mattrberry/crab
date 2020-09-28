@@ -5,12 +5,12 @@ module ARM
     set_conditions = bit?(instr, 20)
     rn = bits(instr, 16..19)
     rd = bits(instr, 12..15)
-    # todo set carry flag from barrel shifter
     operand_2 = if imm_flag # Operand 2 is an immediate
                   immediate_offset bits(instr, 0..11)
                 else # Operand 2 is a register
-                  rotate_register bits(instr, 0..11)
+                  rotate_register bits(instr, 0..11), set_conditions
                 end
+    # todo handle carry flag on all ops
     case opcode
     when 0x0 then res = @r[rd] = @r[rn] & operand_2
     when 0x1 then res = @r[rd] = @r[rn] ^ operand_2
