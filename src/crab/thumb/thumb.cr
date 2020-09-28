@@ -7,7 +7,7 @@ module THUMB
     lut = Slice(Proc(Word, Nil)).new 256, ->thumb_unimplemented(Word)
     256.times do |idx|
       if idx & 0b11110000 == 0b11110000
-        # long branch with link
+        lut[idx] = ->thumb_long_branch_link(Word)
       elsif idx & 0b11111000 == 0b11100000
         # unconditional branch
       elsif idx & 0b11111111 == 0b11011111
