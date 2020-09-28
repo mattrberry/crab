@@ -6,9 +6,9 @@ module THUMB
     # todo handle carry flag on all ops
     case op
     when 0b00 then res = @r[rd] = offset
-    when 0b01 then res = @r[rd] &- offset
+    when 0b01 then res = sub(@r[rd], offset, true)
     when 0b10 then res = @r[rd] &+= offset
-    when 0b11 then res = @r[rd] &-= offset
+    when 0b11 then res = @r[rd] = sub(@r[rd], offset, true)
     else           raise "Invalid move/compare/add/subtract op: #{op}"
     end
     @cpsr.zero = res == 0

@@ -11,7 +11,7 @@ module THUMB
                 @r[imm]
               end
     if sub
-      @r[rd] = @r[rs] &- operand
+      @r[rd] = sub(@r[rs], operand, true)
     else
       @r[rd] = @r[rs] &+ operand
     end

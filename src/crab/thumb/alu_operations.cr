@@ -3,6 +3,7 @@ module THUMB
     op = bits(instr, 6..9)
     rs = bits(instr, 3..5)
     rd = bits(instr, 0..2)
+    # todo handle flags for all ops
     case op
     when 0b0000 then res = @r[rd] = @r[rd] & @r[rs]
     when 0b0001 then res = @r[rd] = @r[rd] ^ @r[rs]
@@ -14,7 +15,7 @@ module THUMB
     when 0b0111 then res = @r[rd] = ror(@r[rd], @r[rs], true)
     when 0b1000 then res = @r[rd] & @r[rs]
     when 0b1001 then res = @r[rd] = (-@r[rs].to_i32!).to_u32!
-    when 0b1010 then res = @r[rd] &- @r[rs]
+    when 0b1010 then res = sub(@r[rd], @r[rs], true)
     when 0b1011 then res = @r[rd] &+ @r[rs]
     when 0b1100 then res = @r[rd] = @r[rd] | @r[rs]
     when 0b1101 then res = @r[rd] = @r[rs] * @r[rd]
