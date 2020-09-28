@@ -62,7 +62,7 @@ class CPU
   end
 
   def check_cond(cond : Word) : Bool
-    case bits cond, 28..31
+    case cond
     when 0x0 then @cpsr.zero
     when 0x1 then !@cpsr.zero
     when 0x2 then @cpsr.carry

@@ -5,7 +5,7 @@
 
 module ARM
   def arm_execute(instr : Word) : Nil
-    if check_cond instr
+    if check_cond bits(instr, 28..31)
       hash = hash_instr instr
       lut[hash].call instr
     else
