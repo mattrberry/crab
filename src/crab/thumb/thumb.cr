@@ -17,7 +17,7 @@ module THUMB
       elsif idx & 0b11110000 == 0b11000000
         lut[idx] = ->thumb_multiple_load_store(Word)
       elsif idx & 0b11110110 == 0b10110100
-        # push/pop registers
+        lut[idx] = ->thumb_push_pop_registers(Word)
       elsif idx & 0b11111111 == 0b10110000
         # add offset to stack pointer
       elsif idx & 0b11110000 == 0b10100000
