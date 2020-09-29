@@ -27,7 +27,7 @@ module THUMB
       elsif idx & 0b11110000 == 0b10000000
         # load/store halfword
       elsif idx & 0b11100000 == 0b01100000
-        # load/store with immediate offset
+        lut[idx] = ->thumb_load_store_immediate_offset(Word)
       elsif idx & 0b11110010 == 0b01010010
         # load/store sign-extended byte/halfword
       elsif idx & 0b11110010 == 0b01010000
