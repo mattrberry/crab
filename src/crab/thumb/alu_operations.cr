@@ -16,7 +16,7 @@ module THUMB
     when 0b1000 then res = @r[rd] & @r[rs]
     when 0b1001 then res = @r[rd] = (-@r[rs].to_i32!).to_u32!
     when 0b1010 then res = sub(@r[rd], @r[rs], true)
-    when 0b1011 then res = @r[rd] &+ @r[rs]
+    when 0b1011 then res = add(@r[rd], @r[rs], true)
     when 0b1100 then res = @r[rd] = @r[rd] | @r[rs]
     when 0b1101 then res = @r[rd] = @r[rs] * @r[rd]
     when 0b1110 then res = @r[rd] = @r[rd] & ~@r[rs]

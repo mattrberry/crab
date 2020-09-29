@@ -123,6 +123,19 @@ class CPU
     res
   end
 
+  # Add two values
+  def add(operand_1 : Word, operand_2 : Word, set_conditions) : Word
+    log "add - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
+    res = operand_1 &+ operand_2
+    if set_conditions
+      @cpsr.overflow = bit?(~(operand_1 ^ operand_2) & (operand_2 ^ res), 31)
+      @cpsr.carry = res < operand_1
+      @cpsr.zero = res == 0
+      @cpsr.negative = bit?(res, 31)
+    end
+    res
+  end
+
   def print_state(instr : Word) : Nil
     {% if flag? :trace %}
       @r.each do |reg|
