@@ -35,7 +35,7 @@ module THUMB
       elsif idx & 0b11111000 == 0b01001000
         lut[idx] = ->thumb_pc_relative_load(Word)
       elsif idx & 0b11111100 == 0b01000100
-        # hi register operations / branch exchange
+        lut[idx] = ->thumb_high_reg_branch_exchange(Word)
       elsif idx & 0b11111100 == 0b01000000
         lut[idx] = ->thumb_alu_operations(Word)
       elsif idx & 0b11100000 == 0b00100000
