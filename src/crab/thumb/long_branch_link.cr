@@ -7,7 +7,8 @@ module THUMB
       @r[15], @r[14] = @r[14], @r[15] - 1
       clear_pipeline
     else
-      @r[14] = (offset << 12) + @r[15]
+      offset = (offset << 5).to_i16! >> 5 # todo make this just bit math
+      @r[14] = @r[15] &+ (offset << 12)
     end
   end
 end
