@@ -20,7 +20,7 @@ module THUMB
         @cpsr.thumb = false
         @r[15] = @r[rs] & ~3
       end
+      clear_pipeline
     end
-    clear_pipeline
   end
 end
