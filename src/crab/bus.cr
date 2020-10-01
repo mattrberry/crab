@@ -46,9 +46,9 @@ class Bus
 
   def []=(index : Int, value : Word) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
-    self[index] = 0xFF_u8 & (value >> 24)
-    self[index] = 0xFF_u8 & (value >> 16)
-    self[index] = 0xFF_u8 & (value >> 8)
+    self[index + 3] = 0xFF_u8 & (value >> 24)
+    self[index + 2] = 0xFF_u8 & (value >> 16)
+    self[index + 1] = 0xFF_u8 & (value >> 8)
     self[index] = 0xFF_u8 & value
   end
 end

@@ -2,7 +2,7 @@ module THUMB
   def thumb_push_pop_registers(instr : Word) : Nil
     pop = bit?(instr, 11)
     pclr = bit?(instr, 8)
-    list = bits(instr, 0..8)
+    list = bits(instr, 0..7)
     address = @r[13]
     if pop
       8.times do |idx|
@@ -18,13 +18,13 @@ module THUMB
       end
     else
       if pclr
-        @gba.bus[address] = @r[14]
         address &-= 4
+        @gba.bus[address] = @r[14]
       end
       7.downto(0).each do |idx|
         if bit?(list, idx)
-          @gba.bus[address] = @r[idx]
           address &-= 4
+          @gba.bus[address] = @r[idx]
         end
       end
     end
