@@ -1,10 +1,10 @@
 module THUMB
   def thumb_multiple_load_store(instr : Word) : Nil
-    load_from_memory = bit?(instr, 11)
+    load = bit?(instr, 11)
     rb = bits(instr, 8..10)
     list = bits(instr, 0..7)
     address = @r[rb]
-    if load_from_memory # ldmia
+    if load # ldmia
       8.times do |idx|
         if bit?(list, idx)
           @r[idx] = @gba.bus.read_word(address)
