@@ -1,4 +1,5 @@
 class Bus
+  BIOS         = 0x00000000..0x00003FFF
   WRAM_BOARD   = 0x02000000..0x0203FFFF
   WRAM_CHIP    = 0x03000000..0x03007FFF
   PPU_IO       = 0x04000000..0x0400005F
@@ -9,6 +10,7 @@ class Bus
   KEYPAD_IO    = 0x04000130..0x04000133
   SERIAL_IO_2  = 0x04000134..0x040001FF
   INTERRUPT_IO = 0x04000200..0x0400FFFF
+  PPU          = 0x05000000..0x07FFFFFF
   CARTRIDGE    = 0x08000000..0x0FFFFFFF
   UNUSED       = 0x10000000..0xFFFFFFFF
 
@@ -23,7 +25,8 @@ class Bus
     case index
     when WRAM_BOARD then @wram_board[index - WRAM_BOARD.begin]
     when WRAM_CHIP  then @wram_chip[index - WRAM_CHIP.begin]
-    when PPU_IO then @gba.ppu[index]
+    when PPU_IO     then @gba.ppu[index]
+    when PPU        then @gba.ppu[index]
     when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin]
     when UNUSED     then 0xFF
     else                 0xFF
@@ -47,7 +50,8 @@ class Bus
     case index
     when WRAM_BOARD then @wram_board[index - WRAM_BOARD.begin] = value
     when WRAM_CHIP  then @wram_chip[index - WRAM_CHIP.begin] = value
-    when PPU_IO then @gba.ppu[index] = value
+    when PPU_IO     then @gba.ppu[index] = value
+    when PPU        then @gba.ppu[index] = value
     when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin] = value # todo is this meant to be writable?
     when UNUSED     then nil
     else                 raise "Unimplemented write ~ addr:#{hex_str index.to_u32}, val:#{value}"
