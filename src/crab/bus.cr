@@ -54,6 +54,12 @@ class Bus
     end
   end
 
+  def []=(index : Int, value : HalfWord) : Nil
+    log "write #{hex_str index.to_u32} -> #{hex_str value}"
+    self[index + 1] = 0xFF_u8 & (value >> 8)
+    self[index] = 0xFF_u8 & value
+  end
+
   def []=(index : Int, value : Word) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
     self[index + 3] = 0xFF_u8 & (value >> 24)
