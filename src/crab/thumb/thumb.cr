@@ -19,7 +19,7 @@ module THUMB
       elsif idx & 0b11110110 == 0b10110100
         lut[idx] = ->thumb_push_pop_registers(Word)
       elsif idx & 0b11111111 == 0b10110000
-        # add offset to stack pointer
+        lut[idx] = ->thumb_add_offset_to_stack_pointer(Word)
       elsif idx & 0b11110000 == 0b10100000
         # load address
       elsif idx & 0b11110000 == 0b10010000
