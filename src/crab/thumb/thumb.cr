@@ -9,7 +9,7 @@ module THUMB
       if idx & 0b11110000 == 0b11110000
         lut[idx] = ->thumb_long_branch_link(Word)
       elsif idx & 0b11111000 == 0b11100000
-        # unconditional branch
+        lut[idx] = ->thumb_unconditional_branch(Word)
       elsif idx & 0b11111111 == 0b11011111
         # software interrupt
       elsif idx & 0b11110000 == 0b11010000
