@@ -10,8 +10,8 @@ module THUMB
     rs += 8 if h2
 
     case op
-    when 0b00 then add(@r[rd], @r[rs], true)
-    when 0b01 then sub(@r[rd], @r[rs], true)
+    when 0b00 then @r[rd] = add(@r[rd], @r[rs], true)
+    when 0b01 then @r[rd] = sub(@r[rd], @r[rs], true)
     when 0b10 then @r[rd] = @r[rs]
     when 0b11
       if bit?(@r[rs], 0)
