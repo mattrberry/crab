@@ -28,6 +28,10 @@ class PPU
   def initialize(@gba : GBA)
   end
 
+  def tick(cycles : Int) : Nil
+    @gba.display.draw @vram
+  end
+
   def [](index : Int) : Byte
     case index
     when 0x04000000 then (@dispcnt.value >> 8).to_u8

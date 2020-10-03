@@ -14,5 +14,7 @@ dependencies:
   bitfield:
     github: mattrberry/bitfield
     version: 0.1.0
+  sdl:
+    git: git@github.com:ysbaddaden/sdl.cr.git
 
 license: MIT

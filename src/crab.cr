@@ -1,4 +1,5 @@
 require "bitfield"
+require "sdl"
 
 require "./crab/gba"
 
