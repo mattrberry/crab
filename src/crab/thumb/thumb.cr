@@ -23,7 +23,7 @@ module THUMB
       elsif idx & 0b11110000 == 0b10100000
         # load address
       elsif idx & 0b11110000 == 0b10010000
-        # sp-relative load/store
+        lut[idx] = ->thumb_sp_relative_load_store(Word)
       elsif idx & 0b11110000 == 0b10000000
         lut[idx] = -> thumb_load_store_halfword(Word)
       elsif idx & 0b11100000 == 0b01100000
