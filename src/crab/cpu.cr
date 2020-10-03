@@ -59,6 +59,7 @@ class CPU
     else
       arm_execute instr
     end
+    @gba.tick 1
   end
 
   def check_cond(cond : Word) : Bool

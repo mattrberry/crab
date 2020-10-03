@@ -3,6 +3,14 @@ class PPU
   VRAM           = 0x06000000..0x06017FFF
   OAM            = 0x07000000..0x070003FF
 
+  # Display timings in cycles
+  HDRAW    = 960
+  HBLANK   = 272
+  SCANLINE = HDRAW + HBLANK
+  VDRAW    = 160 * SCANLINE
+  VBLANK   = 68 * SCANLINE
+  REFRESH  = VDRAW + VBLANK
+
   # LCD Control
   class DISPCNT < BitField(UInt16)
     bool obj_window_display
@@ -25,11 +33,17 @@ class PPU
 
   @dispcnt : DISPCNT = DISPCNT.new 0
 
+  @cycles = 0
+
   def initialize(@gba : GBA)
   end
 
   def tick(cycles : Int) : Nil
-    @gba.display.draw @vram
+    @cycles += cycles
+    if @cycles >= REFRESH
+      @gba.display.draw @vram
+      @cycles -= REFRESH
+    end
   end
 
   def [](index : Int) : Byte

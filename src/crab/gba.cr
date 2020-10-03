@@ -13,6 +13,8 @@ class GBA
   getter display : Display { Display.new }
   getter ppu : PPU { PPU.new self }
 
+  @cycles = 0
+
   def initialize(rom_path : String)
     @cartridge = Cartridge.new rom_path
 
@@ -34,13 +36,17 @@ class GBA
   end
 
   def run : Nil
-    # puts @cartridge.title
     loop do
-      280896.times do
-        cpu.tick
-      end
-      ppu.tick 280896
+      cpu.tick
+    end
+  end
+
+  def tick(cycles : Int) : Nil
+    ppu.tick cycles
+    @cycles += cycles
+    if @cycles >= PPU::REFRESH
       handle_events
+      @cycles -= PPU::REFRESH
     end
   end
 end
