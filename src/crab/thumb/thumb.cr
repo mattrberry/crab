@@ -29,7 +29,7 @@ module THUMB
       elsif idx & 0b11100000 == 0b01100000
         lut[idx] = ->thumb_load_store_immediate_offset(Word)
       elsif idx & 0b11110010 == 0b01010010
-        # load/store sign-extended byte/halfword
+        lut[idx] = ->thumb_load_store_sign_extended(Word)
       elsif idx & 0b11110010 == 0b01010000
         # load/store with register offset
       elsif idx & 0b11111000 == 0b01001000
@@ -40,7 +40,7 @@ module THUMB
         lut[idx] = ->thumb_alu_operations(Word)
       elsif idx & 0b11100000 == 0b00100000
         lut[idx] = ->thumb_move_compare_add_subtract(Word)
-      elsif idx & 0b11111100 == 0b00011000
+      elsif idx & 0b11111000 == 0b00011000
         lut[idx] = ->thumb_add_subtract(Word)
       elsif idx & 0b11100000 == 0b00000000
         lut[idx] = ->thumb_move_shifted_register(Word)
