@@ -14,10 +14,22 @@ class Display
     @texture = LibSDL.create_texture @renderer, PIXELFORMAT_BGR555, TEXTUREACCESS_STREAMING, WIDTH, HEIGHT
   end
 
+  def window_title : String
+    "crab - #{@fps} fps"
+  end
+
+  @fps = 30
+  @seconds : Int32 = Time.utc.second
   def draw(framebuffer : Bytes) : Nil
     LibSDL.update_texture @texture, nil, framebuffer, WIDTH * 2
     @renderer.clear
     @renderer.copy @texture
     @renderer.present
+    @fps += 1
+    if Time.utc.second != @seconds
+      @window.title = window_title
+      @fps = 0
+      @seconds = Time.utc.second
+    end
   end
 end

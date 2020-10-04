@@ -28,9 +28,9 @@ class Bus
     when PPU_IO     then @gba.ppu[index]
     when PPU        then @gba.ppu[index]
     when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin]
-    when UNUSED     then 0xFF
-    else                 0xFF
-    end.to_u8
+    when UNUSED     then 0xFF_u8
+    else                 0xFF_u8
+    end
   end
 
   def read_word(index : Int) : Word
