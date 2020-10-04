@@ -1,8 +1,4 @@
 class PPU
-  BG_OBJ_PALETTE = 0x05000000..0x050003FF
-  VRAM           = 0x06000000..0x06017FFF
-  OAM            = 0x07000000..0x070003FF
-
   # Display timings in cycles
   HDRAW    = 960
   HBLANK   = 272
@@ -29,7 +25,7 @@ class PPU
     num bg_mode, 3                  # (0-5=Video Mode 0-5, 6-7=Prohibited)
   end
 
-  @vram = Bytes.new VRAM.size
+  getter vram = Bytes.new 0x18000
 
   @dispcnt : DISPCNT = DISPCNT.new 0
 
@@ -52,7 +48,6 @@ class PPU
     when 0x04000001 then @dispcnt.value.to_u8!
     when 0x04000002 then 0_u8
     when 0x04000003 then 0_u8
-    when VRAM       then @vram[index = VRAM.begin]
     else                 raise "Unimplemented PPU read ~ addr:#{hex_str index.to_u32}"
     end
   end
@@ -63,7 +58,6 @@ class PPU
     when 0x04000001 then @dispcnt.value = (@dispcnt.value & 0xFF00) | value
     when 0x04000002
     when 0x04000003
-    when VRAM then @vram[index - VRAM.begin] = value
     else           raise "Unimplemented PPU write ~ addr:#{hex_str index.to_u32}, val:#{value}"
     end
   end

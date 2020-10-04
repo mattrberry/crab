@@ -22,14 +22,22 @@ class Bus
 
   def [](index : Int) : Byte
     log "read #{hex_str index.to_u32}"
-    case index
-    when WRAM_BOARD then @wram_board[index - WRAM_BOARD.begin]
-    when WRAM_CHIP  then @wram_chip[index - WRAM_CHIP.begin]
-    when PPU_IO     then @gba.ppu[index]
-    when PPU        then @gba.ppu[index]
-    when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin]
-    when UNUSED     then 0xFF_u8
-    else                 0xFF_u8
+    case bits(index, 24..27)
+    when 0x2 then @wram_board[index & 0x3FFFF]
+    when 0x3 then @wram_chip[index & 0x7FFF]
+    when 0x4
+      io_addr = 0x0FFF_u16 & index
+      if io_addr <= 0x05F
+        @gba.ppu[index]
+      else
+        raise "Unmapped i/o read: #{hex_str index.to_u32}"
+      end
+    when 0x6
+      address = 0x1FFFF_u32 & index
+      address &= ~0x8000 if address > 0x17FFF
+      @gba.ppu.vram[address]
+    when 0x8, 0x9 then @gba.cartridge[index & 0x7FFFFFF]
+    else               raise "Unmapped read: #{hex_str index.to_u32}"
     end
   end
 
@@ -47,14 +55,23 @@ class Bus
 
   def []=(index : Int, value : Byte) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
-    case index
-    when WRAM_BOARD then @wram_board[index - WRAM_BOARD.begin] = value
-    when WRAM_CHIP  then @wram_chip[index - WRAM_CHIP.begin] = value
-    when PPU_IO     then @gba.ppu[index] = value
-    when PPU        then @gba.ppu[index] = value
-    when CARTRIDGE  then @gba.cartridge[index - CARTRIDGE.begin] = value # todo is this meant to be writable?
-    when UNUSED     then nil
-    else                 raise "Unimplemented write ~ addr:#{hex_str index.to_u32}, val:#{value}"
+    return if bits(index, 28..31) > 0
+    case bits(index, 24..27)
+    when 0x2 then @wram_board[index & 0x3FFFF] = value
+    when 0x3 then @wram_chip[index & 0x7FFF] = value
+    when 0x4
+      io_addr = 0x0FFF_u16 & index
+      if io_addr <= 0x05F
+        @gba.ppu[index] = value
+      else
+        raise "Unmapped i/o write: #{hex_str index.to_u32}"
+      end
+    when 0x6
+      address = 0x1FFFF_u32 & index
+      address &= ~0x8000 if address > 0x17FFF
+      @gba.ppu.vram[address] = value
+    when 0x8, 0x9 then @gba.cartridge[index & 0x7FFFFFF] = value
+    else               raise "Unmapped write: #{hex_str index.to_u32}"
     end
   end
 
