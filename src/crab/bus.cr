@@ -1,21 +1,6 @@
 class Bus
-  BIOS         = 0x00000000..0x00003FFF
-  WRAM_BOARD   = 0x02000000..0x0203FFFF
-  WRAM_CHIP    = 0x03000000..0x03007FFF
-  PPU_IO       = 0x04000000..0x0400005F
-  SOUND_IO     = 0x04000060..0x040000AF
-  DMA_IO       = 0x040000B0..0x040000FF
-  TIMER_IO     = 0x04000100..0x0400011F
-  SERIAL_IO_1  = 0x04000120..0x0400012F
-  KEYPAD_IO    = 0x04000130..0x04000133
-  SERIAL_IO_2  = 0x04000134..0x040001FF
-  INTERRUPT_IO = 0x04000200..0x0400FFFF
-  PPU          = 0x05000000..0x07FFFFFF
-  CARTRIDGE    = 0x08000000..0x0FFFFFFF
-  UNUSED       = 0x10000000..0xFFFFFFFF
-
-  @wram_board = Bytes.new Bus::WRAM_BOARD.size
-  @wram_chip = Bytes.new Bus::WRAM_CHIP.size
+  @wram_board = Bytes.new 0x40000
+  @wram_chip = Bytes.new 0x08000
 
   def initialize(@gba : GBA)
   end

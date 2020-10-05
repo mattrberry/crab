@@ -1,5 +1,6 @@
 require "./arm/*"
 require "./thumb/*"
+require "./pipeline"
 
 class CPU
   include ARM
@@ -19,7 +20,7 @@ class CPU
 
   @r = Slice(Word).new 16
   @cpsr : PSR
-  @pipeline = Deque(Word).new 2
+  @pipeline = Pipeline.new
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
 
@@ -35,11 +36,11 @@ class CPU
     while @pipeline.size < 2
       if @cpsr.thumb
         log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_half(@r[15]).to_u16}"
-        @pipeline << @gba.bus.read_half @r[15]
+        @pipeline.push @gba.bus.read_half @r[15]
         @r[15] &+= 2
       else
         log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_word @r[15]}"
-        @pipeline << @gba.bus.read_word @r[15]
+        @pipeline.push @gba.bus.read_word @r[15]
         @r[15] &+= 4
       end
     end
