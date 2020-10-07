@@ -25,6 +25,7 @@ class PPU
     num bg_mode, 3                  # (0-5=Video Mode 0-5, 6-7=Prohibited)
   end
 
+  getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
 
   @dispcnt : DISPCNT = DISPCNT.new 0

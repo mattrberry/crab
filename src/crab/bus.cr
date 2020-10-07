@@ -17,6 +17,7 @@ class Bus
       else
         raise "Unmapped i/o read: #{hex_str index.to_u32}"
       end
+    when 0x5 then @gba.ppu.pram[index]
     when 0x6
       address = 0x1FFFF_u32 & index
       address &= ~0x8000 if address > 0x17FFF
@@ -51,6 +52,7 @@ class Bus
       else
         raise "Unmapped i/o write: #{hex_str index.to_u32}"
       end
+    when 0x5 then @gba.ppu.pram[index & 0x3FF] = value
     when 0x6
       address = 0x1FFFF_u32 & index
       address &= ~0x8000 if address > 0x17FFF
