@@ -1,14 +1,18 @@
 require "./types"
 require "./util"
 require "./cartridge"
+require "./mmio"
 require "./bus"
+require "./interrupts"
 require "./cpu"
 require "./display"
 require "./ppu"
 
 class GBA
   getter cartridge : Cartridge
+  getter mmio : MMIO { MMIO.new self }
   getter bus : Bus { Bus.new self }
+  getter interrupts : Interrupts { Interrupts.new }
   getter cpu : CPU { CPU.new self }
   getter display : Display { Display.new }
   getter ppu : PPU { PPU.new self }

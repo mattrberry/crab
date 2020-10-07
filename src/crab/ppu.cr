@@ -28,7 +28,7 @@ class PPU
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
 
-  @dispcnt : DISPCNT = DISPCNT.new 0
+  getter dispcnt : DISPCNT = DISPCNT.new 0
 
   @cycles = 0
 
@@ -43,23 +43,21 @@ class PPU
     end
   end
 
-  def [](index : Int) : Byte
-    case index
-    when 0x04000000 then (@dispcnt.value >> 8).to_u8
-    when 0x04000001 then @dispcnt.value.to_u8!
-    when 0x04000002 then 0_u8
-    when 0x04000003 then 0_u8
-    else                 raise "Unimplemented PPU read ~ addr:#{hex_str index.to_u32}"
+  def read_io(io_addr : Int) : Byte
+    case io_addr
+    when 0x000 then (@dispcnt.value >> 8).to_u8
+    when 0x001 then @dispcnt.value.to_u8!
+    else            raise "Unimplemented PPU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
 
-  def []=(index : Int, value : Byte) : Nil
-    case index
-    when 0x04000000 then @dispcnt.value = (@dispcnt.value & 0x00FF) | value.to_u16 << 8
-    when 0x04000001 then @dispcnt.value = (@dispcnt.value & 0xFF00) | value
-    when 0x04000002
-    when 0x04000003
-    else           raise "Unimplemented PPU write ~ addr:#{hex_str index.to_u32}, val:#{value}"
+  def write_io(io_addr : Int, value : Byte) : Nil
+    case io_addr
+    when 0x000 then @dispcnt.value = (@dispcnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x001 then @dispcnt.value = (@dispcnt.value & 0xFF00) | value
+    when 0x002 # undocumented - green swap
+    when 0x003 # undocumented - green swap
+    else            raise "Unimplemented PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
     end
   end
 end

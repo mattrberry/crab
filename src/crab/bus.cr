@@ -10,13 +10,7 @@ class Bus
     case bits(index, 24..27)
     when 0x2 then @wram_board[index & 0x3FFFF]
     when 0x3 then @wram_chip[index & 0x7FFF]
-    when 0x4
-      io_addr = 0x0FFF_u16 & index
-      if io_addr <= 0x05F
-        @gba.ppu[index]
-      else
-        raise "Unmapped i/o read: #{hex_str index.to_u32}"
-      end
+    when 0x4 then @gba.mmio[index]
     when 0x5 then @gba.ppu.pram[index]
     when 0x6
       address = 0x1FFFF_u32 & index
@@ -45,13 +39,7 @@ class Bus
     case bits(index, 24..27)
     when 0x2 then @wram_board[index & 0x3FFFF] = value
     when 0x3 then @wram_chip[index & 0x7FFF] = value
-    when 0x4
-      io_addr = 0x0FFF_u16 & index
-      if io_addr <= 0x05F
-        @gba.ppu[index] = value
-      else
-        raise "Unmapped i/o write: #{hex_str index.to_u32}"
-      end
+    when 0x4 then @gba.mmio[index] = value
     when 0x5 then @gba.ppu.pram[index & 0x3FF] = value
     when 0x6
       address = 0x1FFFF_u32 & index

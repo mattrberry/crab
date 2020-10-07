@@ -9,19 +9,19 @@ module ARM
     load = bit?(instr, 20)
     rn = bits(instr, 16..19)
     rd = bits(instr, 12..15)
-    operand_2 = if imm_flag # Operand 2 is a register (opposite of data procesing for some reason)
-                  rotate_register bits(instr, 0..11), set_conditions: false, allow_register_shifts: false
-                else # Operand 2 is an immediate offset
-                  immediate_offset bits(instr, 0..11)
-                end
+    offset = if imm_flag # Operand 2 is a register (opposite of data processing for some reason)
+               rotate_register bits(instr, 0..11), set_conditions: false, allow_register_shifts: false
+             else # Operand 2 is an immediate offset
+               bits(instr, 0..11)
+             end
 
     address = @r[rn]
 
     if pre_indexing
       if add_offset
-        address &+= operand_2
+        address &+= offset
       else
-        address &-= operand_2
+        address &-= offset
       end
     end
 
@@ -33,9 +33,9 @@ module ARM
 
     if !pre_indexing
       if add_offset
-        @r[rn] &+= operand_2
+        @r[rn] &+= offset
       else
-        @r[rn] &-= operand_2
+        @r[rn] &-= offset
       end
     elsif write_back
       @r[rn] = address
