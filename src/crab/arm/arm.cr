@@ -31,7 +31,7 @@ module ARM
       elsif idx & 0b111000000000 == 0b101000000000
         lut[idx] = ->arm_branch(Word)
       elsif idx & 0b111000000000 == 0b100000000000
-        # block data transfer
+        lut[idx] = ->arm_block_data_transfer(Word)
       elsif idx & 0b111000000001 == 0b011000000001
         # undefined
       elsif idx & 0b110000000000 == 0b010000000000
