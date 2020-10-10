@@ -41,38 +41,61 @@ class PPU
 
   getter dispcnt : DISPCNT = DISPCNT.new 0
   getter dispstat : DISPSTAT = DISPSTAT.new 0
-
-  @cycles = 0
+  getter vcount : UInt16 = 0x0000_u16
 
   def initialize(@gba : GBA)
+    start_scanline
   end
 
-  def tick(cycles : Int) : Nil
-    @cycles += cycles
-    if @cycles >= REFRESH
+  def start_scanline : Nil
+    @gba.scheduler.schedule 960, ->start_hblank
+  end
+
+  def start_hblank : Nil
+    @gba.scheduler.schedule 272, ->end_hblank
+    @dispstat.hblank = true
+  end
+
+  def end_hblank : Nil
+    @dispstat.hblank = false
+    @vcount += 1
+    if @vcount == 228
+      @vcount = 0
+      @dispstat.vblank = false
+      @gba.scheduler.schedule 0, ->start_scanline
+    elsif @vcount == 160
+      @dispstat.vblank = true
+      @gba.scheduler.schedule 0, ->start_vblank_line
       @gba.display.draw @vram
-      @cycles -= REFRESH
+    elsif @vcount >= 160
+      @gba.scheduler.schedule 0, ->start_vblank_line
+    else
+      @gba.scheduler.schedule 0, ->start_scanline
     end
+  end
+
+  def start_vblank_line : Nil
+    @gba.scheduler.schedule 960, ->start_hblank
   end
 
   def read_io(io_addr : Int) : Byte
     case io_addr
-    when 0x000 then 0xFF_u8 & @dispcnt.value >> 8
-    when 0x001 then 0xFF_u8 & @dispcnt.value
-    when 0x004 then 0xFF_u8 & @dispstat.value >> 8
-    when 0x005 then 0xFF_u8 & @dispstat.value
+    when 0x000 then 0xFF_u8 & @dispcnt.value
+    when 0x001 then 0xFF_u8 & @dispcnt.value >> 8
+    when 0x004 then 0xFF_u8 & @dispstat.value
+    when 0x005 then 0xFF_u8 & @dispstat.value >> 8
     else            raise "Unimplemented PPU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
 
   def write_io(io_addr : Int, value : Byte) : Nil
     case io_addr
-    when 0x000 then @dispcnt.value = (@dispcnt.value & 0x00FF) | value.to_u16 << 8
-    when 0x001 then @dispcnt.value = (@dispcnt.value & 0xFF00) | value
+    when 0x000 then @dispcnt.value = (@dispcnt.value & 0xFF00) | value
+    when 0x001 then @dispcnt.value = (@dispcnt.value & 0x00FF) | value.to_u16 << 8
     when 0x002 # undocumented - green swap
     when 0x003 # undocumented - green swap
-    when 0x004 then @dispstat.value = (@dispstat.value & 0x00FF) | value.to_u16 << 8
-    when 0x005 then @dispstat.value = (@dispstat.value & 0xFF00) | value
+    when 0x004 then @dispstat.value = (@dispstat.value & 0xFF00) | value
+    when 0x005 then @dispstat.value = (@dispstat.value & 0x00FF) | value.to_u16 << 8
     else            raise "Unimplemented PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
     end
   end
