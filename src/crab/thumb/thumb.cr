@@ -31,7 +31,7 @@ module THUMB
       elsif idx & 0b11110010 == 0b01010010
         lut[idx] = ->thumb_load_store_sign_extended(Word)
       elsif idx & 0b11110010 == 0b01010000
-        # load/store with register offset
+        lut[idx] = ->thumb_load_store_register_offset(Word)
       elsif idx & 0b11111000 == 0b01001000
         lut[idx] = ->thumb_pc_relative_load(Word)
       elsif idx & 0b11111100 == 0b01000100
