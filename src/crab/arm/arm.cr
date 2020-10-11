@@ -36,11 +36,6 @@ module ARM
         # undefined
       elsif idx & 0b110000000000 == 0b010000000000
         lut[idx] = ->arm_single_data_transfer(Word)
-      elsif idx & 0b111001001001 == 0b000001001001
-        # halfword data transfer immediate offset
-        lut[idx] = ->arm_halfword_data_transfer_immediate(Word)
-      elsif idx & 0b111001001001 == 0b000000001001
-        # halfword data transfer register offset
       elsif idx & 0b111111111111 == 0b000100100001
         lut[idx] = ->arm_branch_exchange(Word)
       elsif idx & 0b111110111111 == 0b000100001001
@@ -48,7 +43,11 @@ module ARM
       elsif idx & 0b111110001111 == 0b000010001001
         # multiply long
       elsif idx & 0b111111001111 == 0b000000001001
-        # multiply
+        lut[idx] = ->arm_multiply(Word)
+      elsif idx & 0b111001001001 == 0b000001001001
+        lut[idx] = ->arm_halfword_data_transfer_immediate(Word)
+      elsif idx & 0b111001001001 == 0b000000001001
+        # halfword data transfer register offset
       elsif idx & 0b110110010000 == 0b000100000000
         lut[idx] = ->arm_psr_transfer(Word)
       elsif idx & 0b110000000000 == 0b000000000000
