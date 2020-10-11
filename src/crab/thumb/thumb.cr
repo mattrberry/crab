@@ -21,7 +21,7 @@ module THUMB
       elsif idx & 0b11111111 == 0b10110000
         lut[idx] = ->thumb_add_offset_to_stack_pointer(Word)
       elsif idx & 0b11110000 == 0b10100000
-        # load address
+        lut[idx] = ->thumb_load_address(Word)
       elsif idx & 0b11110000 == 0b10010000
         lut[idx] = ->thumb_sp_relative_load_store(Word)
       elsif idx & 0b11110000 == 0b10000000
