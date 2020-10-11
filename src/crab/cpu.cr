@@ -102,7 +102,7 @@ class CPU
   def asr(word : Word, bits : Int, set_conditions : Bool) : Word
     log "asr - word:#{hex_str word}, bits:#{bits}"
     @cpsr.carry = bit?(word, bits - 1) if set_conditions
-    word // (2 ** bits)
+    word >> bits | (0xFFFFFFFF_u32 &* (word >> 31)) << (32 - bits)
   end
 
   # Rotate right
