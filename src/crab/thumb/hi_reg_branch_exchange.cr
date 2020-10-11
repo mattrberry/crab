@@ -22,5 +22,6 @@ module THUMB
       end
       clear_pipeline
     end
+    clear_pipeline if rd == 15
   end
 end
