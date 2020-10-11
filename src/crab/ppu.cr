@@ -36,12 +36,27 @@ class PPU
     bool vblank   # todo update bitfield macro to make values read-only when writing to value
   end
 
+  class BGCNT < BitField(UInt16)
+    num screen_size, 2
+    bool screen_overflow
+    num tile_map, 5
+    bool colors_palette
+    bool mosaic
+    num not_used, 2 # todo update bitfield macro to support locking values, must be 0
+    num tile_data, 2
+    num priority, 2
+  end
+
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
 
   getter dispcnt : DISPCNT = DISPCNT.new 0
   getter dispstat : DISPSTAT = DISPSTAT.new 0
   getter vcount : UInt16 = 0x0000_u16
+  getter bg0cnt : BGCNT = BGCNT.new 0
+  getter bg1cnt : BGCNT = BGCNT.new 0
+  getter bg2cnt : BGCNT = BGCNT.new 0
+  getter bg3cnt : BGCNT = BGCNT.new 0
 
   def initialize(@gba : GBA)
     start_scanline
@@ -84,6 +99,16 @@ class PPU
     when 0x001 then 0xFF_u8 & @dispcnt.value >> 8
     when 0x004 then 0xFF_u8 & @dispstat.value
     when 0x005 then 0xFF_u8 & @dispstat.value >> 8
+    when 0x006 then 0xFF_u8 & @vcount
+    when 0x007 then 0xFF_u8 & @vcount >> 8
+    when 0x008 then 0xFF_u8 & @bg0cnt.value
+    when 0x009 then 0xFF_u8 & @bg0cnt.value >> 8
+    when 0x00A then 0xFF_u8 & @bg1cnt.value
+    when 0x00B then 0xFF_u8 & @bg1cnt.value >> 8
+    when 0x00C then 0xFF_u8 & @bg2cnt.value
+    when 0x00D then 0xFF_u8 & @bg2cnt.value >> 8
+    when 0x00E then 0xFF_u8 & @bg3cnt.value
+    when 0x00F then 0xFF_u8 & @bg3cnt.value >> 8
     else            raise "Unimplemented PPU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
@@ -96,6 +121,14 @@ class PPU
     when 0x003 # undocumented - green swap
     when 0x004 then @dispstat.value = (@dispstat.value & 0xFF00) | value
     when 0x005 then @dispstat.value = (@dispstat.value & 0x00FF) | value.to_u16 << 8
+    when 0x008 then @bg0cnt.value = (@bg0cnt.value & 0xFF00) | value
+    when 0x009 then @bg0cnt.value = (@bg0cnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x00A then @bg1cnt.value = (@bg1cnt.value & 0xFF00) | value
+    when 0x00B then @bg1cnt.value = (@bg1cnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x00C then @bg2cnt.value = (@bg2cnt.value & 0xFF00) | value
+    when 0x00D then @bg2cnt.value = (@bg2cnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x00E then @bg3cnt.value = (@bg3cnt.value & 0xFF00) | value
+    when 0x00F then @bg3cnt.value = (@bg3cnt.value & 0x00FF) | value.to_u16 << 8
     else            raise "Unimplemented PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
     end
   end
