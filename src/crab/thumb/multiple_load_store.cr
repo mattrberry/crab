@@ -12,7 +12,7 @@ module THUMB
         end
       end
     else # stmia
-      8.times do |idx|
+      7.downto(0).each do |idx|
         if bit?(list, idx)
           @gba.bus[address] = @r[idx]
           address &+= 4

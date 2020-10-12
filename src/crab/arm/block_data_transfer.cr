@@ -19,7 +19,7 @@ module ARM
         end
       end
     else
-      16.times do |idx|
+      15.downto(0).each do |idx|
         if bit?(list, idx)
           address &+= add ? 4 : -4 if pre_index
           @gba.bus[address] = @r[idx]
