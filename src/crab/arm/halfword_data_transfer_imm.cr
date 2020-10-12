@@ -27,7 +27,7 @@ module ARM
       if load
         @r[rd] = @gba.bus.read_half address
       else
-        @gba.bus[address] = @r[rd]
+        @gba.bus[address] = 0xFFFF_u16 & @r[rd]
       end
     when 0b10 # ldrsb
       @r[rd] = @gba.bus[address].to_i8!.to_u32
