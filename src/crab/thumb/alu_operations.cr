@@ -10,7 +10,7 @@ module THUMB
     when 0b0010 then res = @r[rd] = lsl(@r[rd], @r[rs], true)
     when 0b0011 then res = @r[rd] = lsr(@r[rd], @r[rs], true)
     when 0b0100 then res = @r[rd] = asr(@r[rd], @r[rs], true)
-    when 0b0101 then res = @r[rd] = @r[rd] &+ @r[rs] &+ @cpsr.carry.to_unsafe
+    when 0b0101 then res = @r[rd] = adc(@r[rd], @r[rs], true)
     when 0b0110 then res = @r[rd] = @r[rd] &- @r[rs] &- ~@cpsr.carry.to_unsafe
     when 0b0111 then res = @r[rd] = ror(@r[rd], @r[rs], true)
     when 0b1000 then res = @r[rd] & @r[rs]
