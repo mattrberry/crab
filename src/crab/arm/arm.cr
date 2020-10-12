@@ -41,7 +41,7 @@ module ARM
       elsif idx & 0b111110111111 == 0b000100001001
         # single data swap
       elsif idx & 0b111110001111 == 0b000010001001
-        # multiply long
+        lut[idx] = ->arm_multiply_long(Word)
       elsif idx & 0b111111001111 == 0b000000001001
         lut[idx] = ->arm_multiply(Word)
       elsif idx & 0b111001001001 == 0b000001001001
