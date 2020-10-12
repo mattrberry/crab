@@ -26,9 +26,17 @@ module ARM
     end
 
     if load
-      @r[rd] = @gba.bus.read_word address
+      if byte_quantity
+        @r[rd] = 0xFF_u32 & @gba.bus[address]
+      else
+        @r[rd] = @gba.bus.read_word address
+      end
     else
-      @gba.bus[address] = @r[rd]
+      if byte_quantity
+        @gba.bus[address] = 0xFF_u8 & @r[rd]
+      else
+        @gba.bus[address] = @r[rd]
+      end
     end
 
     if !pre_indexing
