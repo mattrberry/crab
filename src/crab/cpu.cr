@@ -125,6 +125,19 @@ class CPU
     res
   end
 
+  # Subtract two values with carry
+  def sbc(operand_1 : Word, operand_2 : Word, set_conditions) : Word
+    log "sbc - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
+    res = operand_1 &- operand_2 &+ @cpsr.carry.to_unsafe &- 1
+    if set_conditions
+      @cpsr.overflow = bit?((operand_1 ^ operand_2) & (operand_1 ^ res), 31)
+      @cpsr.carry = operand_1 >= operand_2
+      @cpsr.zero = res == 0
+      @cpsr.negative = bit?(res, 31)
+    end
+    res
+  end
+
   # Add two values
   def add(operand_1 : Word, operand_2 : Word, set_conditions) : Word
     log "add - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
