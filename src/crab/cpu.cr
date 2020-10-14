@@ -87,6 +87,7 @@ class CPU
   # Logical shift left
   def lsl(word : Word, bits : Int, set_conditions : Bool) : Word
     log "lsl - word:#{hex_str word}, bits:#{bits}"
+    return word if bits == 0
     @cpsr.carry = bit?(word, 32 - bits) if set_conditions
     word << bits
   end
@@ -94,6 +95,7 @@ class CPU
   # Logical shift right
   def lsr(word : Word, bits : Int, set_conditions : Bool) : Word
     log "lsr - word:#{hex_str word}, bits:#{bits}"
+    bits = 32 if bits == 0
     @cpsr.carry = bit?(word, bits - 1) if set_conditions
     word >> bits
   end
@@ -101,6 +103,7 @@ class CPU
   # Arithmetic shift right
   def asr(word : Word, bits : Int, set_conditions : Bool) : Word
     log "asr - word:#{hex_str word}, bits:#{bits}"
+    bits = 32 if bits == 0
     @cpsr.carry = bit?(word, bits - 1) if set_conditions
     word >> bits | (0xFFFFFFFF_u32 &* (word >> 31)) << (32 - bits)
   end
@@ -108,6 +111,7 @@ class CPU
   # Rotate right
   def ror(word : Word, bits : Int, set_conditions : Bool) : Word
     log "ror - word:#{hex_str word}, bits:#{bits}"
+    return word if bits == 0
     @cpsr.carry = bit?(word, bits - 1) if set_conditions
     word >> bits | word << (32 - bits)
   end
