@@ -34,5 +34,6 @@ module ARM
       @cpsr.zero = res == 0
       @cpsr.negative = bit?(res, 31)
     end
+    clear_pipeline if rd == 15 # todo only do this when needed (not 0xA or 0xB)
   end
 end
