@@ -11,7 +11,7 @@ class Interrupts
     when 0x203 then 0xFF_u8 & @reg_if >> 8
     when 0x208 then @reg_ime ? 1_u8 : 0_u8
     when 0x209 then @reg_ime ? 1_u8 : 0_u8
-    else            raise "Unimplemented interrupts read ~ addr:#{hex_str io_addr.to_u8}"
+    else            raise "Unimplemented interrupts read ~ addr:#{hex_str io_addr.to_u8!}"
     end
   end
 
