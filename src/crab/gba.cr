@@ -30,7 +30,7 @@ class GBA
   end
 
   def handle_events : Nil
-    @scheduler.schedule PPU::REFRESH, ->handle_events
+    @scheduler.schedule 280896, ->handle_events
     while event = SDL::Event.poll
       case event
       when SDL::Event::Quit then exit 0

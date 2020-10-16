@@ -1,13 +1,4 @@
 class PPU
-  # Display timings in cycles
-  HDRAW    = 960
-  HBLANK   = 272
-  SCANLINE = HDRAW + HBLANK
-  VDRAW    = 160 * SCANLINE
-  VBLANK   = 68 * SCANLINE
-  REFRESH  = VDRAW + VBLANK
-
-  # LCD Control
   class DISPCNT < BitField(UInt16)
     bool obj_window_display
     bool window_1_display
@@ -47,6 +38,8 @@ class PPU
     num priority, 2
   end
 
+  @framebuffer : Bytes = Bytes.new 0x12C00 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
+
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
 
@@ -81,7 +74,7 @@ class PPU
     elsif @vcount == 160
       @dispstat.vblank = true
       @gba.scheduler.schedule 0, ->start_vblank_line
-      @gba.display.draw @vram
+      draw
     elsif @vcount >= 160
       @gba.scheduler.schedule 0, ->start_vblank_line
     else
@@ -93,10 +86,28 @@ class PPU
     @gba.scheduler.schedule 960, ->start_hblank
   end
 
+  def draw : Nil
+    case @dispcnt.bg_mode
+    when 3
+      @gba.display.draw @vram
+    when 4
+      base = @dispcnt.display_frame_select ? 0xA000 : 0
+      (240 * 160).times do |idx|
+        pal_idx = @vram[base + idx]
+        @framebuffer[idx * 2] = @pram[pal_idx * 2]
+        @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
+      end
+      @gba.display.draw @framebuffer
+    else abort "Unsupported background mode: #{@dispcnt.bg_mode}"
+    end
+  end
+
   def read_io(io_addr : Int) : Byte
     case io_addr
     when 0x000 then 0xFF_u8 & @dispcnt.value
     when 0x001 then 0xFF_u8 & @dispcnt.value >> 8
+    when 0x002 then 0xFF_u8 # todo green swap
+    when 0x003 then 0xFF_u8 # todo green swap
     when 0x004 then 0xFF_u8 & @dispstat.value
     when 0x005 then 0xFF_u8 & @dispstat.value >> 8
     when 0x006 then 0xFF_u8 & @vcount
