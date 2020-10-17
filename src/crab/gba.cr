@@ -3,6 +3,7 @@ require "./util"
 require "./scheduler"
 require "./cartridge"
 require "./mmio"
+require "./keypad"
 require "./bus"
 require "./interrupts"
 require "./cpu"
@@ -13,6 +14,7 @@ class GBA
   getter scheduler : Scheduler
   getter cartridge : Cartridge
   getter mmio : MMIO { MMIO.new self }
+  getter keypad : Keypad { Keypad.new }
   getter bus : Bus { Bus.new self }
   getter interrupts : Interrupts { Interrupts.new }
   getter cpu : CPU { CPU.new self }
@@ -36,7 +38,7 @@ class GBA
       when SDL::Event::Quit then exit 0
       when SDL::Event::Keyboard,
            SDL::Event::JoyHat,
-           SDL::Event::JoyButton
+           SDL::Event::JoyButton then keypad.handle_keypad_event event
       else nil
       end
     end

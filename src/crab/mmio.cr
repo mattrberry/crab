@@ -8,8 +8,8 @@ class MMIO
       @gba.ppu.read_io io_addr
     elsif (io_addr >= 0x200 && io_addr <= 0x203) || (io_addr >= 0x208 && io_addr <= 0x209)
       @gba.interrupts.read_io io_addr
-    elsif io_addr >= 0x130 && io_addr <= 0x133 # todo keypad
-      0xFF_u8
+    elsif io_addr >= 0x130 && io_addr <= 0x133
+      @gba.keypad.read_io io_addr
     elsif not_used? io_addr
       0xFF_u8 # todo what is returned here?
     else
@@ -23,6 +23,8 @@ class MMIO
       @gba.ppu.write_io io_addr, value
     elsif (io_addr >= 0x200 && io_addr <= 0x203) || (io_addr >= 0x208 && io_addr <= 0x209)
       @gba.interrupts.write_io io_addr, value
+    elsif io_addr >= 0x130 && io_addr <= 0x133
+      @gba.keypad.read_io io_addr
     elsif not_used? io_addr
     else
       raise "Unmapped MMIO write: #{hex_str index.to_u32}"
