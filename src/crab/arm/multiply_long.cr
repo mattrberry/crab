@@ -9,16 +9,16 @@ module ARM
     rm = bits(instr, 0..3)
 
     res = if signed
-            (@r[rm].to_i32!.to_i64 &* @r[rs]).to_u64 # todo make this just bit math...
+            @r[rm].to_i32!.to_i64 &* @r[rs].to_i32!
           else
-            (0_u64 | @r[rm]) &* @r[rs]
+            @r[rm].to_u64 &* @r[rs]
           end
-    res &+= (0_u64 | @r[rdhi]) << 32 | @r[rdlo] if accumulate
-    @r[rdhi] = 0_u32 | res >> 32
-    @r[rdlo] = 0xFFFFFFFF_u32 & res
+    res &+= @r[rdhi].to_u64 << 32 | @r[rdlo] if accumulate
+    @r[rdhi] = (res >> 32).to_u32!
+    @r[rdlo] = res.to_u32!
     if set_conditions
       @cpsr.zero = res == 0
-      @cpsr.negative = bit?(res, 63)
+      @cpsr.negative = bit?(@r[rdhi], 31)
     end
   end
 end
