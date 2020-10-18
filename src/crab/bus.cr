@@ -21,22 +21,25 @@ class Bus
     end
   end
 
+  def read_half(index : Int) : Word
+    puts "Unaligned half read at #{hex_str index.to_u32}" if index.to_u32 != index.to_u32 & 0xFFFFFFFE
+    self[index].to_u32 |
+      (self[index + 1].to_u32 << 8)
+  end
+
   def read_word(index : Int) : Word
+    puts "Unaligned word read at #{hex_str index.to_u32}" if index.to_u32 != index.to_u32 & 0xFFFFFFFC
     self[index].to_u32 |
       (self[index + 1].to_u32 << 8) |
       (self[index + 2].to_u32 << 16) |
       (self[index + 3].to_u32 << 24)
   end
 
-  def read_half(index : Int) : Word
-    self[index].to_u32 |
-      (self[index + 1].to_u32 << 8)
-  end
-
   def []=(index : Int, value : Byte) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
     return if bits(index, 28..31) > 0
     case bits(index, 24..27)
+    when 0x0 then puts "Writing to bios - #{hex_str index.to_u32}: #{hex_str value}"
     when 0x2 then @wram_board[index & 0x3FFFF] = value
     when 0x3 then @wram_chip[index & 0x7FFF] = value
     when 0x4 then @gba.mmio[index] = value
@@ -51,16 +54,16 @@ class Bus
   end
 
   def []=(index : Int, value : HalfWord) : Nil
-    log "write #{hex_str index.to_u32} -> #{hex_str value}"
-    self[index + 1] = 0xFF_u8 & (value >> 8)
+    puts "Unaligned half write at #{hex_str index.to_u32}: #{hex_str value}" if index.to_u32 != index.to_u32 & 0xFFFFFFFE
     self[index] = 0xFF_u8 & value
+    self[index + 1] = 0xFF_u8 & (value >> 8)
   end
 
   def []=(index : Int, value : Word) : Nil
-    log "write #{hex_str index.to_u32} -> #{hex_str value}"
-    self[index + 3] = 0xFF_u8 & (value >> 24)
-    self[index + 2] = 0xFF_u8 & (value >> 16)
-    self[index + 1] = 0xFF_u8 & (value >> 8)
+    puts "Unaligned word write at #{hex_str index.to_u32}: #{hex_str value}" if index.to_u32 != index.to_u32 & 0xFFFFFFFC
     self[index] = 0xFF_u8 & value
+    self[index + 1] = 0xFF_u8 & (value >> 8)
+    self[index + 2] = 0xFF_u8 & (value >> 16)
+    self[index + 3] = 0xFF_u8 & (value >> 24)
   end
 end
