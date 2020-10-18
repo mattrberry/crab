@@ -95,7 +95,7 @@ class CPU
   # Logical shift right
   def lsr(word : Word, bits : Int, set_conditions : Bool) : Word
     log "lsr - word:#{hex_str word}, bits:#{bits}"
-    bits = 32 if bits == 0
+    return word if bits == 0
     @cpsr.carry = bit?(word, bits - 1) if set_conditions
     word >> bits
   end
