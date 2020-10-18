@@ -104,8 +104,14 @@ class CPU
   def asr(word : Word, bits : Int, set_conditions : Bool) : Word
     log "asr - word:#{hex_str word}, bits:#{bits}"
     return word if bits == 0
-    @cpsr.carry = bit?(word, bits - 1) if set_conditions
-    word >> bits | (0xFFFFFFFF_u32 &* (word >> 31)) << (32 - bits)
+    if bits <= 31
+      @cpsr.carry = bit?(word, bits - 1) if set_conditions
+      word >> bits | (0xFFFFFFFF_u32 &* (word >> 31)) << (32 - bits)
+    else
+      # ASR by 32 or more has result filled with and carry out equal to bit 31 of Rm.
+      @cpsr.carry = bit?(word, 31) if set_conditions
+      0xFFFFFFFF_u32 &* (word >> 31)
+    end
   end
 
   # Rotate right
