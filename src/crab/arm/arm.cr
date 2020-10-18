@@ -47,7 +47,7 @@ module ARM
       elsif idx & 0b111001001001 == 0b000001001001
         lut[idx] = ->arm_halfword_data_transfer_immediate(Word)
       elsif idx & 0b111001001001 == 0b000000001001
-        # halfword data transfer register offset
+        lut[idx] = ->arm_halfword_data_transfer_register(Word)
       elsif idx & 0b110110010000 == 0b000100000000
         lut[idx] = ->arm_psr_transfer(Word)
       elsif idx & 0b110000000000 == 0b000000000000
