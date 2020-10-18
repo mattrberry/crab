@@ -111,6 +111,7 @@ class CPU
   # Rotate right
   def ror(word : Word, bits : Int, set_conditions : Bool) : Word
     log "ror - word:#{hex_str word}, bits:#{bits}"
+    bits &= 31
     return word if bits == 0
     @cpsr.carry = bit?(word, bits - 1) if set_conditions
     word >> bits | word << (32 - bits)
