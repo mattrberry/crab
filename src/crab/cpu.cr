@@ -168,7 +168,7 @@ class CPU
     res = operand_1 &+ operand_2 &+ @cpsr.carry.to_unsafe
     if set_conditions
       @cpsr.overflow = bit?(~(operand_1 ^ operand_2) & (operand_2 ^ res), 31)
-      @cpsr.carry = res < operand_1
+      @cpsr.carry = res < operand_1.to_u64 + @cpsr.carry.to_unsafe
       @cpsr.zero = res == 0
       @cpsr.negative = bit?(res, 31)
     end
