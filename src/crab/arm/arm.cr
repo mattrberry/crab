@@ -21,7 +21,7 @@ module ARM
     lut = Slice(Proc(Word, Nil)).new 4096, ->arm_unimplemented(Word)
     4096.times do |idx|
       if idx & 0b111100000000 == 0b111100000000
-        # software interrupt
+        lut[idx] = ->arm_software_interrupt(Word)
       elsif idx & 0b111100000001 == 0b111000000001
         # coprocessor register transfer
       elsif idx & 0b111100000001 == 0b111000000001

@@ -11,7 +11,7 @@ module THUMB
       elsif idx & 0b11111000 == 0b11100000
         lut[idx] = ->thumb_unconditional_branch(Word)
       elsif idx & 0b11111111 == 0b11011111
-        # software interrupt
+        lut[idx] = ->thumb_software_interrupt(Word)
       elsif idx & 0b11110000 == 0b11010000
         lut[idx] = ->thumb_conditional_branch(Word)
       elsif idx & 0b11110000 == 0b11000000
