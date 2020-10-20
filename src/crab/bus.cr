@@ -1,13 +1,16 @@
 class Bus
+  @bios = Bytes.new 0x3FFF
   @wram_board = Bytes.new 0x40000
   @wram_chip = Bytes.new 0x08000
 
-  def initialize(@gba : GBA)
+  def initialize(@gba : GBA, bios_path : String)
+    File.open(bios_path) { |file| file.read @bios }
   end
 
   def [](index : Int) : Byte
     log "read #{hex_str index.to_u32}"
     case bits(index, 24..27)
+    when 0x0 then @bios[index & 0x3FFF]
     when 0x2 then @wram_board[index & 0x3FFFF]
     when 0x3 then @wram_chip[index & 0x7FFF]
     when 0x4 then @gba.mmio[index]

@@ -9,7 +9,7 @@ module Crab
   extend self
 
   def run
-    gba = GBA.new ARGV[0]
+    gba = GBA.new ARGV[0], ARGV[1]
     gba.run
   end
 end

@@ -15,13 +15,13 @@ class GBA
   getter cartridge : Cartridge
   getter mmio : MMIO { MMIO.new self }
   getter keypad : Keypad { Keypad.new }
-  getter bus : Bus { Bus.new self }
+  getter bus : Bus { Bus.new self, @bios_path }
   getter interrupts : Interrupts { Interrupts.new }
   getter cpu : CPU { CPU.new self }
   getter display : Display { Display.new }
   getter ppu : PPU { PPU.new self }
 
-  def initialize(rom_path : String)
+  def initialize(@bios_path : String, rom_path : String)
     @scheduler = Scheduler.new
     @cartridge = Cartridge.new rom_path
     handle_events
