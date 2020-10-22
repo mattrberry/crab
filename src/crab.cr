@@ -10,6 +10,7 @@ module Crab
 
   def run
     gba = GBA.new ARGV[0], ARGV[1]
+    gba.post_init
     gba.run
   end
 end

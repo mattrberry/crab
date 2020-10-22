@@ -11,15 +11,15 @@ require "./display"
 require "./ppu"
 
 class GBA
-  getter scheduler : Scheduler
-  getter cartridge : Cartridge
-  getter mmio : MMIO { MMIO.new self }
-  getter keypad : Keypad { Keypad.new }
-  getter bus : Bus { Bus.new self, @bios_path }
-  getter interrupts : Interrupts { Interrupts.new }
-  getter cpu : CPU { CPU.new self }
-  getter display : Display { Display.new }
-  getter ppu : PPU { PPU.new self }
+  getter! scheduler : Scheduler
+  getter! cartridge : Cartridge
+  getter! mmio : MMIO
+  getter! keypad : Keypad
+  getter! bus : Bus
+  getter! interrupts : Interrupts
+  getter! cpu : CPU
+  getter! display : Display
+  getter! ppu : PPU
 
   def initialize(@bios_path : String, rom_path : String)
     @scheduler = Scheduler.new
@@ -31,8 +31,18 @@ class GBA
     at_exit { SDL.quit }
   end
 
+  def post_init : Nil
+    @mmio = MMIO.new self
+    @keypad = Keypad.new
+    @bus = Bus.new self, @bios_path
+    @interrupts = Interrupts.new
+    @cpu = CPU.new self
+    @display = Display.new
+    @ppu = PPU.new self
+  end
+
   def handle_events : Nil
-    @scheduler.schedule 280896, ->handle_events
+    scheduler.schedule 280896, ->handle_events
     while event = SDL::Event.poll
       case event
       when SDL::Event::Quit then exit 0
@@ -51,6 +61,6 @@ class GBA
   end
 
   def tick(cycles : Int) : Nil
-    @scheduler.tick cycles
+    scheduler.tick cycles
   end
 end

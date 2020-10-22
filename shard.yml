@@ -13,7 +13,7 @@ crystal: 0.35.1
 dependencies:
   bitfield:
     github: mattrberry/bitfield
-    version: 0.1.0
+    version: 0.1.2
   sdl:
     git: git@github.com:ysbaddaden/sdl.cr.git
 
