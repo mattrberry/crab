@@ -15,6 +15,7 @@ module ARM
         if bit?(list, idx)
           address &+= add ? 4 : -4 if pre_index
           @r[idx] = @gba.bus.read_word(address)
+          clear_pipeline if idx == 15
           address &+= add ? 4 : -4 unless pre_index
         end
       end
@@ -28,7 +29,9 @@ module ARM
       end
     end
 
-    @r[rn] = address if write_back
-    # todo reset pipeline if r15 is written (this needs to be done in all other instrs that write to r15 as well)
+    if write_back
+      @r[rn] = address
+      clear_pipeline if rn == 15 # do this for all other instrs that write to r15
+    end
   end
 end
