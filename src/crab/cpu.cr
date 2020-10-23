@@ -40,16 +40,19 @@ class CPU
   end
 
   @r = Slice(Word).new 16
-  @cpsr : PSR
+  @cpsr : PSR = PSR.new 0x0000001F
+  @spsr : PSR = PSR.new 0
   @pipeline = Pipeline.new
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
-  @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 8, 0 }
+  @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 9, 0 }
 
   def initialize(@gba : GBA)
     @r[0] = 0x08000000
     @r[1] = 0x000000EA
-    @r[13] = 0x03007F00
+    @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
+    @reg_banks[Mode::IRQ.bank][5] = 0x03007FA0
+    @reg_banks[Mode::SVC.bank][5] = 0x03007FE0
     @r[15] = 0x08000000
     @cpsr = PSR.new 0x6000001F
   end
@@ -59,6 +62,11 @@ class CPU
     return if new_mode == old_mode
     new_bank = new_mode.bank
     old_bank = old_mode.bank
+    if new_bank == 0
+      @spsr = @cpsr
+    else
+      @spsr.value = @reg_banks[new_bank][8]
+    end
     if new_mode == Mode::FIQ || old_mode == Mode::FIQ
       5.times do |idx|
         @reg_banks[old_bank][idx] = @r[8 + idx]

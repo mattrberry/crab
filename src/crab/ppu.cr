@@ -53,6 +53,7 @@ class PPU
 
   def initialize(@gba : GBA)
     start_scanline
+    @dispcnt.bg_mode = 3 # todo remove this once mode 0 is implemented
   end
 
   def start_scanline : Nil

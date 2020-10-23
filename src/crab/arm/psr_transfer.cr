@@ -1,26 +1,36 @@
 module ARM
   def arm_psr_transfer(instr : Word) : Nil
-    # todo respect spsr
     spsr = bit?(instr, 22)
     msr = bit?(instr, 21)
     if msr
       all = bit?(instr, 16)
-      if all
-        rm = bits(instr, 0..3)
-        @cpsr.value = @r[rm]
+      if CPU::Mode.from_value(@cpsr.mode) == CPU::Mode::USR || !all
+        mask = 0x0FFFFFFF_u32
       else
-        imm_flag = bit?(instr, 25)
-        value = if imm_flag
-                  immediate_offset bits(instr, 0..11)
-                else
-                  rm = bits(instr, 0..3)
-                  @r[rm]
-                end
-        @cpsr.value = (@cpsr.value & 0x0FFFFFFF) | (value & 0xF0000000)
+        mask = 0x00000000_u32
+      end
+      imm_flag = bit?(instr, 25)
+      if imm_flag
+        value = immediate_offset bits(instr, 0..11)
+      else
+        rm = bits(instr, 0..3)
+        value = @r[rm]
+      end
+      if spsr
+        @spsr.value = (@spsr.value & mask) | (value & ~mask)
+      else
+        thumb = @cpsr.thumb
+        switch_mode CPU::Mode.from_value value & 0x1F if all
+        @cpsr.value = (@cpsr.value & mask) | (value & ~mask)
+        @cpsr.thumb = thumb
       end
     else
       rd = bits(instr, 12..15)
-      @r[rd] = @cpsr.value
+      if spsr
+        @r[rd] = @spsr.value
+      else
+        @r[rd] = @cpsr.value
+      end
     end
   end
 end
