@@ -53,7 +53,6 @@ class PPU
 
   def initialize(@gba : GBA)
     start_scanline
-    @dispcnt.bg_mode = 3 # todo remove this once mode 0 is implemented
   end
 
   def start_scanline : Nil
@@ -89,6 +88,8 @@ class PPU
 
   def draw : Nil
     case @dispcnt.bg_mode
+    when 0, 1, 2
+      puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
       @gba.display.draw @vram
     when 4
@@ -99,7 +100,7 @@ class PPU
         @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
       end
       @gba.display.draw @framebuffer
-    else abort "Unsupported background mode: #{@dispcnt.bg_mode}"
+    else abort "Invalid background mode: #{@dispcnt.bg_mode}"
     end
   end
 
