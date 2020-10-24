@@ -195,10 +195,10 @@ class CPU
   # Subtract two values with carry
   def sbc(operand_1 : Word, operand_2 : Word, set_conditions) : Word
     log "sbc - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
-    res = operand_1 &- operand_2 &+ @cpsr.carry.to_unsafe &- 1
+    res = operand_1 &- operand_2 &- 1 &+ @cpsr.carry.to_unsafe
     if set_conditions
       @cpsr.overflow = bit?((operand_1 ^ operand_2) & (operand_1 ^ res), 31)
-      @cpsr.carry = operand_1 >= operand_2
+      @cpsr.carry = operand_1 >= operand_2.to_u64 + 1 - @cpsr.carry.to_unsafe
       @cpsr.zero = res == 0
       @cpsr.negative = bit?(res, 31)
     end
