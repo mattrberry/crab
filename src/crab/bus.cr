@@ -14,11 +14,12 @@ class Bus
     when 0x2 then @wram_board[index & 0x3FFFF]
     when 0x3 then @wram_chip[index & 0x7FFF]
     when 0x4 then @gba.mmio[index]
-    when 0x5 then @gba.ppu.pram[index]
+    when 0x5 then @gba.ppu.pram[index & 0x3FF]
     when 0x6
       address = 0x1FFFF_u32 & index
-      address &= ~0x8000 if address > 0x17FFF
+      address -= 0x8000 if address > 0x17FFF
       @gba.ppu.vram[address]
+    when 0x7      then @gba.ppu.oam[index & 0x3FF]
     when 0x8, 0x9 then @gba.cartridge[index & 0x7FFFFFF]
     else               raise "Unmapped read: #{hex_str index.to_u32}"
     end
@@ -49,8 +50,9 @@ class Bus
     when 0x5 then @gba.ppu.pram[index & 0x3FF] = value
     when 0x6
       address = 0x1FFFF_u32 & index
-      address &= ~0x8000 if address > 0x17FFF
+      address -= 0x8000 if address > 0x17FFF
       @gba.ppu.vram[address] = value
+    when 0x7 then @gba.ppu.oam[index & 0x3FF]
     when 0x8, 0x9 then @gba.cartridge[index & 0x7FFFFFF] = value
     else               raise "Unmapped write: #{hex_str index.to_u32}"
     end

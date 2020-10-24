@@ -42,6 +42,7 @@ class PPU
 
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
+  getter oam = Bytes.new 0x400
 
   getter dispcnt : DISPCNT = DISPCNT.new 0
   getter dispstat : DISPSTAT = DISPSTAT.new 0
