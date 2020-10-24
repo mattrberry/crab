@@ -11,7 +11,7 @@ module ARM
       end
       imm_flag = bit?(instr, 25)
       if imm_flag
-        value = immediate_offset bits(instr, 0..11)
+        value = immediate_offset bits(instr, 0..11), set_conditions: false
       else
         rm = bits(instr, 0..3)
         value = @r[rm]

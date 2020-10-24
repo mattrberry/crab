@@ -87,9 +87,9 @@ module ARM
     end
   end
 
-  def immediate_offset(instr : Word) : Word
+  def immediate_offset(instr : Word, set_conditions : Bool) : Word
     rotate = bits(instr, 8..11)
     imm = bits(instr, 0..7)
-    ror(imm, 2 * rotate, false)
+    ror(imm, 2 * rotate, set_conditions)
   end
 end
