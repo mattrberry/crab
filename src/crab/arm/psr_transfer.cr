@@ -27,9 +27,9 @@ module ARM
     else
       rd = bits(instr, 12..15)
       if spsr
-        @r[rd] = @spsr.value
+        set_reg(rd, @spsr.value)
       else
-        @r[rd] = @cpsr.value
+        set_reg(rd, @cpsr.value)
       end
     end
   end

@@ -3,9 +3,9 @@ module THUMB
     sign = bit?(instr, 7)
     offset = bits(instr, 0..6)
     if sign # negative
-      @r[13] &-= (offset << 2)
+      set_reg(13, @r[13] &- (offset << 2))
     else # positive
-      @r[13] &+= (offset << 2)
+      set_reg(13, @r[13] &+ (offset << 2))
     end
   end
 end

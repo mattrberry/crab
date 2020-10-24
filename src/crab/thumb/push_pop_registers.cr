@@ -7,14 +7,13 @@ module THUMB
     if pop
       8.times do |idx|
         if bit?(list, idx)
-          @r[idx] = @gba.bus.read_word(address)
+          set_reg(idx, @gba.bus.read_word(address))
           address &+= 4
         end
       end
       if pclr
-        @r[15] = @gba.bus.read_word(address)
+        set_reg(15, @gba.bus.read_word(address))
         address &+= 4
-        clear_pipeline
       end
     else
       if pclr
@@ -28,6 +27,6 @@ module THUMB
         end
       end
     end
-    @r[13] = address
+    set_reg(13, address)
   end
 end

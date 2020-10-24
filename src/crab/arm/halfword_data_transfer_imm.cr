@@ -25,25 +25,25 @@ module ARM
     when 0b00 # swp, no docs on this?
     when 0b01 # ldrh/strh
       if load
-        @r[rd] = @gba.bus.read_half address
+        set_reg(rd, @gba.bus.read_half address)
       else
         @gba.bus[address] = 0xFFFF_u16 & @r[rd]
       end
     when 0b10 # ldrsb
-      @r[rd] = @gba.bus[address].to_i8!.to_u32
+      set_reg(rd, @gba.bus[address].to_i8!.to_u32)
     when 0b11 # ldrsh
-      @r[rd] = @gba.bus.read_half(address).to_i16!.to_u32
+      set_reg(rd, @gba.bus.read_half(address).to_i16!.to_u32)
     else raise "Invalid halfword data transfer imm op: #{sh}"
     end
 
     if !pre_index
       if add
-        @r[rn] &+= offset
+        set_reg(rn, @r[rn] &+ offset)
       else
-        @r[rn] &-= offset
+        set_reg(rn, @r[rn] &- offset)
       end
     elsif write_back
-      @r[rn] = address
+      set_reg(rn, address)
     end
   end
 end

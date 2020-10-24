@@ -3,8 +3,7 @@ module THUMB
     cond = bits(instr, 8..11)
     offset = bits(instr, 0..7).to_i8!.to_i32
     if check_cond cond
-      @r[15] &+= (offset * 2)
-      clear_pipeline
+      set_reg(15, @r[15] &+ (offset * 2))
     end
   end
 end

@@ -7,7 +7,7 @@ module THUMB
     if load # ldmia
       8.times do |idx|
         if bit?(list, idx)
-          @r[idx] = @gba.bus.read_word(address)
+          set_reg(idx, @gba.bus.read_word(address))
           address &+= 4
         end
       end
@@ -19,6 +19,6 @@ module THUMB
         end
       end
     end
-    @r[rb] = address
+    set_reg(rb, address)
   end
 end

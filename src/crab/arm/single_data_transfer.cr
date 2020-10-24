@@ -27,9 +27,9 @@ module ARM
 
     if load
       if byte_quantity
-        @r[rd] = 0xFF_u32 & @gba.bus[address]
+        set_reg(rd, 0xFF_u32 & @gba.bus[address])
       else
-        @r[rd] = @gba.bus.read_word address
+        set_reg(rd, @gba.bus.read_word address)
       end
     else
       if byte_quantity
@@ -41,12 +41,12 @@ module ARM
 
     if !pre_indexing
       if add_offset
-        @r[rn] &+= offset
+        set_reg(rn, @r[rn] &+ offset)
       else
-        @r[rn] &-= offset
+        set_reg(rn, @r[rn] &- offset)
       end
     elsif write_back
-      @r[rn] = address
+      set_reg(rn, address)
     end
   end
 end

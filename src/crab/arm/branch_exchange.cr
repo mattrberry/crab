@@ -3,10 +3,9 @@ module ARM
     rn = bits(instr, 0..3)
     if bit?(@r[rn], 0)
       @cpsr.thumb = true
-      @r[15] = @r[rn] & ~1
+      set_reg(15, @r[rn])
     else
-      @r[15] = @r[rn] & ~3
+      set_reg(15, @r[rn])
     end
-    clear_pipeline
   end
 end

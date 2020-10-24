@@ -4,6 +4,6 @@ module THUMB
     rd = bits(instr, 8..10)
     word = bits(instr, 0..8)
     imm = word << 2
-    @r[rd] = (source ? @r[13] : @r[15]) &+ imm
+    set_reg(rd, (source ? @r[13] : @r[15]) &+ imm)
   end
 end

@@ -25,7 +25,7 @@ module THUMB
       elsif idx & 0b11110000 == 0b10010000
         lut[idx] = ->thumb_sp_relative_load_store(Word)
       elsif idx & 0b11110000 == 0b10000000
-        lut[idx] = -> thumb_load_store_halfword(Word)
+        lut[idx] = ->thumb_load_store_halfword(Word)
       elsif idx & 0b11100000 == 0b01100000
         lut[idx] = ->thumb_load_store_immediate_offset(Word)
       elsif idx & 0b11110010 == 0b01010010

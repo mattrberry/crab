@@ -7,11 +7,11 @@ module ARM
     if byte_quantity
       tmp = @gba.bus[@r[rn]]
       @gba.bus[@r[rn]] = @r[rm].to_u8!
-      @r[rd] = tmp.to_u32
+      set_reg(rd, tmp.to_u32)
     else
       tmp = @gba.bus.read_word @r[rn]
       @gba.bus[@r[rn]] = @r[rm]
-      @r[rd] = tmp
+      set_reg(rd, tmp)
     end
   end
 end

@@ -5,10 +5,10 @@ module THUMB
     offset = bits(instr, 0..7)
     # todo handle carry flag on all ops
     case op
-    when 0b00 then res = @r[rd] = offset
+    when 0b00 then res = set_reg(rd, offset)
     when 0b01 then res = sub(@r[rd], offset, true)
-    when 0b10 then res = @r[rd] = add(@r[rd], offset, true)
-    when 0b11 then res = @r[rd] = sub(@r[rd], offset, true)
+    when 0b10 then res = set_reg(rd, add(@r[rd], offset, true))
+    when 0b11 then res = set_reg(rd, sub(@r[rd], offset, true))
     else           raise "Invalid move/compare/add/subtract op: #{op}"
     end
     @cpsr.zero = res == 0

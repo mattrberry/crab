@@ -20,6 +20,7 @@ class Display
 
   @fps = 30
   @seconds : Int32 = Time.utc.second
+
   def draw(framebuffer : Bytes) : Nil
     LibSDL.update_texture @texture, nil, framebuffer, WIDTH * 2
     @renderer.clear

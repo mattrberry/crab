@@ -7,8 +7,8 @@ module ARM
     rs = bits(instr, 8..11)
     rm = bits(instr, 0..3)
 
-    @r[rd] = @r[rm] &* @r[rs]
-    @r[rd] &+= @r[rn] if accumulate
+    set_reg(rd, @r[rm] &* @r[rs])
+    set_reg(rd, @r[rd] &+ @r[rn]) if accumulate
     if set_conditions
       @cpsr.zero = @r[rd] == 0
       @cpsr.negative = bit?(@r[rd], 31)

@@ -6,7 +6,7 @@ module THUMB
     rd = bits(instr, 0..2)
     address = @r[rb] + (offset << 1)
     if load
-      @r[rd] = @gba.bus.read_half(address)
+      set_reg(rd, @gba.bus.read_half(address))
     else
       @gba.bus[address] = @r[rd].to_u16!
     end

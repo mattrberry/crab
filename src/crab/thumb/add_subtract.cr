@@ -11,9 +11,9 @@ module THUMB
                 @r[imm]
               end
     if sub
-      @r[rd] = sub(@r[rs], operand, true)
+      set_reg(rd, sub(@r[rs], operand, true))
     else
-      @r[rd] = add(@r[rs], operand, true)
+      set_reg(rd, add(@r[rs], operand, true))
     end
     # todo handle carry flag on all ops
     @cpsr.zero = @r[rd] == 0

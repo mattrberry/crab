@@ -10,18 +10,16 @@ module THUMB
     rs += 8 if h2
 
     case op
-    when 0b00 then @r[rd] = add(@r[rd], @r[rs], true)
+    when 0b00 then set_reg(rd, add(@r[rd], @r[rs], true))
     when 0b01 then sub(@r[rd], @r[rs], true)
-    when 0b10 then @r[rd] = @r[rs]
+    when 0b10 then set_reg(rd, @r[rs])
     when 0b11
       if bit?(@r[rs], 0)
-        @r[15] = @r[rs] & ~1
+        set_reg(15, @r[rs])
       else
         @cpsr.thumb = false
-        @r[15] = @r[rs] & ~3
+        set_reg(15, @r[rs])
       end
-      clear_pipeline
     end
-    clear_pipeline if rd == 15
   end
 end

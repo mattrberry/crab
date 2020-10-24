@@ -134,6 +134,21 @@ class CPU
     end
   end
 
+  @[AlwaysInline]
+  def set_reg(reg : Int, value : UInt32) : UInt32
+    case reg
+    when 15
+      if @cpsr.thumb
+        @r[reg] = value & ~1
+      else
+        @r[reg] = value & ~3
+      end
+      clear_pipeline
+    else @r[reg] = value
+    end
+    value
+  end
+
   # Logical shift left
   def lsl(word : Word, bits : Int, set_conditions : Bool) : Word
     log "lsl - word:#{hex_str word}, bits:#{bits}"

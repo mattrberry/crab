@@ -3,8 +3,7 @@ module ARM
     link = bit?(instr, 24)
     offset = instr & 0xFFFFFF
     offset = (offset << 8).to_i32! >> 6
-    @r[14] = @r[15] - 4 if link
-    @r[15] &+= offset
-    clear_pipeline
+    set_reg(14, @r[15] - 4) if link
+    set_reg(15, @r[15] &+ offset)
   end
 end
