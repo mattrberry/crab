@@ -6,7 +6,7 @@ class CPU
   include ARM
   include THUMB
 
-  enum Mode
+  enum Mode : UInt32
     USR = 0b10000
     FIQ = 0b10001
     IRQ = 0b10010
@@ -17,7 +17,7 @@ class CPU
 
     def bank : Int
       case self
-      in Mode::USR, Mode::SYS then 0 # todo maybe some cpsr bits can't be changed in user mode?
+      in Mode::USR, Mode::SYS then 0
       in Mode::FIQ            then 1
       in Mode::IRQ            then 2
       in Mode::SVC            then 3
@@ -45,7 +45,7 @@ class CPU
   @pipeline = Pipeline.new
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
-  @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 9, 0 }
+  @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 8, 0 }
 
   def initialize(@gba : GBA)
     @r[0] = 0x08000000
@@ -60,12 +60,13 @@ class CPU
   def switch_mode(new_mode : Mode) : Nil
     old_mode = Mode.from_value @cpsr.mode
     return if new_mode == old_mode
+    @cpsr.mode = new_mode.value
     new_bank = new_mode.bank
     old_bank = old_mode.bank
     if new_bank == 0
-      @spsr = @cpsr
+      @spsr.value = @cpsr.value
     else
-      @spsr.value = @reg_banks[new_bank][8]
+      @spsr.value = @reg_banks[new_bank][7]
     end
     if new_mode == Mode::FIQ || old_mode == Mode::FIQ
       5.times do |idx|
@@ -76,11 +77,9 @@ class CPU
     # store old regs
     @reg_banks[old_bank][5] = @r[13]
     @reg_banks[old_bank][6] = @r[14]
-    @reg_banks[old_bank][7] = @cpsr.value
     # load new regs
     @r[13] = @reg_banks[new_bank][5]
     @r[14] = @reg_banks[new_bank][6]
-    @cpsr.value = @reg_banks[new_bank][7]
   end
 
   def fill_pipeline : Nil
