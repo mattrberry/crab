@@ -71,18 +71,20 @@ module ARM
   def rotate_register(instr : Word, set_conditions : Bool, allow_register_shifts = true) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
-    shift_amount = if allow_register_shifts && bit?(instr, 4)
-                     shift_register = bits(instr, 8..11)
-                     # todo weird logic if bottom byte of reg > 31
-                     @r[shift_register] & 0xFF
-                   else
-                     bits(instr, 7..11)
-                   end
+    if allow_register_shifts && bit?(instr, 4)
+      shift_register = bits(instr, 8..11)
+      # todo weird logic if bottom byte of reg > 31
+      shift_amount = @r[shift_register] & 0xFF
+      immediate = false
+    else
+      shift_amount = bits(instr, 7..11)
+      immediate = true
+    end
     case shift_type
     when 0b00 then lsl(@r[reg], shift_amount, set_conditions)
-    when 0b01 then lsr(@r[reg], shift_amount, false, set_conditions)
-    when 0b10 then asr(@r[reg], shift_amount, false, set_conditions)
-    when 0b11 then ror(@r[reg], shift_amount, false, set_conditions)
+    when 0b01 then lsr(@r[reg], shift_amount, immediate, set_conditions)
+    when 0b10 then asr(@r[reg], shift_amount, immediate, set_conditions)
+    when 0b11 then ror(@r[reg], shift_amount, immediate, set_conditions)
     else           raise "Impossible shift type: #{hex_str shift_type}"
     end
   end

@@ -171,7 +171,10 @@ class CPU
   # Arithmetic shift right
   def asr(word : Word, bits : Int, immediate : Bool, set_conditions : Bool) : Word
     log "asr - word:#{hex_str word}, bits:#{bits}"
-    return word if bits == 0
+    if bits == 0
+      return word unless immediate
+      bits = 32
+    end
     if bits <= 31
       @cpsr.carry = bit?(word, bits - 1) if set_conditions
       word >> bits | (0xFFFFFFFF_u32 &* (word >> 31)) << (32 - bits)
