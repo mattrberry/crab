@@ -80,9 +80,9 @@ module ARM
                    end
     case shift_type
     when 0b00 then lsl(@r[reg], shift_amount, set_conditions)
-    when 0b01 then lsr(@r[reg], shift_amount, set_conditions)
-    when 0b10 then asr(@r[reg], shift_amount, set_conditions)
-    when 0b11 then ror(@r[reg], shift_amount, set_conditions)
+    when 0b01 then lsr(@r[reg], shift_amount, false, set_conditions)
+    when 0b10 then asr(@r[reg], shift_amount, false, set_conditions)
+    when 0b11 then ror(@r[reg], shift_amount, false, set_conditions)
     else           raise "Impossible shift type: #{hex_str shift_type}"
     end
   end
@@ -90,6 +90,6 @@ module ARM
   def immediate_offset(instr : Word, set_conditions : Bool) : Word
     rotate = bits(instr, 8..11)
     imm = bits(instr, 0..7)
-    ror(imm, 2 * rotate, set_conditions)
+    ror(imm, 2 * rotate, true, set_conditions)
   end
 end

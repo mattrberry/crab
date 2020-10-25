@@ -6,8 +6,8 @@ module THUMB
     rd = bits(instr, 0..2)
     case op
     when 0b00 then set_reg(rd, lsl(@r[rs], offset, true))
-    when 0b01 then set_reg(rd, lsr(@r[rs], offset, true))
-    when 0b10 then set_reg(rd, asr(@r[rs], offset, true))
+    when 0b01 then set_reg(rd, lsr(@r[rs], offset, true, true))
+    when 0b10 then set_reg(rd, asr(@r[rs], offset, true, true))
     else           raise "Invalid shifted register op: #{op}"
     end
     @cpsr.zero = @r[rd] == 0
