@@ -188,13 +188,14 @@ class CPU
   # Rotate right
   def ror(word : Word, bits : Int, immediate : Bool, set_conditions : Bool) : Word
     log "ror - word:#{hex_str word}, bits:#{bits}"
-    return word if bits == 0
-    bits &= 31
-    if bits == 0
-      # ROR by 32 has result equal to Rm, carry out equal to bit 31 of Rm.
-      @cpsr.carry = bit?(word, 31) if set_conditions
-      word
+    if bits == 0 # RRX #1
+      return word unless immediate
+      res = (word >> 1) | (@cpsr.carry.to_unsafe << 31)
+      @cpsr.carry = bit?(word, 0) if set_conditions
+      res
     else
+      bits &= 31             # ROR by n where n is greater than 32 will give the same result and carry out as ROR by n-32
+      bits = 32 if bits == 0 # ROR by 32 has result equal to Rm, carry out equal to bit 31 of Rm.
       @cpsr.carry = bit?(word, bits - 1) if set_conditions
       word >> bits | word << (32 - bits)
     end

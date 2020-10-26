@@ -92,6 +92,7 @@ module ARM
   def immediate_offset(instr : Word, set_conditions : Bool) : Word
     rotate = bits(instr, 8..11)
     imm = bits(instr, 0..7)
-    ror(imm, 2 * rotate, true, set_conditions)
+    # todo putting "false" here causes the gba-suite tests to pass, but _why_
+    ror(imm, 2 * rotate, false, set_conditions)
   end
 end
