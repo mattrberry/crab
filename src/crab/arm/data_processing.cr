@@ -10,6 +10,12 @@ module ARM
                 else # Operand 2 is a register
                   rotate_register bits(instr, 0..11), set_conditions
                 end
+    if rd == 15 && set_conditions
+      old_spsr = @spsr.value
+      switch_mode CPU::Mode.from_value @spsr.mode
+      @cpsr.value = old_spsr
+      set_conditions = false
+    end
     # todo handle carry flag on all ops
     case opcode
     when 0x0 then res = set_reg(rd, @r[rn] & operand_2)
