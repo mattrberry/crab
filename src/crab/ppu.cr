@@ -12,8 +12,8 @@ class PPU
     bool obj_character_vram_mapping # (0=Two dimensional, 1=One dimensional)
     bool hblank_interval_free       # (1=Allow access to OAM during H-Blank)
     bool display_frame_select       # (0-1=Frame 0-1) (for BG Modes 4,5 only)
-    bool reserved_for_bios          # todo update bitfield macro to support overwriting/locking values
-    num bg_mode, 3                  # (0-5=Video Mode 0-5, 6-7=Prohibited)
+    bool reserved_for_bios, lock: true
+    num bg_mode, 3 # (0-5=Video Mode 0-5, 6-7=Prohibited)
   end
 
   class DISPSTAT < BitField(UInt16)
@@ -22,9 +22,9 @@ class PPU
     bool vcounter_irq_enable
     bool hblank_irq_enable
     bool vblank_irq_enable
-    bool vcounter # todo update bitfield macro to make values read-only when writing to value
-    bool hblank   # todo update bitfield macro to make values read-only when writing to value
-    bool vblank   # todo update bitfield macro to make values read-only when writing to value
+    bool vcounter, lock: true
+    bool hblank, lock: true
+    bool vblank, lock: true
   end
 
   class BGCNT < BitField(UInt16)
@@ -33,7 +33,7 @@ class PPU
     num tile_map, 5
     bool colors_palette
     bool mosaic
-    num not_used, 2 # todo update bitfield macro to support locking values, must be 0
+    num not_used, 2, lock: true
     num tile_data, 2
     num priority, 2
   end
