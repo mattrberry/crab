@@ -9,8 +9,9 @@ module THUMB
     rd += 8 if h1
     rs += 8 if h2
 
+    # In this group only CMP (Op = 01) sets the CPSR condition codes.
     case op
-    when 0b00 then set_reg(rd, add(@r[rd], @r[rs], true))
+    when 0b00 then set_reg(rd, add(@r[rd], @r[rs], false))
     when 0b01 then sub(@r[rd], @r[rs], true)
     when 0b10 then set_reg(rd, @r[rs])
     when 0b11
