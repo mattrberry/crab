@@ -1,6 +1,5 @@
 module ARM
   def arm_single_data_transfer(instr : Word) : Nil
-    # todo revisit this whole instruction. ldr/str have some weird edge cases iirc..
     imm_flag = bit?(instr, 25)
     pre_indexing = bit?(instr, 24)
     add_offset = bit?(instr, 23)
@@ -27,26 +26,28 @@ module ARM
 
     if load
       if byte_quantity
-        set_reg(rd, 0xFF_u32 & @gba.bus[address])
+        set_reg(rd, @gba.bus[address].to_u32)
       else
-        set_reg(rd, @gba.bus.read_word address)
+        set_reg(rd, @gba.bus.read_word_rotate address)
       end
     else
       if byte_quantity
-        @gba.bus[address] = 0xFF_u8 & @r[rd]
+        @gba.bus[address] = @r[rd].to_u8!
       else
         @gba.bus[address] = @r[rd]
       end
     end
 
-    if !pre_indexing
+    unless pre_indexing
       if add_offset
-        set_reg(rn, @r[rn] &+ offset)
+        address &+= offset
       else
-        set_reg(rn, @r[rn] &- offset)
+        address &-= offset
       end
-    elsif write_back
-      set_reg(rn, address)
     end
+    # In the case of post-indexed addressing, the write back bit is redundant and is always set to
+    # zero, since the old base value can be retained by setting the offset to zero. Therefore
+    # post-indexed data transfers always write back the modified base.
+    set_reg(rn, address) if (write_back || !pre_indexing) && rd != rn
   end
 end

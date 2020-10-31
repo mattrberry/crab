@@ -5,7 +5,7 @@ module THUMB
     word = bits(instr, 0..7)
     address = @r[13] &+ (word << 2)
     if load
-      set_reg(rd, @gba.bus.read_word(address))
+      set_reg(rd, @gba.bus.read_word_rotate(address))
     else
       @gba.bus[address] = @r[rd]
     end

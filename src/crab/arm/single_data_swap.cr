@@ -9,7 +9,7 @@ module ARM
       @gba.bus[@r[rn]] = @r[rm].to_u8!
       set_reg(rd, tmp.to_u32)
     else
-      tmp = @gba.bus.read_word @r[rn]
+      tmp = @gba.bus.read_word_rotate @r[rn]
       @gba.bus[@r[rn]] = @r[rm]
       set_reg(rd, tmp)
     end

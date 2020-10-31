@@ -25,7 +25,7 @@ module ARM
     when 0b00 # swp, no docs on this?
     when 0b01 # ldrh/strh
       if load
-        set_reg(rd, @gba.bus.read_half address)
+        set_reg(rd, @gba.bus.read_half_rotate address)
       else
         @gba.bus[address] = 0xFFFF_u16 & @r[rd]
       end

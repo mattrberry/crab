@@ -26,17 +26,27 @@ class Bus
   end
 
   def read_half(index : Int) : Word
-    puts "Unaligned half read at #{hex_str index.to_u32}" if index.to_u32 != index.to_u32 & 0xFFFFFFFE
-    self[index].to_u32 |
-      (self[index + 1].to_u32 << 8)
+    self[index & ~1].to_u32 |
+      (self[(index & ~1) + 1].to_u32 << 8)
+  end
+
+  def read_half_rotate(index : Int) : Word
+    half = read_half index
+    bits = (index & 1) << 3
+    shift = half >> bits | half << (32 - bits)
   end
 
   def read_word(index : Int) : Word
-    puts "Unaligned word read at #{hex_str index.to_u32}" if index.to_u32 != index.to_u32 & 0xFFFFFFFC
-    self[index].to_u32 |
-      (self[index + 1].to_u32 << 8) |
-      (self[index + 2].to_u32 << 16) |
-      (self[index + 3].to_u32 << 24)
+    self[index & ~3].to_u32 |
+      (self[(index & ~3) + 1].to_u32 << 8) |
+      (self[(index & ~3) + 2].to_u32 << 16) |
+      (self[(index & ~3) + 3].to_u32 << 24)
+  end
+
+  def read_word_rotate(index : Int) : Word
+    word = read_word index
+    bits = (index & 3) << 3
+    shift = word >> bits | word << (32 - bits)
   end
 
   def []=(index : Int, value : Byte) : Nil
@@ -52,23 +62,21 @@ class Bus
       address = 0x1FFFF_u32 & index
       address -= 0x8000 if address > 0x17FFF
       @gba.ppu.vram[address] = value
-    when 0x7 then @gba.ppu.oam[index & 0x3FF]
+    when 0x7      then @gba.ppu.oam[index & 0x3FF]
     when 0x8, 0x9 then @gba.cartridge[index & 0x7FFFFFF] = value
     else               raise "Unmapped write: #{hex_str index.to_u32}"
     end
   end
 
   def []=(index : Int, value : HalfWord) : Nil
-    puts "Unaligned half write at #{hex_str index.to_u32}: #{hex_str value}" if index.to_u32 != index.to_u32 & 0xFFFFFFFE
-    self[index] = 0xFF_u8 & value
-    self[index + 1] = 0xFF_u8 & (value >> 8)
+    self[index & ~1] = 0xFF_u8 & value
+    self[(index & ~1) + 1] = 0xFF_u8 & (value >> 8)
   end
 
   def []=(index : Int, value : Word) : Nil
-    puts "Unaligned word write at #{hex_str index.to_u32}: #{hex_str value}" if index.to_u32 != index.to_u32 & 0xFFFFFFFC
-    self[index] = 0xFF_u8 & value
-    self[index + 1] = 0xFF_u8 & (value >> 8)
-    self[index + 2] = 0xFF_u8 & (value >> 16)
-    self[index + 3] = 0xFF_u8 & (value >> 24)
+    self[index & ~3] = 0xFF_u8 & value
+    self[(index & ~3) + 1] = 0xFF_u8 & (value >> 8)
+    self[(index & ~3) + 2] = 0xFF_u8 & (value >> 16)
+    self[(index & ~3) + 3] = 0xFF_u8 & (value >> 24)
   end
 end
