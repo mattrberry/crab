@@ -4,13 +4,12 @@ module THUMB
     offset = bits(instr, 6..10)
     rb = bits(instr, 3..5)
     rd = bits(instr, 0..2)
-    imm = offset << 2
-    address = @r[rb] &+ (offset << 2)
+    base_address = @r[rb]
     case byte_quantity_and_load
-    when 0b00 then @gba.bus[address] = @r[rd]
-    when 0b01 then set_reg(rd, @gba.bus.read_word_rotate(address))
-    when 0b10 then @gba.bus[address] = 0xFF_u8 & @r[rd]
-    when 0b11 then set_reg(rd, 0xFFFFFFFF_u32 & @gba.bus[address])
+    when 0b00 then @gba.bus[base_address &+ (offset << 2)] = @r[rd]                      # str
+    when 0b01 then set_reg(rd, @gba.bus.read_word_rotate(base_address &+ (offset << 2))) # ldr
+    when 0b10 then @gba.bus[base_address &+ offset] = @r[rd].to_u8!                      # strb
+    when 0b11 then set_reg(rd, @gba.bus[base_address &+ offset].to_u32)                  # ldrb
     end
   end
 end

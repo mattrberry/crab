@@ -6,10 +6,10 @@ module THUMB
     rd = bits(instr, 0..2)
     address = @r[rb] &+ @r[ro]
     case load_and_byte_quantity
-    when 0b00 then @gba.bus[address] = @r[rd]
-    when 0b01 then @gba.bus[address] = 0xFF_u8 & @r[rd]
-    when 0b10 then set_reg(rd, @gba.bus.read_word_rotate address)
-    when 0b11 then set_reg(rd, 0xFFFFFFFF_u32 & @gba.bus[address])
+    when 0b00 then @gba.bus[address] = @r[rd]                      # str
+    when 0b01 then @gba.bus[address] = @r[rd].to_u8!               # strb
+    when 0b10 then set_reg(rd, @gba.bus.read_word_rotate(address)) # ldr
+    when 0b11 then set_reg(rd, @gba.bus[address].to_u32!)          # ldrb
     end
   end
 end
