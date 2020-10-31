@@ -36,6 +36,17 @@ class Bus
     shift = half >> bits | half << (32 - bits)
   end
 
+  # On ARM7 aka ARMv4 aka NDS7/GBA:
+  #   LDRH Rd,[odd]   -->  LDRH Rd,[odd-1] ROR 8  ;read to bit0-7 and bit24-31
+  #   LDRSH Rd,[odd]  -->  LDRSB Rd,[odd]         ;sign-expand BYTE value
+  def read_half_signed(index : Int) : Word
+    if bit?(index, 0)
+      self[index].to_i8!.to_u32
+    else
+      read_half(index).to_i16!.to_u32
+    end
+  end
+
   def read_word(index : Int) : Word
     self[index & ~3].to_u32 |
       (self[(index & ~3) + 1].to_u32 << 8) |
