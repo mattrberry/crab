@@ -5,7 +5,7 @@ module ARM
     set_conditions = bit?(instr, 20)
     rdhi = bits(instr, 16..19)
     rdlo = bits(instr, 12..15)
-    rs = bits(instr, 12..15)
+    rs = bits(instr, 8..11)
     rm = bits(instr, 0..3)
 
     res = if signed
