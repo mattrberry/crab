@@ -5,6 +5,11 @@ module ARM
     set_conditions = bit?(instr, 20)
     rn = bits(instr, 16..19)
     rd = bits(instr, 12..15)
+    # The PC value will be the address of the instruction, plus 8 or 12 bytes due to instruction
+    # prefetching. If the shift amount is specified in the instruction, the PC will be 8 bytes
+    # ahead. If a register is used to specify the shift amount the PC will be 12 bytes ahead.
+    pc_reads_12_ahead = !imm_flag && bit?(instr, 4)
+    @r[15] &+= 4 if pc_reads_12_ahead
     operand_2 = if imm_flag # Operand 2 is an immediate
                   immediate_offset bits(instr, 0..11), set_conditions
                 else # Operand 2 is a register
@@ -40,5 +45,6 @@ module ARM
       @cpsr.zero = res == 0
       @cpsr.negative = bit?(res, 31)
     end
+    @r[15] &-= 4 if pc_reads_12_ahead
   end
 end
