@@ -35,14 +35,16 @@ module ARM
     else raise "Invalid halfword data transfer imm op: #{sh}"
     end
 
-    if !pre_index
+    unless pre_index
       if add
-        set_reg(rn, @r[rn] &+ offset)
+        address &+= offset
       else
-        set_reg(rn, @r[rn] &- offset)
+        address &-= offset
       end
-    elsif write_back
-      set_reg(rn, address)
     end
+    # In the case of post-indexed addressing, the write back bit is redundant and is always set to
+    # zero, since the old base value can be retained by setting the offset to zero. Therefore
+    # post-indexed data transfers always write back the modified base.
+    set_reg(rn, address) if (write_back || !pre_index) && rd != rn
   end
 end
