@@ -1,6 +1,6 @@
 module THUMB
   def thumb_software_interrupt(instr : Word) : Nil
-    lr = @r[15] - 4
+    lr = @r[15] - 2
     switch_mode CPU::Mode::SVC
     set_reg(14, lr)
     @cpsr.irq_disable = true
