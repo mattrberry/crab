@@ -4,10 +4,10 @@ module ARM
     msr = bit?(instr, 21)
     if msr
       all = bit?(instr, 16)
-      if CPU::Mode.from_value(@cpsr.mode) == CPU::Mode::USR || !all
-        mask = 0x0FFFFFFF_u32
-      else
+      if all && CPU::Mode.from_value(@cpsr.mode) != CPU::Mode::USR
         mask = 0x00000000_u32
+      else
+        mask = 0x0FFFFFFF_u32
       end
       imm_flag = bit?(instr, 25)
       if imm_flag
@@ -20,7 +20,7 @@ module ARM
         @spsr.value = (@spsr.value & mask) | (value & ~mask)
       else
         thumb = @cpsr.thumb
-        switch_mode CPU::Mode.from_value value & 0x1F if all
+        switch_mode CPU::Mode.from_value value & 0x1F if all && CPU::Mode.from_value(@cpsr.mode) != CPU::Mode::USR
         @cpsr.value = (@cpsr.value & mask) | (value & ~mask)
         @cpsr.thumb = thumb
       end

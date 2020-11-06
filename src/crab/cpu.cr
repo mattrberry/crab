@@ -48,26 +48,19 @@ class CPU
   @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 8, 0 }
 
   def initialize(@gba : GBA)
-    @r[0] = 0x08000000
-    @r[1] = 0x000000EA
     @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
     @reg_banks[Mode::IRQ.bank][5] = 0x03007FA0
     @reg_banks[Mode::SVC.bank][5] = 0x03007FE0
     @r[15] = 0x08000000
-    @cpsr = PSR.new 0x6000001F
   end
 
   def switch_mode(new_mode : Mode) : Nil
     old_mode = Mode.from_value @cpsr.mode
     return if new_mode == old_mode
+    @spsr.value = @cpsr.value
     @cpsr.mode = new_mode.value
     new_bank = new_mode.bank
     old_bank = old_mode.bank
-    if new_bank == 0
-      @spsr.value = @cpsr.value
-    else
-      @spsr.value = @reg_banks[new_bank][7]
-    end
     if new_mode == Mode::FIQ || old_mode == Mode::FIQ
       5.times do |idx|
         @reg_banks[old_bank][idx] = @r[8 + idx]
