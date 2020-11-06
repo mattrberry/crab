@@ -101,6 +101,15 @@ class PPU
         @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
       end
       @gba.display.draw @framebuffer
+    when 5
+      base = @dispcnt.display_frame_select ? 0xA000 : 0
+      128.times do |row|
+        160.times do |col|
+          @framebuffer[base + (row * 240 + col) * 2] = @vram[base + (row * 160 + col) * 2]
+          @framebuffer[base + (row * 240 + col) * 2 + 1] = @vram[base + (row * 160 + col) * 2 + 1]
+        end
+      end
+      @gba.display.draw @framebuffer
     else abort "Invalid background mode: #{@dispcnt.bg_mode}"
     end
   end
