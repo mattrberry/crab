@@ -53,63 +53,71 @@ class PPU
   getter bg3cnt : BGCNT = BGCNT.new 0
 
   def initialize(@gba : GBA)
-    start_scanline
+    start_line
   end
 
-  def start_scanline : Nil
+  def start_line : Nil
     @gba.scheduler.schedule 960, ->start_hblank
   end
 
   def start_hblank : Nil
     @gba.scheduler.schedule 272, ->end_hblank
     @dispstat.hblank = true
+    scanline if @vcount < 160
   end
 
   def end_hblank : Nil
     @dispstat.hblank = false
     @vcount += 1
-    if @vcount == 228
-      @vcount = 0
+    @vcount %= 228
+    if @vcount == 0
       @dispstat.vblank = false
-      @gba.scheduler.schedule 0, ->start_scanline
     elsif @vcount == 160
       @dispstat.vblank = true
-      @gba.scheduler.schedule 0, ->start_vblank_line
       draw
-    elsif @vcount >= 160
-      @gba.scheduler.schedule 0, ->start_vblank_line
-    else
-      @gba.scheduler.schedule 0, ->start_scanline
     end
-  end
-
-  def start_vblank_line : Nil
-    @gba.scheduler.schedule 960, ->start_hblank
+    @gba.scheduler.schedule 0, ->start_line
   end
 
   def draw : Nil
+    @gba.display.draw @framebuffer
+  end
+
+  def scanline : Nil
     case @dispcnt.bg_mode
     when 0, 1, 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
-      @gba.display.draw @vram
+      240.times do |col|
+        row_base = 240 * 2 * @vcount
+        @framebuffer[row_base + col * 2] = @vram[row_base + col * 2]
+        @framebuffer[row_base + col * 2 + 1] = @vram[row_base + col * 2 + 1]
+      end
     when 4
       base = @dispcnt.display_frame_select ? 0xA000 : 0
-      (240 * 160).times do |idx|
+      240.times do |col|
+        idx = 240 * @vcount + col
         pal_idx = @vram[base + idx]
         @framebuffer[idx * 2] = @pram[pal_idx * 2]
         @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
       end
-      @gba.display.draw @framebuffer
     when 5
       base = @dispcnt.display_frame_select ? 0xA000 : 0
-      128.times do |row|
+      if @vcount < 128
         160.times do |col|
-          @framebuffer[base + (row * 240 + col) * 2] = @vram[base + (row * 160 + col) * 2]
-          @framebuffer[base + (row * 240 + col) * 2 + 1] = @vram[base + (row * 160 + col) * 2 + 1]
+          @framebuffer[(240 * @vcount + col) * 2] = @vram[base + (@vcount * 160 + col) * 2]
+          @framebuffer[(240 * @vcount + col) * 2 + 1] = @vram[base + (@vcount * 160 + col) * 2 + 1]
+        end
+        160.to 239 do |col|
+          @framebuffer[(240 * @vcount + col) * 2] = 0x1F
+          @framebuffer[(240 * @vcount + col) * 2 + 1] = 0x7C
+        end
+      else
+        240.times do |col|
+          @framebuffer[(240 * @vcount + col) * 2] = 0x1F
+          @framebuffer[(240 * @vcount + col) * 2 + 1] = 0x7C
         end
       end
-      @gba.display.draw @framebuffer
     else abort "Invalid background mode: #{@dispcnt.bg_mode}"
     end
   end
