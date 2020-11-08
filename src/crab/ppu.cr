@@ -29,12 +29,12 @@ class PPU
 
   class BGCNT < BitField(UInt16)
     num screen_size, 2
-    bool screen_overflow
-    num tile_map, 5
-    bool colors_palette
+    bool affine_wrap
+    num screen_base_block, 5
+    bool color_mode
     bool mosaic
     num not_used, 2, lock: true
-    num tile_data, 2
+    num character_base_block, 2
     num priority, 2
   end
 
@@ -85,7 +85,43 @@ class PPU
 
   def scanline : Nil
     case @dispcnt.bg_mode
-    when 0, 1, 2
+    when 0
+      # todo handle all bg layers
+      tw, th = case @bg0cnt.screen_size
+               when 0b00 then {32, 32} # 32x32
+               when 0b01 then {64, 32} # 64x32
+               when 0b10 then {32, 64} # 32x64
+               when 0b11 then {64, 64} # 64x64
+               else           raise "Impossible bgcnt screen size: #{@bg0cnt.screen_size}"
+               end
+      # todo actually handle different sizes
+
+      screen_base = @bg0cnt.screen_base_block * 0x800
+      character_base = @bg0cnt.character_base_block * 0x4000
+      row = @vcount
+      ty = row >> 3
+      y = row & 7
+      240.times do |col|
+        tx = col >> 3
+        x = col & 7
+
+        screen_entry = @vram[screen_base + (ty * tw + tx) * 2 + 1].to_u16 << 8 | @vram[screen_base + (ty * tw + tx) * 2]
+        tile_id = bits(screen_entry, 0..9)
+        palette_bank = bits(screen_entry, 12..15)
+        hflip = bit?(screen_entry, 11)
+        vflip = bit?(screen_entry, 10)
+
+        if @bg0cnt.color_mode # 8bpp
+          abort "todo 8bpp"
+        else # 4bpp
+          palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
+          pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
+        end
+        idx = 240 * row + col
+        @framebuffer[idx * 2] = @pram[pal_idx * 2]
+        @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
+      end
+    when 1, 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
       240.times do |col|
