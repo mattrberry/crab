@@ -7,18 +7,16 @@ class Cartridge
     io.to_s
   }
 
+  @rom = Bytes.new 0x02000000 do |addr|
+    oob = 0xFFFF & (addr >> 1)
+    (oob >> (8 * (addr & 1))).to_u8!
+  end
+
   def initialize(rom_path : String)
-    @rom = File.open rom_path do |file|
-      bytes = Bytes.new file.size
-      file.read bytes
-      bytes
-    end
+    File.open(rom_path) { |file| file.read @rom }
   end
 
   def [](index : Int) : Byte
     @rom[index]
-  end
-
-  def []=(index : Int, value : Byte) : Nil
   end
 end
