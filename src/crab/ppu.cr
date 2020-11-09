@@ -38,6 +38,11 @@ class PPU
     num priority, 2
   end
 
+  class BGOFS < BitField(UInt16)
+    num not_used, 7, lock: true
+    num offset, 9
+  end
+
   @framebuffer : Bytes = Bytes.new 0x12C00 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
 
   getter pram = Bytes.new 0x400
@@ -51,6 +56,14 @@ class PPU
   getter bg1cnt : BGCNT = BGCNT.new 0
   getter bg2cnt : BGCNT = BGCNT.new 0
   getter bg3cnt : BGCNT = BGCNT.new 0
+  getter bg0hofs : BGOFS = BGOFS.new 0
+  getter bg0vofs : BGOFS = BGOFS.new 0
+  getter bg1hofs : BGOFS = BGOFS.new 0
+  getter bg1vofs : BGOFS = BGOFS.new 0
+  getter bg2hofs : BGOFS = BGOFS.new 0
+  getter bg2vofs : BGOFS = BGOFS.new 0
+  getter bg3hofs : BGOFS = BGOFS.new 0
+  getter bg3vofs : BGOFS = BGOFS.new 0
 
   def initialize(@gba : GBA)
     start_line
@@ -196,6 +209,22 @@ class PPU
     when 0x00D then @bg2cnt.value = (@bg2cnt.value & 0x00FF) | value.to_u16 << 8
     when 0x00E then @bg3cnt.value = (@bg3cnt.value & 0xFF00) | value
     when 0x00F then @bg3cnt.value = (@bg3cnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x010 then @bg0hofs.value = (@bg0hofs.value & 0xFF00) | value
+    when 0x011 then @bg0hofs.value = (@bg0hofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x012 then @bg0vofs.value = (@bg0vofs.value & 0xFF00) | value
+    when 0x013 then @bg0vofs.value = (@bg0vofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x014 then @bg1hofs.value = (@bg1hofs.value & 0xFF00) | value
+    when 0x015 then @bg1hofs.value = (@bg1hofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x016 then @bg1vofs.value = (@bg1vofs.value & 0xFF00) | value
+    when 0x017 then @bg1vofs.value = (@bg1vofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x018 then @bg2hofs.value = (@bg2hofs.value & 0xFF00) | value
+    when 0x019 then @bg2hofs.value = (@bg2hofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x01A then @bg2vofs.value = (@bg2vofs.value & 0xFF00) | value
+    when 0x01B then @bg2vofs.value = (@bg2vofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x01C then @bg3hofs.value = (@bg3hofs.value & 0xFF00) | value
+    when 0x01D then @bg3hofs.value = (@bg3hofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x01E then @bg3vofs.value = (@bg3vofs.value & 0xFF00) | value
+    when 0x01F then @bg3vofs.value = (@bg3vofs.value & 0x00FF) | value.to_u16 << 8
     else            raise "Unimplemented PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
     end
   end
