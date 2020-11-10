@@ -13,7 +13,7 @@ class MMIO
     elsif not_used? io_addr
       0xFF_u8 # todo what is returned here?
     else
-      raise "Unmapped MMIO read: #{hex_str index.to_u32}"
+      abort "Unmapped MMIO read: #{hex_str index.to_u32}"
     end
   end
 
@@ -27,7 +27,7 @@ class MMIO
       @gba.keypad.read_io io_addr
     elsif not_used? io_addr
     else
-      raise "Unmapped MMIO write: #{hex_str index.to_u32}"
+      abort "Unmapped MMIO write ~ addr:#{hex_str io_addr.to_u32}, val:#{value}"
     end
   end
 

@@ -1,5 +1,6 @@
 class Cartridge
   @rom : Bytes
+  getter sram = Bytes.new 0x10000
 
   getter title : String {
     io = IO::Memory.new

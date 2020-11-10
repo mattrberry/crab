@@ -189,7 +189,7 @@ class PPU
     when 0x00D then 0xFF_u8 & @bg2cnt.value >> 8
     when 0x00E then 0xFF_u8 & @bg3cnt.value
     when 0x00F then 0xFF_u8 & @bg3cnt.value >> 8
-    else            raise "Unimplemented PPU read ~ addr:#{hex_str io_addr.to_u8}"
+    else            abort "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
 
@@ -225,7 +225,7 @@ class PPU
     when 0x01D then @bg3hofs.value = (@bg3hofs.value & 0x00FF) | value.to_u16 << 8
     when 0x01E then @bg3vofs.value = (@bg3vofs.value & 0xFF00) | value
     when 0x01F then @bg3vofs.value = (@bg3vofs.value & 0x00FF) | value.to_u16 << 8
-    else            raise "Unimplemented PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
+    else            abort "Unmapped PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
     end
   end
 end
