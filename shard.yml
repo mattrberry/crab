@@ -16,5 +16,7 @@ dependencies:
     version: 0.1.3
   sdl:
     git: git@github.com:ysbaddaden/sdl.cr.git
+  lib_gl:
+    github: nulldotpro/LibGL
 
 license: MIT
