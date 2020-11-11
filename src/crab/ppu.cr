@@ -96,6 +96,15 @@ class PPU
     @gba.display.draw @framebuffer
   end
 
+  # Get the screen entry offset from the tile x, tile y, and background screen-size param using tonc algo
+  @[AlwaysInline]
+  def se_index(tx : Int, ty : Int, screen_size : Int) : Int
+    n = tx + ty * 32
+    n += 0x03E0 if tx >= 32
+    n += 0x0400 if ty >= 32 && @bg0cnt.screen_size == 0b11
+    n
+  end
+
   def scanline : Nil
     case @dispcnt.bg_mode
     when 0
@@ -109,16 +118,20 @@ class PPU
                end
       # todo actually handle different sizes
 
-      screen_base = @bg0cnt.screen_base_block * 0x800
+      screen_base = 0x800_u32 * @bg0cnt.screen_base_block
       character_base = @bg0cnt.character_base_block * 0x4000
       row = @vcount
-      ty = row >> 3
-      y = row & 7
+      effective_row = (row + @bg0vofs.value) % (th << 3)
+      ty = effective_row >> 3
+      y = effective_row & 7
       240.times do |col|
-        tx = col >> 3
-        x = col & 7
+        effective_col = (col + @bg0hofs.value) % (tw << 3)
+        tx = effective_col >> 3
+        x = effective_col & 7
 
-        screen_entry = @vram[screen_base + (ty * tw + tx) * 2 + 1].to_u16 << 8 | @vram[screen_base + (ty * tw + tx) * 2]
+        se_idx = se_index(tx, ty, @bg0cnt.screen_size)
+        screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
+
         tile_id = bits(screen_entry, 0..9)
         palette_bank = bits(screen_entry, 12..15)
         hflip = bit?(screen_entry, 11)
