@@ -123,7 +123,6 @@ class PPU
       row = @vcount
       effective_row = (row + @bg0vofs.value) % (th << 3)
       ty = effective_row >> 3
-      y = effective_row & 7
       240.times do |col|
         effective_col = (col + @bg0hofs.value) % (tw << 3)
         tx = effective_col >> 3
@@ -134,8 +133,8 @@ class PPU
 
         tile_id = bits(screen_entry, 0..9)
         palette_bank = bits(screen_entry, 12..15)
-        hflip = bit?(screen_entry, 11)
-        vflip = bit?(screen_entry, 10)
+        y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
+        x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
 
         if @bg0cnt.color_mode # 8bpp
           abort "todo 8bpp"
