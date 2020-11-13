@@ -40,10 +40,7 @@ class Display
       log_length = 0
       LibGL.get_shader_iv(shader, LibGL::INFO_LOG_LENGTH, pointerof(log_length))
       s = " " * log_length
-      if log_length > 0
-        LibGL.get_shader_info_log(shader, log_length, pointerof(log_length), s)
-      end
-      puts source
+      LibGL.get_shader_info_log(shader, log_length, pointerof(log_length), s) if log_length > 0
       abort "Error compiling shader: #{s}"
     end
     shader
@@ -59,19 +56,19 @@ class Display
 
     LibSDL.gl_set_attribute LibSDL::GLattr::SDL_GL_CONTEXT_MAJOR_VERSION, 4
     LibSDL.gl_set_attribute LibSDL::GLattr::SDL_GL_CONTEXT_MINOR_VERSION, 5
-    LibSDL.gl_set_swap_interval 1
+    LibSDL.gl_set_swap_interval 1 # enable vsync
     LibGL.enable(LibGL::DEBUG_OUTPUT)
     LibGL.enable(LibGL::DEBUG_OUTPUT_SYNCHRONOUS)
     LibGL.debug_message_callback(->Display.callback, nil)
 
-    vtx_shader_id = compile_shader(File.read("src/crab/shaders/gba_colors.vert"), LibGL::VERTEX_SHADER)
+    vert_shader_id = compile_shader(File.read("src/crab/shaders/gba_colors.vert"), LibGL::VERTEX_SHADER)
     frag_shader_id = compile_shader(File.read("src/crab/shaders/gba_colors.frag"), LibGL::FRAGMENT_SHADER)
 
     frame_buffer = 0_u32
     LibGL.gen_textures(1, pointerof(frame_buffer))
     LibGL.active_texture(LibGL::TEXTURE0)
     LibGL.bind_texture(LibGL::TEXTURE_2D, frame_buffer)
-    LibGL.attach_shader shader_program, vtx_shader_id
+    LibGL.attach_shader shader_program, vert_shader_id
     LibGL.attach_shader shader_program, frag_shader_id
     LibGL.link_program shader_program
     LibGL.validate_program shader_program
@@ -81,7 +78,7 @@ class Display
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MIN_FILTER, LibGL::NEAREST)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MAG_FILTER, LibGL::NEAREST)
     LibGL.use_program shader_program
-    vao = 0_u32 # required even if not used
+    vao = 0_u32 # required even if not used in modern opengl
     LibGL.gen_vertex_arrays(1, pointerof(vao))
     LibGL.bind_vertex_array(vao)
   end
