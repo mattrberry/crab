@@ -43,6 +43,74 @@ class PPU
     num offset, 9
   end
 
+  class WINH < BitField(UInt16)
+    num x1, 8
+    num x2, 8
+  end
+
+  class WINV < BitField(UInt16)
+    num y1, 8
+    num y2, 8
+  end
+
+  class WININ < BitField(UInt16)
+    num not_used_1, 2, lock: true
+    bool window_1_color_special_effect
+    bool window_1_obj_enable
+    num window_1_enable_bits, 4
+    num not_used_0, 2, lock: true
+    bool window_0_color_special_effect
+    bool window_0_obj_enable
+    num window_0_enable_bits, 4
+  end
+
+  class WINOUT < BitField(UInt16)
+    num not_used_obj, 2, lock: true
+    bool obj_window_color_special_effect
+    bool obj_window_obj_enable
+    num obj_window_enable_bits, 4
+    num not_used_outside, 2, lock: true
+    bool outside_color_special_effect
+    bool outside_obj_enable
+    num outside_enable_bits, 4
+  end
+
+  class MOSAIC < BitField(UInt16)
+    num obj_mosiac_v_size, 4
+    num obj_mosiac_h_size, 4
+    num bg_mosiac_v_size, 4
+    num bg_mosiac_h_size, 4
+  end
+
+  class BLDCNT < BitField(UInt16)
+    num not_used, 2, lock: true
+    bool bd_2nd_target_pixel
+    bool obj_2nd_target_pixel
+    bool bg3_2nd_target_pixel
+    bool bg2_2nd_target_pixel
+    bool bg1_2nd_target_pixel
+    bool bg0_2nd_target_pixel
+    num color_special_effect, 2
+    bool bd_1st_target_pixel
+    bool obj_1st_target_pixel
+    bool bg3_1st_target_pixel
+    bool bg2_1st_target_pixel
+    bool bg1_1st_target_pixel
+    bool bg0_1st_target_pixel
+  end
+
+  class BLDALPHA < BitField(UInt16)
+    num not_used_13_15, 3, lock: true
+    num evb_coefficient, 5
+    num not_used_5_7, 3, lock: true
+    num eva_coefficient, 5
+  end
+
+  class BLDY < BitField(UInt16)
+    num not_used, 11, lock: true
+    num evy_coefficient, 5
+  end
+
   @framebuffer : Bytes = Bytes.new 0x12C00 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
 
   getter pram = Bytes.new 0x400
@@ -64,6 +132,16 @@ class PPU
   getter bg2vofs : BGOFS = BGOFS.new 0
   getter bg3hofs : BGOFS = BGOFS.new 0
   getter bg3vofs : BGOFS = BGOFS.new 0
+  getter win0h : WINH = WINH.new 0
+  getter win1h : WINH = WINH.new 0
+  getter win0V : WINV = WINV.new 0
+  getter win1V : WINV = WINV.new 0
+  getter winin : WININ = WININ.new 0
+  getter winout : WINOUT = WINOUT.new 0
+  getter mosaic : MOSAIC = MOSAIC.new 0
+  getter bldcnt : BLDCNT = BLDCNT.new 0
+  getter bldalpha : BLDALPHA = BLDALPHA.new 0
+  getter bldy : BLDY = BLDY.new 0
 
   def initialize(@gba : GBA)
     start_line
@@ -201,6 +279,42 @@ class PPU
     when 0x00D then 0xFF_u8 & @bg2cnt.value >> 8
     when 0x00E then 0xFF_u8 & @bg3cnt.value
     when 0x00F then 0xFF_u8 & @bg3cnt.value >> 8
+    when 0x010 then 0xFF_u8 & @bg0hofs.value
+    when 0x011 then 0xFF_u8 & @bg0hofs.value >> 8
+    when 0x012 then 0xFF_u8 & @bg0vofs.value
+    when 0x013 then 0xFF_u8 & @bg0vofs.value >> 8
+    when 0x014 then 0xFF_u8 & @bg1hofs.value
+    when 0x015 then 0xFF_u8 & @bg1hofs.value >> 8
+    when 0x016 then 0xFF_u8 & @bg1vofs.value
+    when 0x017 then 0xFF_u8 & @bg1vofs.value >> 8
+    when 0x018 then 0xFF_u8 & @bg2hofs.value
+    when 0x019 then 0xFF_u8 & @bg2hofs.value >> 8
+    when 0x01A then 0xFF_u8 & @bg2vofs.value
+    when 0x01B then 0xFF_u8 & @bg2vofs.value >> 8
+    when 0x01C then 0xFF_u8 & @bg3hofs.value
+    when 0x01D then 0xFF_u8 & @bg3hofs.value >> 8
+    when 0x01E then 0xFF_u8 & @bg3vofs.value
+    when 0x01F then 0xFF_u8 & @bg3vofs.value >> 8
+    when 0x040 then 0xFF_u8 & @win0h.value
+    when 0x041 then 0xFF_u8 & @win0h.value >> 8
+    when 0x042 then 0xFF_u8 & @win1h.value
+    when 0x043 then 0xFF_u8 & @win1h.value >> 8
+    when 0x044 then 0xFF_u8 & @win0V.value
+    when 0x045 then 0xFF_u8 & @win0V.value >> 8
+    when 0x046 then 0xFF_u8 & @win1V.value
+    when 0x047 then 0xFF_u8 & @win1V.value >> 8
+    when 0x048 then 0xFF_u8 & @winin.value
+    when 0x049 then 0xFF_u8 & @winin.value >> 8
+    when 0x04A then 0xFF_u8 & @winout.value
+    when 0x04B then 0xFF_u8 & @winout.value >> 8
+    when 0x04C then 0xFF_u8 & @mosaic.value
+    when 0x04D then 0xFF_u8 & @mosaic.value >> 8
+    when 0x050 then 0xFF_u8 & @bldcnt.value
+    when 0x051 then 0xFF_u8 & @bldcnt.value >> 8
+    when 0x052 then 0xFF_u8 & @bldalpha.value
+    when 0x053 then 0xFF_u8 & @bldalpha.value >> 8
+    when 0x054 then 0xFF_u8 & @bldy.value
+    when 0x055 then 0xFF_u8 & @bldy.value >> 8
     else            abort "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
@@ -213,6 +327,8 @@ class PPU
     when 0x003 # undocumented - green swap
     when 0x004 then @dispstat.value = (@dispstat.value & 0xFF00) | value
     when 0x005 then @dispstat.value = (@dispstat.value & 0x00FF) | value.to_u16 << 8
+    when 0x006 # vcount
+    when 0x007 # vcount
     when 0x008 then @bg0cnt.value = (@bg0cnt.value & 0xFF00) | value
     when 0x009 then @bg0cnt.value = (@bg0cnt.value & 0x00FF) | value.to_u16 << 8
     when 0x00A then @bg1cnt.value = (@bg1cnt.value & 0xFF00) | value
@@ -237,6 +353,26 @@ class PPU
     when 0x01D then @bg3hofs.value = (@bg3hofs.value & 0x00FF) | value.to_u16 << 8
     when 0x01E then @bg3vofs.value = (@bg3vofs.value & 0xFF00) | value
     when 0x01F then @bg3vofs.value = (@bg3vofs.value & 0x00FF) | value.to_u16 << 8
+    when 0x040 then @win0h.value = (@win0h.value & 0xFF00) | value
+    when 0x041 then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
+    when 0x042 then @win1h.value = (@win1h.value & 0xFF00) | value
+    when 0x043 then @win1h.value = (@win1h.value & 0x00FF) | value.to_u16 << 8
+    when 0x044 then @win0V.value = (@win0V.value & 0xFF00) | value
+    when 0x045 then @win0V.value = (@win0V.value & 0x00FF) | value.to_u16 << 8
+    when 0x046 then @win1V.value = (@win1V.value & 0xFF00) | value
+    when 0x047 then @win1V.value = (@win1V.value & 0x00FF) | value.to_u16 << 8
+    when 0x048 then @winin.value = (@winin.value & 0xFF00) | value
+    when 0x049 then @winin.value = (@winin.value & 0x00FF) | value.to_u16 << 8
+    when 0x04A then @winout.value = (@winout.value & 0xFF00) | value
+    when 0x04B then @winout.value = (@winout.value & 0x00FF) | value.to_u16 << 8
+    when 0x04C then @mosaic.value = (@mosaic.value & 0xFF00) | value
+    when 0x04D then @mosaic.value = (@mosaic.value & 0x00FF) | value.to_u16 << 8
+    when 0x050 then @bldcnt.value = (@bldcnt.value & 0xFF00) | value
+    when 0x051 then @bldcnt.value = (@bldcnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x052 then @bldalpha.value = (@bldalpha.value & 0xFF00) | value
+    when 0x053 then @bldalpha.value = (@bldalpha.value & 0x00FF) | value.to_u16 << 8
+    when 0x054 then @bldy.value = (@bldy.value & 0xFF00) | value
+    when 0x055 then @bldy.value = (@bldy.value & 0x00FF) | value.to_u16 << 8
     else            abort "Unmapped PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}"
     end
   end
