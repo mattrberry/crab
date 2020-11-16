@@ -1,3 +1,5 @@
+require "colorize"
+
 require "bitfield"
 require "sdl"
 

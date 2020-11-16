@@ -31,7 +31,8 @@ class MMIO
     elsif not_used? io_addr
       0xFF_u8 # todo what is returned here?
     else
-      abort "Unmapped MMIO read: #{hex_str index.to_u32}"
+      puts "Unmapped MMIO read: #{hex_str index.to_u32}".colorize(:red)
+      0_u8
     end
   end
 
@@ -49,7 +50,7 @@ class MMIO
       @waitcnt.value = (@waitcnt.value & mask) | value.to_u16 << shift
     elsif not_used? io_addr
     else
-      abort "Unmapped MMIO write ~ addr:#{hex_str io_addr.to_u32}, val:#{value}"
+      puts "Unmapped MMIO write ~ addr:#{hex_str io_addr.to_u32}, val:#{value}".colorize(:yellow)
     end
   end
 
