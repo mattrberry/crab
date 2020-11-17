@@ -35,7 +35,7 @@ class GBA
     @mmio = MMIO.new self
     @keypad = Keypad.new
     @bus = Bus.new self, @bios_path
-    @interrupts = Interrupts.new
+    @interrupts = Interrupts.new self
     @cpu = CPU.new self
     @display = Display.new
     @ppu = PPU.new self

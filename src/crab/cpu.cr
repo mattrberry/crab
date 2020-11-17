@@ -75,6 +75,18 @@ class CPU
     @r[14] = @reg_banks[new_bank][6]
   end
 
+  def irq : Nil
+    unless @cpsr.irq_disable
+      lr = @r[15] - (@cpsr.thumb ? 0 : 4)
+      switch_mode CPU::Mode::IRQ
+      @cpsr.thumb = false
+      clear_pipeline
+      @cpsr.irq_disable = true
+      set_reg(14, lr)
+      set_reg(15, 0x18)
+    end
+  end
+
   def fill_pipeline : Nil
     while @pipeline.size < 2
       if @cpsr.thumb

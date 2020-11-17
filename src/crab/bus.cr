@@ -1,5 +1,5 @@
 class Bus
-  @bios = Bytes.new 0x3FFF
+  @bios = Bytes.new 0x4000
   @wram_board = Bytes.new 0x40000
   @wram_chip = Bytes.new 0x08000
 
