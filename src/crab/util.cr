@@ -18,6 +18,22 @@ macro clear_bit(value, bit)
   ({{value}} & ~(1 << {{bit}}))
 end
 
+macro count_bits(value)
+  (8 * sizeof(typeof(n)))
+end
+
+def count_set_bits(n : Int) : Int
+  count = 0
+  count_bits(n).times { |idx| count += n >> idx & 1 }
+  count
+end
+
+def first_set_bit(n : Int) : Int
+  count = count_bits(n)
+  count.times { |idx| return idx if bit?(n, idx) }
+  count
+end
+
 macro trace(value, newline = true)
   {% if flag? :trace %}
     {% if newline %}
