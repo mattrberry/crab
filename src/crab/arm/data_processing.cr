@@ -10,10 +10,11 @@ module ARM
     # ahead. If a register is used to specify the shift amount the PC will be 12 bytes ahead.
     pc_reads_12_ahead = !imm_flag && bit?(instr, 4)
     @r[15] &+= 4 if pc_reads_12_ahead
+    barrel_shifter_carry_out = @cpsr.carry
     operand_2 = if imm_flag # Operand 2 is an immediate
-                  immediate_offset bits(instr, 0..11), set_conditions
+                  immediate_offset bits(instr, 0..11), pointerof(barrel_shifter_carry_out)
                 else # Operand 2 is a register
-                  rotate_register bits(instr, 0..11), set_conditions
+                  rotate_register bits(instr, 0..11), pointerof(barrel_shifter_carry_out)
                 end
     if rd == 15 && set_conditions
       old_spsr = @spsr.value
@@ -21,29 +22,66 @@ module ARM
       @cpsr.value = old_spsr
       set_conditions = false
     end
-    # todo handle carry flag on all ops
     case opcode
-    when 0x0 then res = set_reg(rd, @r[rn] & operand_2)
-    when 0x1 then res = set_reg(rd, @r[rn] ^ operand_2)
-    when 0x2 then res = set_reg(rd, sub(@r[rn], operand_2, set_conditions))
-    when 0x3 then res = set_reg(rd, sub(operand_2, @r[rn], set_conditions))
-    when 0x4 then res = set_reg(rd, add(@r[rn], operand_2, set_conditions))
-    when 0x5 then res = set_reg(rd, adc(@r[rn], operand_2, set_conditions))
-    when 0x6 then res = set_reg(rd, sbc(@r[rn], operand_2, set_conditions))
-    when 0x7 then res = set_reg(rd, sbc(operand_2, @r[rn], set_conditions))
-    when 0x8 then res = @r[rn] & operand_2
-    when 0x9 then res = @r[rn] ^ operand_2
-    when 0xA then res = sub(@r[rn], operand_2, set_conditions)
-    when 0xB then res = add(@r[rn], operand_2, set_conditions)
-    when 0xC then res = set_reg(rd, @r[rn] | operand_2)
-    when 0xD then res = set_reg(rd, operand_2)
-    when 0xE then res = set_reg(rd, @r[rn] & ~operand_2)
-    when 0xF then res = set_reg(rd, ~operand_2)
-    else          raise "Unimplemented execution of data processing opcode: #{hex_str opcode}"
-    end
-    if set_conditions # todo this only works for logical ops, not arithmetic
-      @cpsr.zero = res == 0
-      @cpsr.negative = bit?(res, 31)
+    when 0b0000 # AND
+      set_reg(rd, @r[rn] & operand_2)
+      if set_conditions
+        set_neg_and_zero_flags(@r[rd])
+        @cpsr.carry = barrel_shifter_carry_out
+      end
+    when 0b0001 # EOR
+      set_reg(rd, @r[rn] ^ operand_2)
+      if set_conditions
+        set_neg_and_zero_flags(@r[rd])
+        @cpsr.carry = barrel_shifter_carry_out
+      end
+    when 0b0010 # SUB
+      set_reg(rd, sub(@r[rn], operand_2, set_conditions))
+    when 0b0011 # RSB
+      set_reg(rd, sub(operand_2, @r[rn], set_conditions))
+    when 0b0100 # ADD
+      set_reg(rd, add(@r[rn], operand_2, set_conditions))
+    when 0b0101 # ADC
+      set_reg(rd, adc(@r[rn], operand_2, set_conditions))
+    when 0b0110 # SBC
+      set_reg(rd, sbc(@r[rn], operand_2, set_conditions))
+    when 0b0111 # RSC
+      set_reg(rd, sbc(operand_2, @r[rn], set_conditions))
+    when 0b1000 # TST
+      set_neg_and_zero_flags(@r[rn] & operand_2)
+      @cpsr.carry = barrel_shifter_carry_out
+    when 0b1001 # TEQ
+      set_neg_and_zero_flags(@r[rn] ^ operand_2)
+      @cpsr.carry = barrel_shifter_carry_out
+    when 0b1010 # CMP
+      sub(@r[rn], operand_2, set_conditions)
+    when 0b1011 # CMN
+      add(@r[rn], operand_2, set_conditions)
+    when 0b1100 # ORR
+      set_reg(rd, @r[rn] | operand_2)
+      if set_conditions
+        set_neg_and_zero_flags(@r[rd])
+        @cpsr.carry = barrel_shifter_carry_out
+      end
+    when 0b1101 # MOV
+      set_reg(rd, operand_2)
+      if set_conditions
+        set_neg_and_zero_flags(@r[rd])
+        @cpsr.carry = barrel_shifter_carry_out
+      end
+    when 0b1110 # BIC
+      set_reg(rd, @r[rn] & ~operand_2)
+      if set_conditions
+        set_neg_and_zero_flags(@r[rd])
+        @cpsr.carry = barrel_shifter_carry_out
+      end
+    when 0b1111 # MVN
+      set_reg(rd, ~operand_2)
+      if set_conditions
+        set_neg_and_zero_flags(@r[rd])
+        @cpsr.carry = barrel_shifter_carry_out
+      end
+    else raise "Unimplemented execution of data processing opcode: #{hex_str opcode}"
     end
     @r[15] &-= 4 if pc_reads_12_ahead
   end

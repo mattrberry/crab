@@ -8,8 +8,10 @@ module ARM
     load = bit?(instr, 20)
     rn = bits(instr, 16..19)
     rd = bits(instr, 12..15)
+    barrel_shifter_carry_out = false # unused, doesn't matter
+
     offset = if imm_flag # Operand 2 is a register (opposite of data processing for some reason)
-               rotate_register bits(instr, 0..11), set_conditions: false, allow_register_shifts: false
+               rotate_register bits(instr, 0..11), pointerof(barrel_shifter_carry_out), allow_register_shifts: false
              else # Operand 2 is an immediate offset
                bits(instr, 0..11)
              end

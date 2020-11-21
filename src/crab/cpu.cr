@@ -154,106 +154,108 @@ class CPU
     value
   end
 
+  @[AlwaysInline]
+  def set_neg_and_zero_flags(value : Int) : Nil
+    @cpsr.negative = bit?(value, 31)
+    @cpsr.zero = value == 0
+  end
+
   # Logical shift left
-  def lsl(word : Word, bits : Int, set_conditions : Bool) : Word
+  def lsl(word : Word, bits : Int, carry_out : Pointer(Bool)) : Word
     log "lsl - word:#{hex_str word}, bits:#{bits}"
     return word if bits == 0
-    @cpsr.carry = bit?(word, 32 - bits) if set_conditions
+    carry_out.value = bit?(word, 32 - bits)
     word << bits
   end
 
   # Logical shift right
-  def lsr(word : Word, bits : Int, immediate : Bool, set_conditions : Bool) : Word
+  def lsr(word : Word, bits : Int, immediate : Bool, carry_out : Pointer(Bool)) : Word
     log "lsr - word:#{hex_str word}, bits:#{bits}"
     if bits == 0
       return word unless immediate
       bits = 32
     end
-    @cpsr.carry = bit?(word, bits - 1) if set_conditions
+    carry_out.value = bit?(word, bits - 1)
     word >> bits
   end
 
   # Arithmetic shift right
-  def asr(word : Word, bits : Int, immediate : Bool, set_conditions : Bool) : Word
+  def asr(word : Word, bits : Int, immediate : Bool, carry_out : Pointer(Bool)) : Word
     log "asr - word:#{hex_str word}, bits:#{bits}"
     if bits == 0
       return word unless immediate
       bits = 32
     end
     if bits <= 31
-      @cpsr.carry = bit?(word, bits - 1) if set_conditions
+      carry_out.value = bit?(word, bits - 1)
       word >> bits | (0xFFFFFFFF_u32 &* (word >> 31)) << (32 - bits)
     else
       # ASR by 32 or more has result filled with and carry out equal to bit 31 of Rm.
-      @cpsr.carry = bit?(word, 31) if set_conditions
+      carry_out.value = bit?(word, 31)
       0xFFFFFFFF_u32 &* (word >> 31)
     end
   end
 
   # Rotate right
-  def ror(word : Word, bits : Int, immediate : Bool, set_conditions : Bool) : Word
+  def ror(word : Word, bits : Int, immediate : Bool, carry_out : Pointer(Bool)) : Word
     log "ror - word:#{hex_str word}, bits:#{bits}"
     if bits == 0 # RRX #1
       return word unless immediate
       res = (word >> 1) | (@cpsr.carry.to_unsafe << 31)
-      @cpsr.carry = bit?(word, 0) if set_conditions
+      carry_out.value = bit?(word, 0)
       res
     else
       bits &= 31             # ROR by n where n is greater than 32 will give the same result and carry out as ROR by n-32
       bits = 32 if bits == 0 # ROR by 32 has result equal to Rm, carry out equal to bit 31 of Rm.
-      @cpsr.carry = bit?(word, bits - 1) if set_conditions
+      carry_out.value = bit?(word, bits - 1)
       word >> bits | word << (32 - bits)
     end
   end
 
   # Subtract two values
-  def sub(operand_1 : Word, operand_2 : Word, set_conditions) : Word
+  def sub(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
     log "sub - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
     res = operand_1 &- operand_2
     if set_conditions
-      @cpsr.overflow = bit?((operand_1 ^ operand_2) & (operand_1 ^ res), 31)
+      set_neg_and_zero_flags(res)
       @cpsr.carry = operand_1 >= operand_2
-      @cpsr.zero = res == 0
-      @cpsr.negative = bit?(res, 31)
+      @cpsr.overflow = bit?((operand_1 ^ operand_2) & (operand_1 ^ res), 31)
     end
     res
   end
 
   # Subtract two values with carry
-  def sbc(operand_1 : Word, operand_2 : Word, set_conditions) : Word
+  def sbc(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
     log "sbc - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
     res = operand_1 &- operand_2 &- 1 &+ @cpsr.carry.to_unsafe
     if set_conditions
-      @cpsr.overflow = bit?((operand_1 ^ operand_2) & (operand_1 ^ res), 31)
+      set_neg_and_zero_flags(res)
       @cpsr.carry = operand_1 >= operand_2.to_u64 + 1 - @cpsr.carry.to_unsafe
-      @cpsr.zero = res == 0
-      @cpsr.negative = bit?(res, 31)
+      @cpsr.overflow = bit?((operand_1 ^ operand_2) & (operand_1 ^ res), 31)
     end
     res
   end
 
   # Add two values
-  def add(operand_1 : Word, operand_2 : Word, set_conditions) : Word
+  def add(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
     log "add - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
     res = operand_1 &+ operand_2
     if set_conditions
-      @cpsr.overflow = bit?(~(operand_1 ^ operand_2) & (operand_2 ^ res), 31)
+      set_neg_and_zero_flags(res)
       @cpsr.carry = res < operand_1
-      @cpsr.zero = res == 0
-      @cpsr.negative = bit?(res, 31)
+      @cpsr.overflow = bit?(~(operand_1 ^ operand_2) & (operand_2 ^ res), 31)
     end
     res
   end
 
   # Add two values with carry
-  def adc(operand_1 : Word, operand_2 : Word, set_conditions) : Word
+  def adc(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
     log "adc - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
     res = operand_1 &+ operand_2 &+ @cpsr.carry.to_unsafe
     if set_conditions
-      @cpsr.overflow = bit?(~(operand_1 ^ operand_2) & (operand_2 ^ res), 31)
+      set_neg_and_zero_flags(res)
       @cpsr.carry = res < operand_1.to_u64 + @cpsr.carry.to_unsafe
-      @cpsr.zero = res == 0
-      @cpsr.negative = bit?(res, 31)
+      @cpsr.overflow = bit?(~(operand_1 ^ operand_2) & (operand_2 ^ res), 31)
     end
     res
   end

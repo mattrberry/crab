@@ -15,8 +15,6 @@ module THUMB
     else
       set_reg(rd, add(@r[rs], operand, true))
     end
-    # todo handle carry flag on all ops
-    @cpsr.zero = @r[rd] == 0
-    @cpsr.negative = bit?(@r[rd], 31)
+    set_neg_and_zero_flags(@r[rd])
   end
 end

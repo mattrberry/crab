@@ -68,7 +68,7 @@ module ARM
     puts "Unused instruction: #{hex_str instr}"
   end
 
-  def rotate_register(instr : Word, set_conditions : Bool, allow_register_shifts = true) : Word
+  def rotate_register(instr : Word, carry_out : Pointer(Bool), allow_register_shifts = true) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
     if allow_register_shifts && bit?(instr, 4)
@@ -81,18 +81,18 @@ module ARM
       immediate = true
     end
     case shift_type
-    when 0b00 then lsl(@r[reg], shift_amount, set_conditions)
-    when 0b01 then lsr(@r[reg], shift_amount, immediate, set_conditions)
-    when 0b10 then asr(@r[reg], shift_amount, immediate, set_conditions)
-    when 0b11 then ror(@r[reg], shift_amount, immediate, set_conditions)
+    when 0b00 then lsl(@r[reg], shift_amount, carry_out)
+    when 0b01 then lsr(@r[reg], shift_amount, immediate, carry_out)
+    when 0b10 then asr(@r[reg], shift_amount, immediate, carry_out)
+    when 0b11 then ror(@r[reg], shift_amount, immediate, carry_out)
     else           raise "Impossible shift type: #{hex_str shift_type}"
     end
   end
 
-  def immediate_offset(instr : Word, set_conditions : Bool) : Word
+  def immediate_offset(instr : Word, carry_out : Pointer(Bool)) : Word
     rotate = bits(instr, 8..11)
     imm = bits(instr, 0..7)
     # todo putting "false" here causes the gba-suite tests to pass, but _why_
-    ror(imm, 2 * rotate, false, set_conditions)
+    ror(imm, 2 * rotate, false, carry_out)
   end
 end

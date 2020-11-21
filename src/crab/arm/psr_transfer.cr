@@ -11,7 +11,8 @@ module ARM
       end
       imm_flag = bit?(instr, 25)
       if imm_flag
-        value = immediate_offset bits(instr, 0..11), set_conditions: false
+        barrel_shifter_carry_out = false # unused, doesn't matter
+        value = immediate_offset bits(instr, 0..11), pointerof(barrel_shifter_carry_out)
       else
         rm = bits(instr, 0..3)
         value = @r[rm]

@@ -9,9 +9,6 @@ module ARM
 
     set_reg(rd, @r[rm] &* @r[rs])
     set_reg(rd, @r[rd] &+ @r[rn]) if accumulate
-    if set_conditions
-      @cpsr.zero = @r[rd] == 0
-      @cpsr.negative = bit?(@r[rd], 31)
-    end
+    set_neg_and_zero_flags(@r[rd]) if set_conditions
   end
 end
