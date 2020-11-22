@@ -14,8 +14,12 @@ module ARM
             @r[rm].to_u64 &* @r[rs]
           end
     res &+= @r[rdhi].to_u64 << 32 | @r[rdlo] if accumulate
+
     set_reg(rdhi, (res >> 32).to_u32!)
     set_reg(rdlo, res.to_u32!)
-    set_neg_and_zero_flags(@r[rdhi]) if set_conditions
+    if set_conditions
+      @cpsr.negative = bit?(@r[rdhi], 31)
+      @cpsr.zero = res == 0
+    end
   end
 end
