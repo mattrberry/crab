@@ -8,9 +8,9 @@ module ARM
     load = bit?(instr, 20)
     rn = bits(instr, 16..19)
     rd = bits(instr, 12..15)
-    barrel_shifter_carry_out = false # unused, doesn't matter
 
-    offset = if imm_flag # Operand 2 is a register (opposite of data processing for some reason)
+    barrel_shifter_carry_out = false # unused, doesn't matter
+    offset = if imm_flag             # Operand 2 is a register (opposite of data processing for some reason)
                rotate_register bits(instr, 0..11), pointerof(barrel_shifter_carry_out), allow_register_shifts: false
              else # Operand 2 is an immediate offset
                bits(instr, 0..11)
@@ -38,6 +38,9 @@ module ARM
       else
         @gba.bus[address] = @r[rd]
       end
+      # When R15 is the source register (Rd) of a register store (STR) instruction, the stored
+      # value will be address of the instruction plus 12.
+      @gba.bus[address] &+= 4 if rd == 15
     end
 
     unless pre_indexing
@@ -50,6 +53,6 @@ module ARM
     # In the case of post-indexed addressing, the write back bit is redundant and is always set to
     # zero, since the old base value can be retained by setting the offset to zero. Therefore
     # post-indexed data transfers always write back the modified base.
-    set_reg(rn, address) if (write_back || !pre_indexing) && rd != rn
+    set_reg(rn, address) if (write_back || !pre_indexing) && (rd != rn || !load)
   end
 end
