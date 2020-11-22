@@ -109,7 +109,7 @@ class CPU
   def tick : Nil
     fill_pipeline
     instr = @pipeline.shift
-    print_state instr
+    {% if flag? :trace %} print_state instr {% end %}
     if @cpsr.thumb
       thumb_execute instr
     else
@@ -261,15 +261,13 @@ class CPU
   end
 
   def print_state(instr : Word) : Nil
-    {% if flag? :trace %}
-      @r.each do |reg|
-        trace "#{hex_str reg, prefix: false} ", newline: false
-      end
-      if @cpsr.thumb
-        trace "cpsr: #{hex_str @cpsr.value, prefix: false} |     #{hex_str instr.to_u16, prefix: false}"
-      else
-        trace "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
-      end
-    {% end %}
+    @r.each_with_index do |val, reg|
+      trace "#{hex_str reg == 15 ? val - (@cpsr.thumb ? 2 : 4) : val, prefix: false} ", newline: false
+    end
+    if @cpsr.thumb
+      trace "cpsr: #{hex_str @cpsr.value, prefix: false} |     #{hex_str instr.to_u16, prefix: false}"
+    else
+      trace "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
+    end
   end
 end
