@@ -28,6 +28,9 @@ module ARM
         set_reg(rd, @gba.bus.read_half_rotate address)
       else
         @gba.bus[address] = 0xFFFF_u16 & @r[rd]
+        # When R15 is the source register (Rd) of a register store (STR) instruction, the stored
+        # value will be address of the instruction plus 12.
+        @gba.bus[address] &+= 4 if rd == 15
       end
     when 0b10 # ldrsb
       set_reg(rd, @gba.bus[address].to_i8!.to_u32)
@@ -46,6 +49,6 @@ module ARM
     # In the case of post-indexed addressing, the write back bit is redundant and is always set to
     # zero, since the old base value can be retained by setting the offset to zero. Therefore
     # post-indexed data transfers always write back the modified base.
-    set_reg(rn, address) if (write_back || !pre_index) && rd != rn
+    set_reg(rn, address) if (write_back || !pre_index) && (rd != rn || !load)
   end
 end
