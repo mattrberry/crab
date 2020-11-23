@@ -262,12 +262,12 @@ class CPU
 
   def print_state(instr : Word) : Nil
     @r.each_with_index do |val, reg|
-      trace "#{hex_str reg == 15 ? val - (@cpsr.thumb ? 2 : 4) : val, prefix: false} ", newline: false
+      print "#{hex_str reg == 15 ? val - (@cpsr.thumb ? 2 : 4) : val, prefix: false} "
     end
     if @cpsr.thumb
-      trace "cpsr: #{hex_str @cpsr.value, prefix: false} |     #{hex_str instr.to_u16, prefix: false}"
+      puts "cpsr: #{hex_str @cpsr.value, prefix: false} |     #{hex_str instr.to_u16, prefix: false}"
     else
-      trace "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
+      puts "cpsr: #{hex_str @cpsr.value, prefix: false} | #{hex_str instr, prefix: false}"
     end
   end
 end
