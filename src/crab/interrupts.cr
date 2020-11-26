@@ -40,8 +40,8 @@ class Interrupts
     case io_addr
     when 0x200 then @reg_ie.value = (@reg_ie.value & 0xFF00) | value
     when 0x201 then @reg_ie.value = (@reg_ie.value & 0x00FF) | value.to_u16 << 8
-    when 0x202 then @reg_if.value = (@reg_if.value & 0xFF00) | value
-    when 0x203 then @reg_if.value = (@reg_if.value & 0x00FF) | value.to_u16 << 8
+    when 0x202 then @reg_if.value &= ~value
+    when 0x203 then @reg_if.value &= ~(value.to_u16 << 8)
     when 0x208 then @ime = bit?(value, 0)
     when 0x209 # ignored
     else raise "Unimplemented interrupts write ~ addr:#{hex_str io_addr.to_u8!}, val:#{value}"
