@@ -39,10 +39,10 @@ class CPU
     num mode, 5
   end
 
-  @r = Slice(Word).new 16
+  getter r = Slice(Word).new 16
   @cpsr : PSR = PSR.new 0x0000001F
   @spsr : PSR = PSR.new 0
-  @pipeline = Pipeline.new
+  getter pipeline = Pipeline.new
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
   @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 8, 0 }
@@ -260,10 +260,11 @@ class CPU
     res
   end
 
-  def print_state(instr : Word) : Nil
+  def print_state(instr : Word? = nil) : Nil
     @r.each_with_index do |val, reg|
       print "#{hex_str reg == 15 ? val - (@cpsr.thumb ? 2 : 4) : val, prefix: false} "
     end
+    instr ||= @pipeline.peek
     if @cpsr.thumb
       puts "cpsr: #{hex_str @cpsr.value, prefix: false} |     #{hex_str instr.to_u16, prefix: false}"
     else

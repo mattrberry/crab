@@ -9,6 +9,7 @@ require "./interrupts"
 require "./cpu"
 require "./display"
 require "./ppu"
+require "./debugger"
 
 class GBA
   getter! scheduler : Scheduler
@@ -20,6 +21,7 @@ class GBA
   getter! cpu : CPU
   getter! display : Display
   getter! ppu : PPU
+  getter! debugger : Debugger
 
   def initialize(@bios_path : String, rom_path : String)
     @scheduler = Scheduler.new
@@ -39,6 +41,7 @@ class GBA
     @cpu = CPU.new self
     @display = Display.new
     @ppu = PPU.new self
+    @debugger = Debugger.new self
   end
 
   def handle_events : Nil
@@ -56,6 +59,7 @@ class GBA
 
   def run : Nil
     loop do
+      {% if flag? :debugger %} debugger.check_debug {% end %}
       cpu.tick
     end
   end

@@ -19,6 +19,10 @@ class Pipeline
     val
   end
 
+  def peek : Word
+    @buffer[@pos]
+  end
+
   def clear : Nil
     @size = 0
   end

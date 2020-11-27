@@ -1,5 +1,5 @@
 class Cartridge
-  @rom : Bytes
+  getter rom : Bytes
   getter sram = Bytes.new 0x10000
 
   getter title : String {
