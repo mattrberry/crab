@@ -40,12 +40,13 @@ class CPU
   end
 
   getter r = Slice(Word).new 16
-  @cpsr : PSR = PSR.new 0x0000001F
-  @spsr : PSR = PSR.new 0
+  @cpsr : PSR = PSR.new CPU::Mode::SYS.value
+  @spsr : PSR = PSR.new CPU::Mode::SYS.value
   getter pipeline = Pipeline.new
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
-  @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 8, 0 }
+  @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 7, 0 }
+  @spsr_banks = Array(Word).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
 
   def initialize(@gba : GBA)
     @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
@@ -57,8 +58,6 @@ class CPU
   def switch_mode(new_mode : Mode) : Nil
     old_mode = Mode.from_value @cpsr.mode
     return if new_mode == old_mode
-    @spsr.value = @cpsr.value
-    @cpsr.mode = new_mode.value
     new_bank = new_mode.bank
     old_bank = old_mode.bank
     if new_mode == Mode::FIQ || old_mode == Mode::FIQ
@@ -70,17 +69,20 @@ class CPU
     # store old regs
     @reg_banks[old_bank][5] = @r[13]
     @reg_banks[old_bank][6] = @r[14]
+    @spsr_banks[old_bank] = @spsr.value
     # load new regs
     @r[13] = @reg_banks[new_bank][5]
     @r[14] = @reg_banks[new_bank][6]
+    @spsr.value = @cpsr.value
+    @cpsr.mode = new_mode.value
   end
 
   def irq : Nil
     unless @cpsr.irq_disable
+      fill_pipeline
       lr = @r[15] - (@cpsr.thumb ? 0 : 4)
       switch_mode CPU::Mode::IRQ
       @cpsr.thumb = false
-      clear_pipeline
       @cpsr.irq_disable = true
       set_reg(14, lr)
       set_reg(15, 0x18)
@@ -88,6 +90,11 @@ class CPU
   end
 
   def fill_pipeline : Nil
+    if @cpsr.thumb # moved alignment to interpreter loop to fix exception returning
+      @r[15] &= ~1
+    else
+      @r[15] &= ~3
+    end
     while @pipeline.size < 2
       if @cpsr.thumb
         log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_half(@r[15]).to_u16}"
@@ -141,17 +148,8 @@ class CPU
 
   @[AlwaysInline]
   def set_reg(reg : Int, value : UInt32) : UInt32
-    case reg
-    when 15
-      if @cpsr.thumb
-        @r[reg] = value & ~1
-      else
-        @r[reg] = value & ~3
-      end
-      clear_pipeline
-    else @r[reg] = value
-    end
-    value
+    clear_pipeline if reg == 15
+    @r[reg] = value
   end
 
   @[AlwaysInline]

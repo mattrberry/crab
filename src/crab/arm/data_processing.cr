@@ -16,12 +16,6 @@ module ARM
                 else # Operand 2 is a register
                   rotate_register bits(instr, 0..11), pointerof(barrel_shifter_carry_out)
                 end
-    if rd == 15 && set_conditions
-      old_spsr = @spsr.value
-      switch_mode CPU::Mode.from_value @spsr.mode
-      @cpsr.value = old_spsr
-      set_conditions = false
-    end
     case opcode
     when 0b0000 # AND
       set_reg(rd, @r[rn] & operand_2)
@@ -84,5 +78,12 @@ module ARM
     else raise "Unimplemented execution of data processing opcode: #{hex_str opcode}"
     end
     @r[15] &-= 4 if pc_reads_12_ahead
+    if rd == 15 && set_conditions
+      old_spsr = @spsr.value
+      new_mode = CPU::Mode.from_value(@spsr.mode)
+      switch_mode new_mode
+      @cpsr.value = old_spsr
+      @spsr.value = new_mode.bank == 0 ? @cpsr.value : @spsr_banks[new_mode.bank]
+    end
   end
 end

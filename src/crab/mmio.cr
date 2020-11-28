@@ -50,7 +50,7 @@ class MMIO
       @waitcnt.value = (@waitcnt.value & mask) | value.to_u16 << shift
     elsif not_used? io_addr
     else
-      puts "Unmapped MMIO write ~ addr:#{hex_str io_addr.to_u32}, val:#{value}".colorize(:yellow)
+      puts "Unmapped MMIO write ~ addr:#{hex_str index.to_u32}, val:#{hex_str value}".colorize(:yellow)
     end
   end
 
