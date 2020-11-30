@@ -55,7 +55,7 @@ class Interrupts
 
   private def check_interrupts : Nil
     if @reg_ie.value & @reg_if.value != 0
-      # todo this condition unhalts
+      @gba.cpu.halted = false
       @gba.cpu.irq if @ime
     end
   end

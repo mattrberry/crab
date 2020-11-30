@@ -47,6 +47,7 @@ class CPU
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
   @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 7, 0 }
   @spsr_banks = Array(Word).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
+  property halted = false
 
   def initialize(@gba : GBA)
     @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
@@ -115,12 +116,14 @@ class CPU
 
   def tick : Nil
     fill_pipeline
-    instr = @pipeline.shift
-    {% if flag? :trace %} print_state instr {% end %}
-    if @cpsr.thumb
-      thumb_execute instr
-    else
-      arm_execute instr
+    unless @halted
+      instr = @pipeline.shift
+      {% if flag? :trace %} print_state instr {% end %}
+      if @cpsr.thumb
+        thumb_execute instr
+      else
+        arm_execute instr
+      end
     end
     @gba.tick 1
   end
