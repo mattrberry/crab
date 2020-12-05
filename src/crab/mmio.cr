@@ -22,6 +22,8 @@ class MMIO
     io_addr = 0x0FFF_u16 & index
     if io_addr <= 0x05F
       @gba.ppu.read_io io_addr
+    elsif io_addr <= 0xAF
+      @gba.apu.read_io io_addr
     elsif (io_addr >= 0x200 && io_addr <= 0x203) || (io_addr >= 0x208 && io_addr <= 0x209)
       @gba.interrupts.read_io io_addr
     elsif io_addr >= 0x130 && io_addr <= 0x133
@@ -40,6 +42,8 @@ class MMIO
     io_addr = 0x0FFF_u16 & index
     if io_addr <= 0x05F
       @gba.ppu.write_io io_addr, value
+    elsif io_addr <= 0xAF
+      @gba.apu.write_io io_addr, value
     elsif (io_addr >= 0x200 && io_addr <= 0x203) || (io_addr >= 0x208 && io_addr <= 0x209)
       @gba.interrupts.write_io io_addr, value
     elsif io_addr >= 0x130 && io_addr <= 0x133

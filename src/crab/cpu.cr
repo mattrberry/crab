@@ -6,6 +6,8 @@ class CPU
   include ARM
   include THUMB
 
+  CLOCK_SPEED = 2**24
+
   enum Mode : UInt32
     USR = 0b10000
     FIQ = 0b10001
