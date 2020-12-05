@@ -17,24 +17,52 @@ class APU
   FRAME_SEQUENCER_RATE   = 512 # Hz
   FRAME_SEQUENCER_PERIOD = CPU::CLOCK_SPEED // FRAME_SEQUENCER_RATE
 
+  class SOUNDCNT_L < BitField(UInt16)
+    num channel_4_left, 1
+    num channel_3_left, 1
+    num channel_2_left, 1
+    num channel_1_left, 1
+    num channel_4_right, 1
+    num channel_3_right, 1
+    num channel_2_right, 1
+    num channel_1_right, 1
+    bool not_used_1, lock: true
+    num left_volume, 3
+    bool not_used_2, lock: true
+    num right_volume, 3
+  end
+
+  class SOUNDCNT_H < BitField(UInt16)
+    bool dma_sound_b_reset, lock: true
+    num dma_sound_b_timer, 1
+    bool dma_sound_b_left
+    bool dma_sound_b_right
+    bool dma_sound_a_reset, lock: true
+    num dma_sound_a_timer, 1
+    bool dma_sound_a_left
+    bool dma_sound_a_right
+    num not_used, 4, lock: true
+    bool dma_sound_b_volume
+    bool dma_sound_a_volume
+    num sound_volume, 2
+  end
+
+  class SOUNDBIAS < BitField(UInt16)
+    num amplitude_resolution, 2
+    num not_used_1, 4
+    num bias_level, 9
+    bool not_used_2
+  end
+
+  @soundcnt_l = SOUNDCNT_L.new 0
+  @soundcnt_h = SOUNDCNT_H.new 0
   @sound_enabled : Bool = false
+  @soundbias = SOUNDBIAS.new 0
 
   @buffer = Slice(Float32).new BUFFER_SIZE
   @buffer_pos = 0
   @frame_sequencer_stage = 0
   getter first_half_of_length_period = false
-
-  # @left_enable = false
-  # @left_volume = 0_u8
-  # @right_enable = false
-  # @right_volume = 0_u8
-  @left_enable = true
-  @left_volume = 7_u8
-  @right_enable = true
-  @right_volume = 7_u8
-
-  # @nr51 : UInt8 = 0x00
-  @nr51 : UInt8 = 0xFF
 
   @audiospec : LibSDL::AudioSpec
   @obtained_spec : LibSDL::AudioSpec
@@ -106,16 +134,16 @@ class APU
     channel2_amp = @channel2.get_amplitude
     channel3_amp = @channel3.get_amplitude
     channel4_amp = @channel4.get_amplitude
-    @buffer[@buffer_pos] = (@left_volume / 7).to_f32 *
-                           ((@nr51 & 0x80 > 0 ? channel4_amp : 0) +
-                            (@nr51 & 0x40 > 0 ? channel3_amp : 0) +
-                            (@nr51 & 0x20 > 0 ? channel2_amp : 0) +
-                            (@nr51 & 0x10 > 0 ? channel1_amp : 0)) / 4
-    @buffer[@buffer_pos + 1] = (@right_volume / 7).to_f32 *
-                               ((@nr51 & 0x08 > 0 ? channel4_amp : 0) +
-                                (@nr51 & 0x04 > 0 ? channel3_amp : 0) +
-                                (@nr51 & 0x02 > 0 ? channel2_amp : 0) +
-                                (@nr51 & 0x01 > 0 ? channel1_amp : 0)) / 4
+    @buffer[@buffer_pos] = (@soundcnt_l.left_volume / 7).to_f32 *
+                           ((channel4_amp * @soundcnt_l.channel_4_left) +
+                            (channel3_amp * @soundcnt_l.channel_3_left) +
+                            (channel2_amp * @soundcnt_l.channel_2_left) +
+                            (channel1_amp * @soundcnt_l.channel_1_left)) / 4
+    @buffer[@buffer_pos + 1] = (@soundcnt_l.right_volume).to_f32 *
+                               ((channel4_amp * @soundcnt_l.channel_4_right) +
+                                (channel3_amp * @soundcnt_l.channel_3_right) +
+                                (channel2_amp * @soundcnt_l.channel_2_right) +
+                                (channel1_amp * @soundcnt_l.channel_1_right)) / 4
     @buffer_pos += 2
 
     # push to SDL if buffer is full
@@ -130,41 +158,42 @@ class APU
     @gba.scheduler.schedule SAMPLE_PERIOD, ->get_sample
   end
 
-  def read_io(index : Int) : UInt8
-    case index
-    when @channel1 then @channel1.read_io index
-    when @channel2 then @channel2.read_io index
-    when @channel3 then @channel3.read_io index
-    when @channel4 then @channel4.read_io index
-    when 0xFF24
-      ((@left_enable ? 0b10000000 : 0) | (@left_volume << 4) |
-        (@right_enable ? 0b00001000 : 0) | @right_volume).to_u8
-    when 0xFF25 then @nr51
-    when 0xFF26
-      0x70 |
+  def read_io(io_addr : Int) : UInt8
+    case io_addr
+    when @channel1 then @channel1.read_io io_addr
+    when @channel2 then @channel2.read_io io_addr
+    when @channel3 then @channel3.read_io io_addr
+    when @channel4 then @channel4.read_io io_addr
+    when 0x80      then @soundcnt_l.value.to_u8
+    when 0x81      then (@soundcnt_l.value >> 8).to_u8
+    when 0x82      then @soundcnt_h.value.to_u8
+    when 0x83      then (@soundcnt_h.value >> 8).to_u8
+    when 0x84
+      0x70_u8 |
         (@sound_enabled ? 0x80 : 0) |
         (@channel4.enabled ? 0b1000 : 0) |
         (@channel3.enabled ? 0b0100 : 0) |
         (@channel2.enabled ? 0b0010 : 0) |
         (@channel1.enabled ? 0b0001 : 0)
-    else 0xFF
-    end.to_u8
+    when 0x85 then 0_u8 # unused
+    when 0x88 then @soundbias.value.to_u8
+    when 0x89 then (@soundbias.value >> 8).to_u8
+    else           abort "Unmapped APU read ~ addr:#{hex_str io_addr.to_u8}"
+    end
   end
 
   # write to apu memory
-  def write_io(index : Int, value : UInt8) : Nil
-    return unless @sound_enabled || index == 0x84 || Channel3::WAVE_RAM_RANGE.includes?(index)
-    case index
-    when @channel1 then @channel1.write_io index, value
-    when @channel2 then @channel2.write_io index, value
-    when @channel3 then @channel3.write_io index, value
-    when @channel4 then @channel4.write_io index, value
-    when 0xFF24
-      @left_enable = value & 0b10000000 > 0
-      @left_volume = (value & 0b01110000) >> 4
-      @right_enable = value & 0b00001000 > 0
-      @right_volume = value & 0b00000111
-    when 0xFF25 then @nr51 = value
+  def write_io(io_addr : Int, value : UInt8) : Nil
+    return unless @sound_enabled || io_addr == 0x84 || Channel3::WAVE_RAM_RANGE.includes?(io_addr)
+    case io_addr
+    when @channel1 then @channel1.write_io io_addr, value
+    when @channel2 then @channel2.write_io io_addr, value
+    when @channel3 then @channel3.write_io io_addr, value
+    when @channel4 then @channel4.write_io io_addr, value
+    when 0x80      then @soundcnt_l.value = (@soundcnt_l.value & 0xFF00) | value
+    when 0x81      then @soundcnt_l.value = (@soundcnt_l.value & 0x00FF) | value.to_u16 << 8
+    when 0x82      then @soundcnt_h.value = (@soundcnt_h.value & 0xFF00) | value
+    when 0x83      then @soundcnt_h.value = (@soundcnt_h.value & 0x00FF) | value.to_u16 << 8
     when 0x84
       if value & 0x80 == 0 && @sound_enabled
         (0xFF10..0xFF25).each { |addr| self.write_io addr, 0x00 }
@@ -177,6 +206,10 @@ class APU
         @channel3.length_counter = 0
         @channel4.length_counter = 0
       end
+    when 0x85 # unused
+    when 0x88 then @soundbias.value = (@soundbias.value & 0xFF00) | value
+    when 0x89 then @soundbias.value = (@soundbias.value & 0x00FF) | value.to_u16 << 8
+    else           puts "Unmapped APU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
   end
 end
