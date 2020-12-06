@@ -24,11 +24,11 @@ class MMIO
       @gba.ppu.read_io io_addr
     elsif io_addr <= 0xAF
       @gba.apu.read_io io_addr
-    elsif (io_addr >= 0x200 && io_addr <= 0x203) || (io_addr >= 0x208 && io_addr <= 0x209)
-      @gba.interrupts.read_io io_addr
-    elsif io_addr >= 0x130 && io_addr <= 0x133
+    elsif 0x130 <= io_addr <= 0x133
       @gba.keypad.read_io io_addr
-    elsif io_addr >= 0x204 && io_addr <= 0x205
+    elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
+      @gba.interrupts.read_io io_addr
+    elsif 0x204 <= io_addr <= 0x205
       (@waitcnt.value >> (8 * (io_addr & 1))).to_u8!
     elsif not_used? io_addr
       0xFF_u8 # todo what is returned here?
@@ -44,11 +44,11 @@ class MMIO
       @gba.ppu.write_io io_addr, value
     elsif io_addr <= 0xAF
       @gba.apu.write_io io_addr, value
-    elsif (io_addr >= 0x200 && io_addr <= 0x203) || (io_addr >= 0x208 && io_addr <= 0x209)
-      @gba.interrupts.write_io io_addr, value
-    elsif io_addr >= 0x130 && io_addr <= 0x133
+    elsif 0x130 <= io_addr <= 0x133
       @gba.keypad.read_io io_addr
-    elsif io_addr >= 0x204 && io_addr <= 0x205
+    elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
+      @gba.interrupts.write_io io_addr, value
+    elsif 0x204 <= io_addr <= 0x205
       shift = 8 * (io_addr & 1)
       mask = 0xFF00_u16 >> shift
       @waitcnt.value = (@waitcnt.value & mask) | value.to_u16 << shift
