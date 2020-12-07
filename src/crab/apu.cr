@@ -164,10 +164,10 @@ class APU
     when @channel2 then @channel2.read_io io_addr
     when @channel3 then @channel3.read_io io_addr
     when @channel4 then @channel4.read_io io_addr
-    when 0x80      then @soundcnt_l.value.to_u8
-    when 0x81      then (@soundcnt_l.value >> 8).to_u8
-    when 0x82      then @soundcnt_h.value.to_u8
-    when 0x83      then (@soundcnt_h.value >> 8).to_u8
+    when 0x80      then @soundcnt_l.value.to_u8!
+    when 0x81      then (@soundcnt_l.value >> 8).to_u8!
+    when 0x82      then @soundcnt_h.value.to_u8!
+    when 0x83      then (@soundcnt_h.value >> 8).to_u8!
     when 0x84
       0x70_u8 |
         (@sound_enabled ? 0x80 : 0) |
@@ -176,8 +176,8 @@ class APU
         (@channel2.enabled ? 0b0010 : 0) |
         (@channel1.enabled ? 0b0001 : 0)
     when 0x85 then 0_u8 # unused
-    when 0x88 then @soundbias.value.to_u8
-    when 0x89 then (@soundbias.value >> 8).to_u8
+    when 0x88 then @soundbias.value.to_u8!
+    when 0x89 then (@soundbias.value >> 8).to_u8!
     else           abort "Unmapped APU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
