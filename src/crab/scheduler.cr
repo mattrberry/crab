@@ -5,12 +5,16 @@ class Scheduler
     APUChannel2
     APUChannel3
     APUChannel4
+    Timer0
+    Timer1
+    Timer2
+    Timer3
   end
 
   private record Event, cycles : UInt64, proc : Proc(Void), type : EventType
 
   @events : Deque(Event) = Deque(Event).new 10
-  @cycles : UInt64 = 0
+  getter cycles : UInt64 = 0
   @next_event : UInt64 = UInt64::MAX
 
   def schedule(cycles : Int, proc : Proc(Void), type = EventType::DEFAULT) : Nil

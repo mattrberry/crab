@@ -3,6 +3,7 @@ require "./util"
 require "./scheduler"
 require "./cartridge"
 require "./mmio"
+require "./timer"
 require "./keypad"
 require "./bus"
 require "./interrupts"
@@ -16,6 +17,7 @@ class GBA
   getter! scheduler : Scheduler
   getter! cartridge : Cartridge
   getter! mmio : MMIO
+  getter! timer : Timer
   getter! keypad : Keypad
   getter! bus : Bus
   getter! interrupts : Interrupts
@@ -37,6 +39,7 @@ class GBA
 
   def post_init : Nil
     @mmio = MMIO.new self
+    @timer = Timer.new self
     @keypad = Keypad.new
     @bus = Bus.new self, @bios_path
     @interrupts = Interrupts.new self

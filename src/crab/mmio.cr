@@ -24,6 +24,8 @@ class MMIO
       @gba.ppu.read_io io_addr
     elsif io_addr <= 0xAF
       @gba.apu.read_io io_addr
+    elsif 0x100 <= io_addr <= 0x10F
+      @gba.timer.read_io io_addr
     elsif 0x130 <= io_addr <= 0x133
       @gba.keypad.read_io io_addr
     elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
@@ -44,6 +46,8 @@ class MMIO
       @gba.ppu.write_io io_addr, value
     elsif io_addr <= 0xAF
       @gba.apu.write_io io_addr, value
+    elsif 0x100 <= io_addr <= 0x10F
+      @gba.timer.write_io io_addr, value
     elsif 0x130 <= io_addr <= 0x133
       @gba.keypad.read_io io_addr
     elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
