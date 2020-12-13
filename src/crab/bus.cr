@@ -36,7 +36,7 @@ class Bus
   def read_half_rotate(index : Int) : Word
     half = read_half index
     bits = (index & 1) << 3
-    shift = half >> bits | half << (32 - bits)
+    half >> bits | half << (32 - bits)
   end
 
   # On ARM7 aka ARMv4 aka NDS7/GBA:
@@ -60,7 +60,7 @@ class Bus
   def read_word_rotate(index : Int) : Word
     word = read_word index
     bits = (index & 3) << 3
-    shift = word >> bits | word << (32 - bits)
+    word >> bits | word << (32 - bits)
   end
 
   def []=(index : Int, value : Byte) : Nil

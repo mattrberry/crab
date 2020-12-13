@@ -51,7 +51,7 @@ class Display
   end
 
   private def setup_gl : Nil
-    glcontext = LibSDL.gl_create_context @window
+    LibSDL.gl_create_context @window
     shader_program = LibGL.create_program
 
     LibSDL.gl_set_attribute LibSDL::GLattr::SDL_GL_CONTEXT_MAJOR_VERSION, 4
