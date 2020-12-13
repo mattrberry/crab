@@ -11,6 +11,7 @@ require "./cpu"
 require "./display"
 require "./ppu"
 require "./apu"
+require "./dma"
 require "./debugger"
 
 class GBA
@@ -25,6 +26,7 @@ class GBA
   getter! display : Display
   getter! ppu : PPU
   getter! apu : APU
+  getter! dma : DMA
   getter! debugger : Debugger
 
   def initialize(@bios_path : String, rom_path : String)
@@ -47,6 +49,7 @@ class GBA
     @display = Display.new
     @ppu = PPU.new self
     @apu = APU.new self
+    @dma = DMA.new self
     @debugger = Debugger.new self
   end
 
