@@ -154,23 +154,23 @@ class PPU
   def start_hblank : Nil
     @gba.scheduler.schedule 272, ->end_hblank
     @dispstat.hblank = true
-    @gba.interrupts.reg_if.hblank = false
-    @gba.interrupts.schedule_interrupt_check
+    @gba.interrupts.reg_if.hblank = @dispstat.hblank_irq_enable
+    @gba.interrupts.schedule_interrupt_check if @dispstat.hblank_irq_enable
     scanline if @vcount < 160
   end
 
   def end_hblank : Nil
     @dispstat.hblank = false
-    @gba.interrupts.reg_if.hblank = @dispstat.hblank_irq_enable
-    @vcount += 1
-    @vcount %= 228
+    @gba.interrupts.reg_if.hblank = false
+    @vcount = (@vcount + 1) % 228
     @dispstat.vcounter = @vcount == @dispstat.vcount_setting
-    @gba.interrupts.reg_if.vcounter == @dispstat.vcounter_irq_enable && @dispstat.vcounter
+    @gba.interrupts.reg_if.vcounter = @dispstat.vcounter_irq_enable && @dispstat.vcounter
     if @vcount == 0
       @dispstat.vblank = false
+      @gba.interrupts.reg_if.vblank = false
     elsif @vcount == 160
       @dispstat.vblank = true
-      @gba.interrupts.reg_if.vblank = @dispstat.vblank_irq_enable && @dispstat.vblank
+      @gba.interrupts.reg_if.vblank = @dispstat.vblank_irq_enable
       draw
     end
     @gba.interrupts.schedule_interrupt_check
@@ -211,7 +211,6 @@ class PPU
       240.times do |col|
         effective_col = (col + @bg0hofs.value) % (tw << 3)
         tx = effective_col >> 3
-        x = effective_col & 7
 
         se_idx = se_index(tx, ty, @bg0cnt.screen_size)
         screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
