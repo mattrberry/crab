@@ -12,6 +12,8 @@ class Timer
     end
   end
 
+  @interrupt_events : Array(Proc(Nil))
+
   def initialize(@gba : GBA)
     @tmcnt = Array(TMCNT).new 4 { TMCNT.new 0 }
     @tmd = Array(UInt16).new 4, 0                       # reload values
@@ -19,6 +21,8 @@ class Timer
     @cycle_enabled = Array(UInt64).new 4, 0             # cycle that the timer was enabled
     @events = Array(Proc(Nil)).new 4 { |i| overflow i } # overflow closures for each timer
     @event_types = [Scheduler::EventType::Timer0, Scheduler::EventType::Timer1, Scheduler::EventType::Timer2, Scheduler::EventType::Timer3]
+    @interrupt_events = [->{ @gba.interrupts.reg_if.timer0 = true }, ->{ @gba.interrupts.reg_if.timer1 = true },
+                         ->{ @gba.interrupts.reg_if.timer2 = true }, ->{ @gba.interrupts.reg_if.timer3 = true }]
   end
 
   def overflow(timer_number : Int) : Proc(Nil)
@@ -26,10 +30,16 @@ class Timer
     ->{
       puts "overflowed timer #{timer_number}".colorize.fore(:green)
       @tm[timer_number] = @tmd[timer_number]
-      cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0xFFFF - @tm[timer_number])
       if timer_number < 3
-        @tm[timer_number + 1] &+= 1 if @tmcnt[timer_number + 1].cascade && @tmcnt[timer_number + 1].enable
+        next_timer_number = timer_number + 1
+        if @tmcnt[next_timer_number].cascade && @tmcnt[next_timer_number].enable
+          @tm[next_timer_number] &+= 1
+          @events[next_timer_number].call if @tm[next_timer_number] == 0 # tell the next timer that it has overflowed
+        end
       end
+      @interrupt_events[timer_number].call
+      @gba.interrupts.schedule_interrupt_check if tmcnt.irq_enable
+      cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0xFFFF - @tm[timer_number])
       puts "  scheduling overflow for timer #{timer_number} in #{cycles_until_overflow} cycles" unless tmcnt.cascade
       @gba.scheduler.schedule cycles_until_overflow, @events[timer_number], @event_types[timer_number] unless tmcnt.cascade
     }
