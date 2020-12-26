@@ -56,6 +56,7 @@ class Interrupts
   private def check_interrupts : Nil
     if @reg_ie.value & @reg_if.value != 0
       @gba.cpu.halted = false
+      # puts "IE:#{hex_str @reg_ie.value} & IF:#{hex_str @reg_if.value} != 0"
       @gba.cpu.irq if @ime
     end
   end

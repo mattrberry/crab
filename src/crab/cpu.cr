@@ -58,12 +58,14 @@ class CPU
     @r[15] = 0x08000000
   end
 
-  def switch_mode(new_mode : Mode) : Nil
+  def switch_mode(new_mode : Mode, caller = __FILE__) : Nil
     old_mode = Mode.from_value @cpsr.mode
     return if new_mode == old_mode
     new_bank = new_mode.bank
     old_bank = old_mode.bank
+    # puts "switching mode from #{old_mode} to #{new_mode}, cpsr:#{hex_str @cpsr.value}, spsr:#{hex_str @spsr.value}, new bank:#{new_bank}, caller:#{caller}"
     if new_mode == Mode::FIQ || old_mode == Mode::FIQ
+      # puts "  One of the modes is FIQ, switching out FIQ regs"
       5.times do |idx|
         @reg_banks[old_bank][idx] = @r[8 + idx]
         @r[8 + idx] = @reg_banks[new_bank][idx]
@@ -78,9 +80,11 @@ class CPU
     @r[14] = @reg_banks[new_bank][6]
     @spsr.value = @cpsr.value
     @cpsr.mode = new_mode.value
+    # puts "                                cpsr:#{hex_str @cpsr.value}, spsr:#{hex_str @spsr.value}"
   end
 
   def irq : Nil
+    # puts "ime is enabled, cpsr:#{hex_str @cpsr.value}, cpsr.irq_disable:#{@cpsr.irq_disable}"
     unless @cpsr.irq_disable
       fill_pipeline
       lr = @r[15] - (@cpsr.thumb ? 0 : 4)

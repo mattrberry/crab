@@ -17,47 +17,10 @@ class APU
   FRAME_SEQUENCER_RATE   = 512 # Hz
   FRAME_SEQUENCER_PERIOD = CPU::CLOCK_SPEED // FRAME_SEQUENCER_RATE
 
-  class SOUNDCNT_L < BitField(UInt16)
-    num channel_4_left, 1
-    num channel_3_left, 1
-    num channel_2_left, 1
-    num channel_1_left, 1
-    num channel_4_right, 1
-    num channel_3_right, 1
-    num channel_2_right, 1
-    num channel_1_right, 1
-    bool not_used_1, lock: true
-    num left_volume, 3
-    bool not_used_2, lock: true
-    num right_volume, 3
-  end
-
-  class SOUNDCNT_H < BitField(UInt16)
-    bool dma_sound_b_reset, lock: true
-    num dma_sound_b_timer, 1
-    bool dma_sound_b_left
-    bool dma_sound_b_right
-    bool dma_sound_a_reset, lock: true
-    num dma_sound_a_timer, 1
-    bool dma_sound_a_left
-    bool dma_sound_a_right
-    num not_used, 4, lock: true
-    bool dma_sound_b_volume
-    bool dma_sound_a_volume
-    num sound_volume, 2
-  end
-
-  class SOUNDBIAS < BitField(UInt16)
-    num amplitude_resolution, 2
-    num not_used_1, 4
-    num bias_level, 9
-    bool not_used_2
-  end
-
-  @soundcnt_l = SOUNDCNT_L.new 0
-  @soundcnt_h = SOUNDCNT_H.new 0
+  @soundcnt_l = Reg::SOUNDCNT_L.new 0
+  getter soundcnt_h = Reg::SOUNDCNT_H.new 0
   @sound_enabled : Bool = false
-  @soundbias = SOUNDBIAS.new 0
+  @soundbias = Reg::SOUNDBIAS.new 0
 
   @buffer = Slice(Float32).new BUFFER_SIZE
   @buffer_pos = 0
@@ -82,7 +45,7 @@ class APU
     @channel2 = Channel2.new @gba
     @channel3 = Channel3.new @gba
     @channel4 = Channel4.new @gba
-    @dma_channels = DMAChannels.new @gba
+    @dma_channels = DMAChannels.new @gba, @soundcnt_h
 
     tick_frame_sequencer
     get_sample
@@ -135,16 +98,20 @@ class APU
     channel2_amp = @channel2.get_amplitude
     channel3_amp = @channel3.get_amplitude
     channel4_amp = @channel4.get_amplitude
+    dma_amp = @dma_channels.get_amplitude
     @buffer[@buffer_pos] = (@soundcnt_l.left_volume / 7).to_f32 *
                            ((channel4_amp * @soundcnt_l.channel_4_left) +
                             (channel3_amp * @soundcnt_l.channel_3_left) +
                             (channel2_amp * @soundcnt_l.channel_2_left) +
-                            (channel1_amp * @soundcnt_l.channel_1_left)) / 4
+                            (channel1_amp * @soundcnt_l.channel_1_left) +
+                            (dma_amp)) / 5
     @buffer[@buffer_pos + 1] = (@soundcnt_l.right_volume).to_f32 *
                                ((channel4_amp * @soundcnt_l.channel_4_right) +
                                 (channel3_amp * @soundcnt_l.channel_3_right) +
                                 (channel2_amp * @soundcnt_l.channel_2_right) +
-                                (channel1_amp * @soundcnt_l.channel_1_right)) / 4
+                                (channel1_amp * @soundcnt_l.channel_1_right) +
+                                (dma_amp)) / 5
+    abort @buffer[@buffer_pos] if @buffer[@buffer_pos].abs > 1
     @buffer_pos += 2
 
     # push to SDL if buffer is full
@@ -157,6 +124,10 @@ class APU
     end
 
     @gba.scheduler.schedule SAMPLE_PERIOD, ->get_sample
+  end
+
+  def timer_overflow(timer : Int) : Nil
+    @dma_channels.timer_overflow timer
   end
 
   def read_io(io_addr : Int) : UInt8
@@ -214,5 +185,7 @@ class APU
     when 0x89 then @soundbias.value = (@soundbias.value & 0x00FF) | value.to_u16 << 8
     else           puts "Unmapped APU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
+
+    puts "SOUNDCNT_H(vol:#{@soundcnt_h.sound_volume}, a_vol:#{@soundcnt_h.dma_sound_a_volume}, b_vol:#{@soundcnt_h.dma_sound_b_volume}, a_right:#{@soundcnt_h.dma_sound_a_right}, a_left:#{@soundcnt_h.dma_sound_a_left}, a_timer:#{@soundcnt_h.dma_sound_a_timer}, b_right:#{@soundcnt_h.dma_sound_b_right}, b_left:#{@soundcnt_h.dma_sound_b_left}, b_timer:#{@soundcnt_h.dma_sound_b_timer}".colorize.fore(:blue) if 0x82 <= io_addr <= 0x83
   end
 end

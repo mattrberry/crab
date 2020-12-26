@@ -79,11 +79,13 @@ module ARM
     end
     @r[15] &-= 4 if pc_reads_12_ahead
     if rd == 15 && set_conditions
+      # puts "returning"
       old_spsr = @spsr.value
       new_mode = CPU::Mode.from_value(@spsr.mode)
       switch_mode new_mode
       @cpsr.value = old_spsr
       @spsr.value = new_mode.bank == 0 ? @cpsr.value : @spsr_banks[new_mode.bank]
+      # puts "                                cpsr:#{hex_str @cpsr.value}, spsr:#{hex_str @spsr.value}"
     end
   end
 end

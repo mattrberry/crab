@@ -11,7 +11,7 @@ class DMA
     num not_used, 5
 
     def to_s(io)
-      io << "enable:#{enable},irq:#{irq_enable},timing:#{start_timing},game_pak:#{game_pak},type:#{type},repeat:#{repeat},srcctl:#{source_control},dstctl:#{dest_control}"
+      io << "enable:#{enable}, irq:#{irq_enable}, timing:#{start_timing}, game_pak:#{game_pak}, type:#{type}, repeat:#{repeat}, srcctl:#{source_control}, dstctl:#{dest_control}"
     end
   end
 
@@ -69,37 +69,45 @@ class DMA
       dmacnt_h = @dmacnt_h[dma_number]
       enabled = dmacnt_h.enable
       dmacnt_h.value = (dmacnt_h.value & ~mask) | value
-      if dmacnt_h.enable && !enabled
-        puts "DMA channel ##{dma_number} enabled, #{hex_str @dmasad[dma_number]} -> #{hex_str @dmadad[dma_number]}"
-        puts dmacnt_h.to_s
-        puts "Unsupported DMA start timing: #{dmacnt_h.start_timing}".colorize.fore(:yellow) unless dmacnt_h.start_timing == 0
-        puts "Unsupported DMA src addr control: #{dmacnt_h.source_control}".colorize.fore(:yellow) unless 0 <= dmacnt_h.source_control <= 1
-        puts "Unsupported DMA dst addr control: #{dmacnt_h.dest_control}".colorize.fore(:yellow) unless 0 <= dmacnt_h.dest_control <= 1
-        delta = 2 << dmacnt_h.type
-        ds = delta * case dmacnt_h.source_control
-        when 0 then 1
-        when 1 then -1
-        when 2 then 0
-        when 3 then puts "Prohibited source control".colorize.fore(:red); 1
-        else        abort "Impossible source control: #{dmacnt_h.source_control}"
-        end
-        dd = delta * case dmacnt_h.dest_control
-        when 0 then 1
-        when 1 then -1
-        when 2 then 0
-        when 3 then 1 # todo: reload
-        else        abort "Impossible source control: #{dmacnt_h.dest_control}"
-        end
-        src, dst = @dmasad[dma_number], @dmadad[dma_number]
-        @dmacnt_l[dma_number].times do |idx|
-          # puts "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str src} to #{hex_str dst}"
-          @gba.bus[dst] = dmacnt_h.type == 0 ? @gba.bus.read_half(src).to_u16! : @gba.bus.read_word(src)
-          src += ds
-          dst += dd
-        end
-        dmacnt_h.enable = false
-      end
+      trigger dma_number, on_write: true if dmacnt_h.enable && !enabled
     else abort "Unmapped DMA write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
+    end
+  end
+
+  def trigger(channel : Int, on_write = false) : Nil
+    dmacnt_h = @dmacnt_h[channel]
+    puts "DMA channel ##{channel} enabled, #{hex_str @dmasad[channel]} -> #{hex_str @dmadad[channel]}, len: #{hex_str @dmacnt_l[channel]}"
+    puts "  DMACNT: #{dmacnt_h.to_s}"
+    puts "  TM#{@gba.apu.soundcnt_h.dma_sound_a_timer}CNT: #{@gba.timer.tmcnt[@gba.apu.soundcnt_h.dma_sound_a_timer]}"
+    if dmacnt_h.start_timing == 0 || !on_write
+      special = dmacnt_h.start_timing == 3
+      delta = 2 << dmacnt_h.type                # transfer either halfwords or words
+      delta = 0 if special && 1 <= channel <= 2 # fifo audio always transfers in words
+      ds = delta * case dmacnt_h.source_control
+      when 0 then 1
+      when 1 then -1
+      when 2 then 0
+      when 3 then puts "Prohibited source control".colorize.fore(:red); 1
+      else        abort "Impossible source control: #{dmacnt_h.source_control}"
+      end
+      dd = delta * case dmacnt_h.dest_control
+      when 0 then 1
+      when 1 then -1
+      when 2 then 0
+      when 3 then puts "todo: DMA dst addr reload not yet supported".colorize.fore(:yellow); 1
+      else        abort "Impossible source control: #{dmacnt_h.dest_control}"
+      end
+      src, dst = @dmasad[channel], @dmadad[channel]
+      len = @dmacnt_l[channel]
+      len = 4 if special && 1 <= channel <= 2
+      puts "  Starting transfer of #{len} #{"half" if dmacnt_h.type == 0}words from #{hex_str src} to #{hex_str dst}"
+      len.times do |idx|
+        # puts "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str src} to #{hex_str dst}"
+        @gba.bus[dst] = dmacnt_h.type == 0 ? @gba.bus.read_half(src).to_u16! : @gba.bus.read_word(src)
+        src += ds
+        dst += dd
+      end
+      dmacnt_h.enable = false unless dmacnt_h.dest_control == 3
     end
   end
 end

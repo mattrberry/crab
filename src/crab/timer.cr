@@ -8,9 +8,11 @@ class Timer
     num frequency, 2
 
     def to_s(io)
-      io << "TMCNT(enable:#{enable},irq:#{irq_enable},cascade:#{cascade},freq:#{frequency}"
+      io << "enable:#{enable}, irq:#{irq_enable}, cascade:#{cascade}, freq:#{frequency}"
     end
   end
+
+  getter tmcnt
 
   @interrupt_events : Array(Proc(Nil))
 
@@ -37,6 +39,7 @@ class Timer
           @events[next_timer_number].call if @tm[next_timer_number] == 0 # tell the next timer that it has overflowed
         end
       end
+      @gba.apu.timer_overflow timer_number if timer_number <= 1
       @interrupt_events[timer_number].call
       @gba.interrupts.schedule_interrupt_check if tmcnt.irq_enable
       cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0xFFFF - @tm[timer_number])
@@ -64,7 +67,6 @@ class Timer
   def write_io(io_addr : Int, value : UInt8) : Nil
     timer_number = (io_addr & 0xFF) // 4
     timer_control = bit?(io_addr, 1)
-    puts "io_addr: #{hex_str io_addr.to_u16}, value: #{hex_str value}, timer number: #{timer_number}, timer_control: #{timer_control}"
     high = bit?(io_addr, 0)
     mask = 0xFF_u16
     mask <<= 8 unless high
@@ -72,27 +74,26 @@ class Timer
     if timer_control
       # todo: properly handle disabling / enabling timers via `cascade` field
       tmcnt = @tmcnt[timer_number]
-      puts "  updating TM#{timer_number}CNT from #{hex_str tmcnt.value} to #{hex_str (tmcnt.value & mask) | value}"
-      puts "  #{tmcnt.to_s}"
       enabled = tmcnt.enable
       tmcnt.value = (tmcnt.value & mask) | value
       if tmcnt.enable && !enabled # enabled
-        puts "  enabling".colorize.mode(:bold)
+        puts "Timer #{timer_number} enabled, freq: #{hex_str freq_to_cycles(tmcnt.frequency)}, tm:#{hex_str @tm[timer_number]}"
+        puts "  TMCNT: #{tmcnt.to_s}"
         @cycle_enabled[timer_number] = @gba.scheduler.cycles
         @tm[timer_number] = @tmd[timer_number]
-        puts "  freq_to_cycles(#{tmcnt.frequency}) -> #{hex_str freq_to_cycles(tmcnt.frequency)}, @tm[#{timer_number}] -> #{hex_str @tm[timer_number]}, 0xFFFF - @tm[#{timer_number}] -> #{0xFFFF - @tm[timer_number]}"
+        # puts "  freq_to_cycles(#{tmcnt.frequency}) -> #{hex_str freq_to_cycles(tmcnt.frequency)}, @tm[#{timer_number}] -> #{hex_str @tm[timer_number]}, 0xFFFF - @tm[#{timer_number}] -> #{0xFFFF - @tm[timer_number]}"
         cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0xFFFF - @tm[timer_number])
-        puts "  scheduling overflow for timer #{timer_number} in #{cycles_until_overflow} cycles"
+        puts "  Scheduling overflow for timer #{timer_number} in #{cycles_until_overflow} cycles"
         @gba.scheduler.schedule cycles_until_overflow, @events[timer_number], @event_types[timer_number] unless tmcnt.cascade
       elsif !tmcnt.enable && enabled # disabled
-        puts "  disabling".colorize.mode(:bold)
+        puts "Timer #{timer_number} disabled".colorize.mode(:bold)
         elapsed = @gba.scheduler.cycles - @cycle_enabled[timer_number]
         @tm[timer_number] &+= elapsed // freq_to_cycles(tmcnt.frequency)
         @gba.scheduler.clear @event_types[timer_number]
       end
     else
       tmd = @tmd[timer_number]
-      puts "  updating TM#{timer_number}D from #{hex_str tmd} to #{hex_str (tmd & mask) | value}"
+      # puts "  updating TM#{timer_number}D from #{hex_str tmd} to #{hex_str (tmd & mask) | value}"
       @tmd[timer_number] = (tmd & mask) | value
     end
   end

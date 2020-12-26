@@ -1,4 +1,5 @@
 require "./types"
+require "./reg"
 require "./util"
 require "./scheduler"
 require "./cartridge"
