@@ -20,6 +20,8 @@ class DMA
     @dmadad = Array(UInt32).new 4, 0
     @dmacnt_l = Array(UInt16).new 4, 0
     @dmacnt_h = Array(DMACNT).new 4 { DMACNT.new 0 }
+    @src = Array(UInt32).new 4, 0
+    @dst = Array(UInt32).new 4, 0
     @src_mask = [0x07FFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF]
     @dst_mask = [0x07FFFFFF, 0x07FFFFFF, 0x07FFFFFF, 0x0FFFFFFF]
     @len_mask = [0x3FFF, 0x3FFF, 0x3FFF, 0xFFFF]
@@ -69,7 +71,10 @@ class DMA
       dmacnt_h = @dmacnt_h[dma_number]
       enabled = dmacnt_h.enable
       dmacnt_h.value = (dmacnt_h.value & ~mask) | value
-      trigger dma_number, on_write: true if dmacnt_h.enable && !enabled
+      if dmacnt_h.enable && !enabled
+        trigger dma_number, on_write: true
+        @src[dma_number], @dst[dma_number] = @dmasad[dma_number], @dmadad[dma_number]
+      end
     else abort "Unmapped DMA write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
   end
@@ -81,8 +86,9 @@ class DMA
     puts "  TM#{@gba.apu.soundcnt_h.dma_sound_a_timer}CNT: #{@gba.timer.tmcnt[@gba.apu.soundcnt_h.dma_sound_a_timer]}"
     if dmacnt_h.start_timing == 0 || !on_write
       special = dmacnt_h.start_timing == 3
-      delta = 2 << dmacnt_h.type                # transfer either halfwords or words
-      delta = 0 if special && 1 <= channel <= 2 # fifo audio always transfers in words
+      fifo_dma = special && 1 <= channel <= 2
+      delta = 2 << dmacnt_h.type # transfer either halfwords or words
+      delta = 4 if fifo_dma      # fifo audio always transfers in words
       ds = delta * case dmacnt_h.source_control
       when 0 then 1
       when 1 then -1
@@ -97,15 +103,15 @@ class DMA
       when 3 then puts "todo: DMA dst addr reload not yet supported".colorize.fore(:yellow); 1
       else        abort "Impossible source control: #{dmacnt_h.dest_control}"
       end
-      src, dst = @dmasad[channel], @dmadad[channel]
+      dd = 0 if fifo_dma # fifo audio doesn't increment destination
       len = @dmacnt_l[channel]
       len = 4 if special && 1 <= channel <= 2
-      puts "  Starting transfer of #{len} #{"half" if dmacnt_h.type == 0}words from #{hex_str src} to #{hex_str dst}"
+      puts "  Starting transfer of #{len} #{"half" if dmacnt_h.type == 0}words from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
       len.times do |idx|
-        # puts "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str src} to #{hex_str dst}"
-        @gba.bus[dst] = dmacnt_h.type == 0 ? @gba.bus.read_half(src).to_u16! : @gba.bus.read_word(src)
-        src += ds
-        dst += dd
+        # puts "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
+        @gba.bus[@dst[channel]] = !fifo_dma && dmacnt_h.type == 0 ? @gba.bus.read_half(@src[channel]).to_u16! : @gba.bus.read_word(@src[channel])
+        @src[channel] += ds
+        @dst[channel] += dd
       end
       dmacnt_h.enable = false unless dmacnt_h.dest_control == 3
     end

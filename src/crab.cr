@@ -5,6 +5,8 @@ require "sdl"
 
 require "./crab/gba"
 
+Colorize.on_tty_only!
+
 module Crab
   VERSION = "0.1.0"
 
