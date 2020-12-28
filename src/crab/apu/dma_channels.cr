@@ -50,8 +50,7 @@ class DMAChannels
     end
   end
 
-  def get_amplitude : Float32
-    # STDERR.puts @latches.sum / 2 #unless -0.001 < @latches.sum / 2 < 0.001
-    @latches.sum / 2
+  def get_amplitude : Tuple(Float32, Float32)
+    {@latches[0], @latches[1]}
   end
 end

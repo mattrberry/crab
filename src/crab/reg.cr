@@ -20,15 +20,15 @@ module Reg
   class SOUNDCNT_H < BitField(UInt16)
     bool dma_sound_b_reset, lock: true
     num dma_sound_b_timer, 1
-    bool dma_sound_b_left
-    bool dma_sound_b_right
+    num dma_sound_b_left, 1
+    num dma_sound_b_right, 1
     bool dma_sound_a_reset, lock: true
     num dma_sound_a_timer, 1
-    bool dma_sound_a_left
-    bool dma_sound_a_right
+    num dma_sound_a_left, 1
+    num dma_sound_a_right, 1
     num not_used, 4, lock: true
-    bool dma_sound_b_volume
-    bool dma_sound_a_volume
+    num dma_sound_b_volume, 1
+    num dma_sound_a_volume, 1
     num sound_volume, 2
   end
 

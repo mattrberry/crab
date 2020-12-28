@@ -94,24 +94,40 @@ class APU
   end
 
   def get_sample : Nil
-    channel1_amp = @channel1.get_amplitude
-    channel2_amp = @channel2.get_amplitude
-    channel3_amp = @channel3.get_amplitude
-    channel4_amp = @channel4.get_amplitude
-    dma_amp = @dma_channels.get_amplitude
-    @buffer[@buffer_pos] = (@soundcnt_l.left_volume / 7).to_f32 *
-                           ((channel4_amp * @soundcnt_l.channel_4_left) +
-                            (channel3_amp * @soundcnt_l.channel_3_left) +
-                            (channel2_amp * @soundcnt_l.channel_2_left) +
-                            (channel1_amp * @soundcnt_l.channel_1_left) +
-                            (dma_amp)) / 5
-    @buffer[@buffer_pos + 1] = (@soundcnt_l.right_volume).to_f32 *
-                               ((channel4_amp * @soundcnt_l.channel_4_right) +
-                                (channel3_amp * @soundcnt_l.channel_3_right) +
-                                (channel2_amp * @soundcnt_l.channel_2_right) +
-                                (channel1_amp * @soundcnt_l.channel_1_right) +
-                                (dma_amp)) / 5
-    abort @buffer[@buffer_pos] if @buffer[@buffer_pos].abs > 1
+    abort "Prohibited sound 1-4 volume #{@soundcnt_h.sound_volume}" if @soundcnt_h.sound_volume >= 3
+    psg_master_volume = ((100 >> (2 - @soundcnt_h.sound_volume)) / 100).to_f32
+    psg_sound = ((@channel1.get_amplitude * @soundcnt_l.channel_1_left) +
+                 (@channel2.get_amplitude * @soundcnt_l.channel_2_left) +
+                 (@channel3.get_amplitude * @soundcnt_l.channel_3_left) +
+                 (@channel4.get_amplitude * @soundcnt_l.channel_4_left)) / 4
+    psg_left = psg_master_volume *
+               (@soundcnt_l.left_volume / 7) *
+               psg_sound
+    psg_right = psg_master_volume *
+                (@soundcnt_l.right_volume / 7) *
+                psg_sound
+
+    dma_a, dma_b = @dma_channels.get_amplitude
+    vol_a = ((100 >> (1 - @soundcnt_h.dma_sound_a_volume)) / 100).to_f32
+    vol_b = ((100 >> (1 - @soundcnt_h.dma_sound_b_volume)) / 100).to_f32
+    dma_left = ((dma_a * @soundcnt_h.dma_sound_a_left * vol_a) +
+                (dma_b * @soundcnt_h.dma_sound_b_left * vol_a)) / 2
+    dma_right = ((dma_a * @soundcnt_h.dma_sound_a_right * vol_a) +
+                 (dma_b * @soundcnt_h.dma_sound_b_right * vol_a)) / 2
+
+    @buffer[@buffer_pos] = (psg_left + dma_left) / 2
+    @buffer[@buffer_pos + 1] = (psg_right + dma_right) / 2
+
+    if @buffer[@buffer_pos].abs > 1 || @buffer[@buffer_pos + 1].abs > 1
+      STDERR.puts "Left:  #{@buffer[@buffer_pos]}"
+      STDERR.puts "  PSG: #{psg_left}"
+      STDERR.puts "  DMA: #{dma_right}"
+      STDERR.puts "Right: #{@buffer[@buffer_pos + 1]}"
+      STDERR.puts "  PSG: #{psg_right}"
+      STDERR.puts "  DMA: #{dma_right}"
+      exit 1
+    end
+
     @buffer_pos += 2
 
     # push to SDL if buffer is full
