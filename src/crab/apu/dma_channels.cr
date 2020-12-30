@@ -23,13 +23,12 @@ class DMAChannels
   end
 
   def write_io(index : Int, value : Byte) : Nil
-    puts "DMA FIFO write: #{hex_str index.to_u16} -> #{hex_str value}"
     channel = bit?(index, 2).to_unsafe
     if @sizes[channel] < 32
       @fifos[channel][(@positions[channel] + @sizes[channel]) % 32] = value.to_i8!
       @sizes[channel] += 1
     else
-      puts "  Writing #{hex_str value} to fifo #{(channel + 65).chr}, but it's already full".colorize.fore(:red)
+      log "Writing #{hex_str value} to fifo #{(channel + 65).chr}, but it's already full".colorize.fore(:red)
     end
   end
 
@@ -37,15 +36,15 @@ class DMAChannels
     (0..1).each do |channel|
       if timer == @timers[channel].call
         if @sizes[channel] > 0
+          log "Timer overflow good; channel:#{channel}, timer:#{timer}".colorize.fore(:yellow)
           @latches[channel] = (@fifos[channel][@positions[channel]] / 128).to_f32
           @positions[channel] = (@positions[channel] + 1) % 32
           @sizes[channel] -= 1
         else
-          puts "Timer overflow but empty".colorize.fore(:yellow)
+          log "Timer overflow but empty; channel:#{channel}, timer:#{timer}".colorize.fore(:yellow)
           @latches[channel] = 0
         end
       end
-      puts "Triggering dma for channel #{channel} / #{channel + 1}" if @sizes[channel] < 16
       @gba.dma.trigger channel + 1 if @sizes[channel] < 16
     end
   end

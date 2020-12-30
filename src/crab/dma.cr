@@ -81,9 +81,9 @@ class DMA
 
   def trigger(channel : Int, on_write = false) : Nil
     dmacnt_h = @dmacnt_h[channel]
-    puts "DMA channel ##{channel} enabled, #{hex_str @dmasad[channel]} -> #{hex_str @dmadad[channel]}, len: #{hex_str @dmacnt_l[channel]}"
-    puts "  DMACNT: #{dmacnt_h.to_s}"
-    puts "  TM#{@gba.apu.soundcnt_h.dma_sound_a_timer}CNT: #{@gba.timer.tmcnt[@gba.apu.soundcnt_h.dma_sound_a_timer]}"
+    log "DMA channel ##{channel} enabled, #{hex_str @dmasad[channel]} -> #{hex_str @dmadad[channel]}, len: #{hex_str @dmacnt_l[channel]}"
+    log "  DMACNT: #{dmacnt_h.to_s}"
+    log "  TM#{@gba.apu.soundcnt_h.dma_sound_a_timer}CNT: #{@gba.timer.tmcnt[@gba.apu.soundcnt_h.dma_sound_a_timer]}"
     if dmacnt_h.start_timing == 0 || !on_write
       special = dmacnt_h.start_timing == 3
       fifo_dma = special && 1 <= channel <= 2
@@ -105,10 +105,10 @@ class DMA
       end
       dd = 0 if fifo_dma # fifo audio doesn't increment destination
       len = @dmacnt_l[channel]
-      len = 4 if special && 1 <= channel <= 2
-      puts "  Starting transfer of #{len} #{"half" if dmacnt_h.type == 0}words from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
+      len = 4 if fifo_dma
+      log "  Starting transfer of #{len} #{"half" if dmacnt_h.type == 0}words from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
       len.times do |idx|
-        # puts "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
+        log "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
         @gba.bus[@dst[channel]] = !fifo_dma && dmacnt_h.type == 0 ? @gba.bus.read_half(@src[channel]).to_u16! : @gba.bus.read_word(@src[channel])
         @src[channel] += ds
         @dst[channel] += dd

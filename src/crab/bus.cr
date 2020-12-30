@@ -67,7 +67,7 @@ class Bus
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
     return if bits(index, 28..31) > 0
     case bits(index, 24..27)
-    when 0x0 then puts "Writing to bios - #{hex_str index.to_u32}: #{hex_str value}"
+    when 0x0 then log "Writing to bios - #{hex_str index.to_u32}: #{hex_str value}"
     when 0x2 then @wram_board[index & 0x3FFFF] = value
     when 0x3 then @wram_chip[index & 0x7FFF] = value
     when 0x4 then @gba.mmio[index] = value
@@ -77,7 +77,7 @@ class Bus
       address -= 0x8000 if address > 0x17FFF
       @gba.ppu.vram[address] = value
     when 0x7      then @gba.ppu.oam[index & 0x3FF] = value
-    when 0x8, 0x9 then puts "Writing to cart - #{hex_str index.to_u32}: #{hex_str value}"
+    when 0x8, 0x9 then log "Writing to cart - #{hex_str index.to_u32}: #{hex_str value}"
     when 0xE      then @gba.cartridge.sram[index & 0xFFFF] = value
     else               abort "Unmapped write: #{hex_str index.to_u32}"
     end
