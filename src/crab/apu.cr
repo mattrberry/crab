@@ -199,7 +199,8 @@ class APU
     when 0x85 # unused
     when 0x88 then @soundbias.value = (@soundbias.value & 0xFF00) | value
     when 0x89 then @soundbias.value = (@soundbias.value & 0x00FF) | value.to_u16 << 8
-    else           puts "Unmapped APU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
+    when 0xA8..0xAF # unused
+    else puts "Unmapped APU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
 
     puts "SOUNDCNT_H(vol:#{@soundcnt_h.sound_volume}, a_vol:#{@soundcnt_h.dma_sound_a_volume}, b_vol:#{@soundcnt_h.dma_sound_b_volume}, a_right:#{@soundcnt_h.dma_sound_a_right}, a_left:#{@soundcnt_h.dma_sound_a_left}, a_timer:#{@soundcnt_h.dma_sound_a_timer}, b_right:#{@soundcnt_h.dma_sound_b_right}, b_left:#{@soundcnt_h.dma_sound_b_left}, b_timer:#{@soundcnt_h.dma_sound_b_timer}".colorize.fore(:blue) if 0x82 <= io_addr <= 0x83
