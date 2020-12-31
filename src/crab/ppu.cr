@@ -111,7 +111,7 @@ class PPU
     num evy_coefficient, 5
   end
 
-  @framebuffer : Bytes = Bytes.new 0x12C00 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
+  @framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
 
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
@@ -191,6 +191,8 @@ class PPU
   end
 
   def scanline : Nil
+    row = @vcount
+    row_base = 240 * row
     case @dispcnt.bg_mode
     when 0
       # todo handle all bg layers
@@ -205,7 +207,6 @@ class PPU
 
       screen_base = 0x800_u32 * @bg0cnt.screen_base_block
       character_base = @bg0cnt.character_base_block * 0x4000
-      row = @vcount
       effective_row = (row + @bg0vofs.value) % (th << 3)
       ty = effective_row >> 3
       240.times do |col|
@@ -226,41 +227,36 @@ class PPU
           palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
           pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
         end
-        idx = 240 * row + col
-        @framebuffer[idx * 2] = @pram[pal_idx * 2]
-        @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
+        idx = row_base + col
+        @framebuffer[idx] = @pram.to_unsafe.as(UInt16*)[pal_idx]
       end
     when 1, 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
       240.times do |col|
-        row_base = 240 * 2 * @vcount
-        @framebuffer[row_base + col * 2] = @vram[row_base + col * 2]
-        @framebuffer[row_base + col * 2 + 1] = @vram[row_base + col * 2 + 1]
+        idx = row_base + col
+        @framebuffer[idx] = @vram.to_unsafe.as(UInt16*)[idx]
       end
     when 4
       base = @dispcnt.display_frame_select ? 0xA000 : 0
       240.times do |col|
-        idx = 240 * @vcount + col
+        idx = row_base + col
         pal_idx = @vram[base + idx]
-        @framebuffer[idx * 2] = @pram[pal_idx * 2]
-        @framebuffer[idx * 2 + 1] = @pram[pal_idx * 2 + 1]
+        @framebuffer[idx] = @pram.to_unsafe.as(UInt16*)[pal_idx]
       end
     when 5
       base = @dispcnt.display_frame_select ? 0xA000 : 0
+      background_color = @pram.to_unsafe.as(UInt16*)[0]
       if @vcount < 128
         160.times do |col|
-          @framebuffer[(240 * @vcount + col) * 2] = @vram[base + (@vcount * 160 + col) * 2]
-          @framebuffer[(240 * @vcount + col) * 2 + 1] = @vram[base + (@vcount * 160 + col) * 2 + 1]
+          @framebuffer[row_base + col] = (@vram + base).to_unsafe.as(UInt16*)[row * 160 + col]
         end
         160.to 239 do |col|
-          @framebuffer[(240 * @vcount + col) * 2] = 0x1F
-          @framebuffer[(240 * @vcount + col) * 2 + 1] = 0x7C
+          @framebuffer[row_base + col] = background_color
         end
       else
         240.times do |col|
-          @framebuffer[(240 * @vcount + col) * 2] = 0x1F
-          @framebuffer[(240 * @vcount + col) * 2 + 1] = 0x7C
+          @framebuffer[row_base + col] = background_color
         end
       end
     else abort "Invalid background mode: #{@dispcnt.bg_mode}"

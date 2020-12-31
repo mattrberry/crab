@@ -12,7 +12,7 @@ class Display
     setup_gl
   end
 
-  def draw(framebuffer : Bytes) : Nil
+  def draw(framebuffer : Slice(UInt16)) : Nil
     LibGL.tex_image_2d(LibGL::TEXTURE_2D, 0, LibGL::RGB5, 240, 160, 0, LibGL::RGBA, LibGL::UNSIGNED_SHORT_1_5_5_5_REV, framebuffer)
     LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
     LibSDL.gl_swap_window @window
