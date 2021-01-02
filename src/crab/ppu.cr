@@ -76,39 +76,10 @@ class PPU
     scanline.to_unsafe.clear(240)
     case @dispcnt.bg_mode
     when 0
-      # todo handle all bg layers
-      tw, th = case @bgcnt[0].screen_size
-               when 0b00 then {32, 32} # 32x32
-               when 0b01 then {64, 32} # 64x32
-               when 0b10 then {32, 64} # 32x64
-               when 0b11 then {64, 64} # 64x64
-               else           raise "Impossible bgcnt screen size: #{@bgcnt[0].screen_size}"
-               end
-      # todo actually handle different sizes
-
-      screen_base = 0x800_u32 * @bgcnt[0].screen_base_block
-      character_base = @bgcnt[0].character_base_block * 0x4000
-      effective_row = (row + @bgvofs[0].value) % (th << 3)
-      ty = effective_row >> 3
-      240.times do |col|
-        effective_col = (col + @bghofs[0].value) % (tw << 3)
-        tx = effective_col >> 3
-
-        se_idx = se_index(tx, ty, @bgcnt[0].screen_size)
-        screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
-
-        tile_id = bits(screen_entry, 0..9)
-        palette_bank = bits(screen_entry, 12..15)
-        y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
-        x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
-
-        if @bgcnt[0].color_mode # 8bpp
-          abort "todo 8bpp"
-        else # 4bpp
-          palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
-          pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
+      4.times do |priority|
+        4.times do |bg|
+          render_background(scanline, row, bg) if @bgcnt[bg].priority == priority
         end
-        scanline[col] = @pram.to_unsafe.as(UInt16*)[pal_idx]
       end
     when 1, 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
@@ -142,6 +113,45 @@ class PPU
     end
   end
 
+  def render_background(scanline : Slice(UInt16), row : Int, bg : Int) : Nil
+    # todo handle all bg layers
+    tw, th = case @bgcnt[bg].screen_size
+             when 0b00 then {32, 32} # 32x32
+             when 0b01 then {64, 32} # 64x32
+             when 0b10 then {32, 64} # 32x64
+             when 0b11 then {64, 64} # 64x64
+             else           raise "Impossible bgcnt screen size: #{@bgcnt[bg].screen_size}"
+             end
+    # todo actually handle different sizes
+
+    screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
+    character_base = @bgcnt[bg].character_base_block * 0x4000
+    effective_row = (row + @bgvofs[bg].value) % (th << 3)
+    ty = effective_row >> 3
+    240.times do |col|
+      next if scanline[col] > 0
+
+      effective_col = (col + @bghofs[bg].value) % (tw << 3)
+      tx = effective_col >> 3
+
+      se_idx = se_index(tx, ty, @bgcnt[bg].screen_size)
+      screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
+
+      tile_id = bits(screen_entry, 0..9)
+      palette_bank = bits(screen_entry, 12..15)
+      y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
+      x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
+
+      if @bgcnt[bg].color_mode # 8bpp
+        abort "todo 8bpp"
+      else # 4bpp
+        palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
+        pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
+      end
+      scanline[col] = @pram.to_unsafe.as(UInt16*)[pal_idx]
+    end
+  end
+
   def read_io(io_addr : Int) : Byte
     case io_addr
     when 0x000..0x001 then @dispcnt.read_byte(io_addr & 1)
@@ -156,27 +166,27 @@ class PPU
       else
         @bghofs[bg_num].read_byte(io_addr & 1)
       end
-    when 0x040        then 0xFF_u8 & @win0h.value
-    when 0x041        then 0xFF_u8 & @win0h.value >> 8
-    when 0x042        then 0xFF_u8 & @win1h.value
-    when 0x043        then 0xFF_u8 & @win1h.value >> 8
-    when 0x044        then 0xFF_u8 & @win0V.value
-    when 0x045        then 0xFF_u8 & @win0V.value >> 8
-    when 0x046        then 0xFF_u8 & @win1V.value
-    when 0x047        then 0xFF_u8 & @win1V.value >> 8
-    when 0x048        then 0xFF_u8 & @winin.value
-    when 0x049        then 0xFF_u8 & @winin.value >> 8
-    when 0x04A        then 0xFF_u8 & @winout.value
-    when 0x04B        then 0xFF_u8 & @winout.value >> 8
-    when 0x04C        then 0xFF_u8 & @mosaic.value
-    when 0x04D        then 0xFF_u8 & @mosaic.value >> 8
-    when 0x050        then 0xFF_u8 & @bldcnt.value
-    when 0x051        then 0xFF_u8 & @bldcnt.value >> 8
-    when 0x052        then 0xFF_u8 & @bldalpha.value
-    when 0x053        then 0xFF_u8 & @bldalpha.value >> 8
-    when 0x054        then 0xFF_u8 & @bldy.value
-    when 0x055        then 0xFF_u8 & @bldy.value >> 8
-    else                   abort "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"
+    when 0x040 then 0xFF_u8 & @win0h.value
+    when 0x041 then 0xFF_u8 & @win0h.value >> 8
+    when 0x042 then 0xFF_u8 & @win1h.value
+    when 0x043 then 0xFF_u8 & @win1h.value >> 8
+    when 0x044 then 0xFF_u8 & @win0V.value
+    when 0x045 then 0xFF_u8 & @win0V.value >> 8
+    when 0x046 then 0xFF_u8 & @win1V.value
+    when 0x047 then 0xFF_u8 & @win1V.value >> 8
+    when 0x048 then 0xFF_u8 & @winin.value
+    when 0x049 then 0xFF_u8 & @winin.value >> 8
+    when 0x04A then 0xFF_u8 & @winout.value
+    when 0x04B then 0xFF_u8 & @winout.value >> 8
+    when 0x04C then 0xFF_u8 & @mosaic.value
+    when 0x04D then 0xFF_u8 & @mosaic.value >> 8
+    when 0x050 then 0xFF_u8 & @bldcnt.value
+    when 0x051 then 0xFF_u8 & @bldcnt.value >> 8
+    when 0x052 then 0xFF_u8 & @bldalpha.value
+    when 0x053 then 0xFF_u8 & @bldalpha.value >> 8
+    when 0x054 then 0xFF_u8 & @bldy.value
+    when 0x055 then 0xFF_u8 & @bldy.value >> 8
+    else            abort "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
 
@@ -194,27 +204,27 @@ class PPU
       else
         @bghofs[bg_num].write_byte(io_addr & 1, value)
       end
-    when 0x040        then @win0h.value = (@win0h.value & 0xFF00) | value
-    when 0x041        then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
-    when 0x042        then @win1h.value = (@win1h.value & 0xFF00) | value
-    when 0x043        then @win1h.value = (@win1h.value & 0x00FF) | value.to_u16 << 8
-    when 0x044        then @win0V.value = (@win0V.value & 0xFF00) | value
-    when 0x045        then @win0V.value = (@win0V.value & 0x00FF) | value.to_u16 << 8
-    when 0x046        then @win1V.value = (@win1V.value & 0xFF00) | value
-    when 0x047        then @win1V.value = (@win1V.value & 0x00FF) | value.to_u16 << 8
-    when 0x048        then @winin.value = (@winin.value & 0xFF00) | value
-    when 0x049        then @winin.value = (@winin.value & 0x00FF) | value.to_u16 << 8
-    when 0x04A        then @winout.value = (@winout.value & 0xFF00) | value
-    when 0x04B        then @winout.value = (@winout.value & 0x00FF) | value.to_u16 << 8
-    when 0x04C        then @mosaic.value = (@mosaic.value & 0xFF00) | value
-    when 0x04D        then @mosaic.value = (@mosaic.value & 0x00FF) | value.to_u16 << 8
-    when 0x050        then @bldcnt.value = (@bldcnt.value & 0xFF00) | value
-    when 0x051        then @bldcnt.value = (@bldcnt.value & 0x00FF) | value.to_u16 << 8
-    when 0x052        then @bldalpha.value = (@bldalpha.value & 0xFF00) | value
-    when 0x053        then @bldalpha.value = (@bldalpha.value & 0x00FF) | value.to_u16 << 8
-    when 0x054        then @bldy.value = (@bldy.value & 0xFF00) | value
-    when 0x055        then @bldy.value = (@bldy.value & 0x00FF) | value.to_u16 << 8
-    else                   puts "Unmapped PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
+    when 0x040 then @win0h.value = (@win0h.value & 0xFF00) | value
+    when 0x041 then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
+    when 0x042 then @win1h.value = (@win1h.value & 0xFF00) | value
+    when 0x043 then @win1h.value = (@win1h.value & 0x00FF) | value.to_u16 << 8
+    when 0x044 then @win0V.value = (@win0V.value & 0xFF00) | value
+    when 0x045 then @win0V.value = (@win0V.value & 0x00FF) | value.to_u16 << 8
+    when 0x046 then @win1V.value = (@win1V.value & 0xFF00) | value
+    when 0x047 then @win1V.value = (@win1V.value & 0x00FF) | value.to_u16 << 8
+    when 0x048 then @winin.value = (@winin.value & 0xFF00) | value
+    when 0x049 then @winin.value = (@winin.value & 0x00FF) | value.to_u16 << 8
+    when 0x04A then @winout.value = (@winout.value & 0xFF00) | value
+    when 0x04B then @winout.value = (@winout.value & 0x00FF) | value.to_u16 << 8
+    when 0x04C then @mosaic.value = (@mosaic.value & 0xFF00) | value
+    when 0x04D then @mosaic.value = (@mosaic.value & 0x00FF) | value.to_u16 << 8
+    when 0x050 then @bldcnt.value = (@bldcnt.value & 0xFF00) | value
+    when 0x051 then @bldcnt.value = (@bldcnt.value & 0x00FF) | value.to_u16 << 8
+    when 0x052 then @bldalpha.value = (@bldalpha.value & 0xFF00) | value
+    when 0x053 then @bldalpha.value = (@bldalpha.value & 0x00FF) | value.to_u16 << 8
+    when 0x054 then @bldy.value = (@bldy.value & 0xFF00) | value
+    when 0x055 then @bldy.value = (@bldy.value & 0x00FF) | value.to_u16 << 8
+    else            puts "Unmapped PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
   end
 end
