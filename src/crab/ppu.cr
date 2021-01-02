@@ -114,7 +114,8 @@ class PPU
   end
 
   def render_background(scanline : Slice(UInt16), row : Int, bg : Int) : Nil
-    # todo handle all bg layers
+    return unless bit?(@dispcnt.value, 8 + bg)
+
     tw, th = case @bgcnt[bg].screen_size
              when 0b00 then {32, 32} # 32x32
              when 0b01 then {64, 32} # 64x32
@@ -122,7 +123,6 @@ class PPU
              when 0b11 then {64, 64} # 64x64
              else           raise "Impossible bgcnt screen size: #{@bgcnt[bg].screen_size}"
              end
-    # todo actually handle different sizes
 
     screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
     character_base = @bgcnt[bg].character_base_block * 0x4000
