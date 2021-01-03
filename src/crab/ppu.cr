@@ -77,6 +77,7 @@ class PPU
     case @dispcnt.bg_mode
     when 0
       4.times do |priority|
+        render_sprites(scanline, row, priority)
         4.times do |bg|
           render_background(scanline, row, bg) if @bgcnt[bg].priority == priority
         end
@@ -138,17 +139,46 @@ class PPU
       screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
 
       tile_id = bits(screen_entry, 0..9)
-      palette_bank = bits(screen_entry, 12..15)
       y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
       x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
 
       if @bgcnt[bg].color_mode # 8bpp
         pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
       else # 4bpp
+        palette_bank = bits(screen_entry, 12..15)
         palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
         pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
       end
       scanline[col] = @pram.to_unsafe.as(UInt16*)[pal_idx]
+    end
+  end
+
+  def render_sprites(scanline : Slice(UInt16), row : Int, priority : Int) : Nil
+    base = 0x10000_u32
+    Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128).each do |sprite|
+      next unless sprite.priority == priority
+      next if sprite.obj_shape == 3 # prohibited
+      width, height = SIZES[sprite.obj_shape][sprite.obj_size]
+      if sprite.y_coord <= row < sprite.y_coord + height
+        sprite_y = row - sprite.y_coord
+        y = sprite_y & 7
+        x_min, x_max = sprite.x_coord, Math.min(240, sprite.x_coord + width)
+        (x_min...x_max).each_with_index do |col, sprite_x|
+          next if scanline[col] > 0
+          x = sprite_x & 7
+          tile_id = sprite.character_name
+          if @dispcnt.obj_character_vram_mapping
+            tile_id += (sprite_y >> 3) * (width >> 3)
+            tile_id += sprite_x >> 3
+          else
+            tile_id += (sprite_y >> 3) * 0x20
+            tile_id += sprite_x >> 3
+          end
+          palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
+          pal_idx = (sprite.palette_number << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
+          scanline[col] = (@pram.to_unsafe + 0x200).as(UInt16*)[pal_idx]
+        end
+      end
     end
   end
 
@@ -226,5 +256,87 @@ class PPU
     when 0x055 then @bldy.value = (@bldy.value & 0x00FF) | value.to_u16 << 8
     else            puts "Unmapped PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
+  end
+end
+
+# SIZES[SHAPE][SIZE]
+SIZES = [
+  [ # square
+    {8, 8},
+    {16, 16},
+    {32, 32},
+    {64, 64},
+  ],
+  [ # horizontal rectangle
+    {16, 8},
+    {32, 8},
+    {32, 16},
+    {64, 32},
+  ],
+  [ # vertical rectangle
+    {8, 16},
+    {8, 32},
+    {16, 32},
+    {32, 64},
+  ],
+]
+
+record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, unused_space : UInt16 do
+  # OBJ Attribute 0
+
+  def obj_shape
+    bits(attr0, 14..15)
+  end
+
+  def colors
+    bit?(attr0, 13)
+  end
+
+  def obj_mosaic
+    bit?(attr0, 12)
+  end
+
+  def obj_mode
+    bits(attr0, 10..11)
+  end
+
+  def attr0_bit_9
+    bit?(attr0, 9)
+  end
+
+  def scaling_flag
+    bit?(attr0, 8)
+  end
+
+  def y_coord
+    bits(attr0, 0..7)
+  end
+
+  # OBJ Attribute 1
+
+  def obj_size
+    bits(attr1, 14..15)
+  end
+
+  def attr1_bits_9_13
+    bits(attr1, 9..13)
+  end
+
+  def x_coord
+    bits(attr1, 0..8)
+  end
+
+  # OBJ Attribute 2
+
+  def character_name
+    bits(attr2, 0..9)
+  end
+
+  def priority
+    bits(attr2, 10..11)
+  end
+
+  def palette_number
+    bits(attr2, 12..15)
   end
 end
