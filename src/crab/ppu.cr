@@ -125,7 +125,7 @@ class PPU
              end
 
     screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
-    character_base = @bgcnt[bg].character_base_block * 0x4000
+    character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
     effective_row = (row + @bgvofs[bg].value) % (th << 3)
     ty = effective_row >> 3
     240.times do |col|
@@ -143,7 +143,7 @@ class PPU
       x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
 
       if @bgcnt[bg].color_mode # 8bpp
-        abort "todo 8bpp"
+        pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
       else # 4bpp
         palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
         pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
