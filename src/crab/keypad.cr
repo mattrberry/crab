@@ -32,6 +32,9 @@ class Keypad
   @keyinput = KEYINPUT.new 0xFFFF_u16
   @keycnt = KEYCNT.new 0xFFFF_u16
 
+  def initialize(@gba : GBA)
+  end
+
   def read_io(io_addr : Int) : Byte
     case io_addr
     when 0x130 then 0xFF_u8 & @keyinput.value
@@ -65,7 +68,9 @@ class Keypad
       when .a?, .k?     then @keyinput.a = bit
       when .w?          then @keyinput.l = bit
       when .r?          then @keyinput.r = bit
-      else                   nil
+        # Extras
+      when .tab? then @gba.apu.toggle_sync if event.pressed?
+      else            nil
       end
     when SDL::Event::JoyHat
       @keyinput.value |= 0x00F0

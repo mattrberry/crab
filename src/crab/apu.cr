@@ -30,6 +30,8 @@ class APU
   @audiospec : LibSDL::AudioSpec
   @obtained_spec : LibSDL::AudioSpec
 
+  @sync : Bool = true
+
   def initialize(@gba : GBA)
     @audiospec = LibSDL::AudioSpec.new
     @audiospec.freq = SAMPLE_RATE
@@ -53,6 +55,10 @@ class APU
     raise "Failed to open audio" if LibSDL.open_audio(pointerof(@audiospec), pointerof(@obtained_spec)) > 0
 
     LibSDL.pause_audio 0
+  end
+
+  def toggle_sync
+    @sync = !@sync
   end
 
   def tick_frame_sequencer : Nil
@@ -132,6 +138,7 @@ class APU
 
     # push to SDL if buffer is full
     if @buffer_pos >= BUFFER_SIZE
+      LibSDL.clear_queued_audio 1 unless @sync
       while LibSDL.get_queued_audio_size(1) > BUFFER_SIZE * sizeof(Float32) * 2
         LibSDL.delay(1)
       end

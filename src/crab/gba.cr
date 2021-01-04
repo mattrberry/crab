@@ -43,7 +43,7 @@ class GBA
   def post_init : Nil
     @mmio = MMIO.new self
     @timer = Timer.new self
-    @keypad = Keypad.new
+    @keypad = Keypad.new self
     @bus = Bus.new self, @bios_path
     @interrupts = Interrupts.new self
     @cpu = CPU.new self
