@@ -115,8 +115,8 @@ class APU
     dma_right = ((dma_a * @soundcnt_h.dma_sound_a_right * vol_a) +
                  (dma_b * @soundcnt_h.dma_sound_b_right * vol_a)) / 2
 
-    @buffer[@buffer_pos] = (psg_left + dma_left) / 2
-    @buffer[@buffer_pos + 1] = (psg_right + dma_right) / 2
+    @buffer[@buffer_pos] = (psg_left + 2*dma_left) / 3
+    @buffer[@buffer_pos + 1] = (psg_right + 2*dma_right) / 3
 
     if @buffer[@buffer_pos].abs > 1 || @buffer[@buffer_pos + 1].abs > 1
       STDERR.puts "Left:  #{@buffer[@buffer_pos]}"
