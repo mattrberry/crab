@@ -154,16 +154,20 @@ class PPU
   end
 
   def render_sprites(scanline : Slice(UInt16), row : Int, priority : Int) : Nil
+    # todo: need to touch all of this up at some point for affine sprites
     base = 0x10000_u32
     Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128).each do |sprite|
       next unless sprite.priority == priority
       next if sprite.obj_shape == 3 # prohibited
+      # Treating these as signed integers to support wrapping. Note: Won't necessarily work for affine sprites. Thanks, Tonc.
+      x_coord, y_coord = (sprite.x_coord << 7).to_i16! >> 7, sprite.y_coord.to_i8!.to_i16!
       width, height = SIZES[sprite.obj_shape][sprite.obj_size]
-      if sprite.y_coord <= row < sprite.y_coord + height
-        sprite_y = row - sprite.y_coord
+      if y_coord <= row < y_coord + height
+        sprite_y = row - y_coord
         y = sprite_y & 7
-        x_min, x_max = sprite.x_coord, Math.min(240, sprite.x_coord + width)
+        x_min, x_max = x_coord, Math.min(240, x_coord + width)
         (x_min...x_max).each_with_index do |col, sprite_x|
+          next if col < 0
           next if scanline[col] > 0
           x = sprite_x & 7
           tile_id = sprite.character_name
