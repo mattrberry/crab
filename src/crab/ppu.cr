@@ -167,14 +167,8 @@ class PPU
           next if scanline[col] > 0
           x = sprite_x & 7
           tile_id = sprite.character_name
-          if @dispcnt.obj_character_vram_mapping
-            tile_id += (sprite_y >> 3) * (width >> 3)
-            tile_id += sprite_x >> 3
-          else
-            tile_id += (sprite_y >> 3) * 0x20
-            tile_id += sprite_x >> 3
-          end
-          palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
+          tile_id_offset = (sprite_x >> 3) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+          palettes = @vram[base + (tile_id + tile_id_offset) * 0x20 + y * 4 + (x >> 1)]
           pal_idx = (sprite.palette_number << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
           scanline[col] = (@pram.to_unsafe + 0x200).as(UInt16*)[pal_idx]
         end
