@@ -166,11 +166,13 @@ class PPU
       width, height = SIZES[sprite.obj_shape][sprite.obj_size]
       if y_coord <= row < y_coord + height
         sprite_y = row - y_coord
+        sprite_y = height - sprite_y - 1 if bit?(sprite.attr1, 13)
         y = sprite_y & 7
         x_min, x_max = x_coord, Math.min(240, x_coord + width)
         (x_min...x_max).each_with_index do |col, sprite_x|
           next if col < 0
           next if scanline[col] > 0
+          sprite_x = width - sprite_x - 1 if bit?(sprite.attr1, 12)
           x = sprite_x & 7
           tile_id = sprite.character_name
           tile_id_offset = (sprite_x >> 3) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
