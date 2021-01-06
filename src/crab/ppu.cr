@@ -82,6 +82,7 @@ class PPU
           render_background(scanline, row, bg) if @bgcnt[bg].priority == priority
         end
       end
+      240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
     when 1, 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
@@ -147,9 +148,10 @@ class PPU
       else # 4bpp
         palette_bank = bits(screen_entry, 12..15)
         palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
-        pal_idx = (palette_bank << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
+        pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
+        pal_idx = (palette_bank << 4) + pal_idx if pal_idx > 0
       end
-      scanline[col] = @pram.to_unsafe.as(UInt16*)[pal_idx]
+      scanline[col] = pal_idx.to_u16
     end
   end
 
@@ -173,8 +175,8 @@ class PPU
           tile_id = sprite.character_name
           tile_id_offset = (sprite_x >> 3) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
           palettes = @vram[base + (tile_id + tile_id_offset) * 0x20 + y * 4 + (x >> 1)]
-          pal_idx = (sprite.palette_number << 4) + ((palettes >> ((x & 1) * 4)) & 0xF)
-          scanline[col] = (@pram.to_unsafe + 0x200).as(UInt16*)[pal_idx]
+          pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
+          scanline[col] = (sprite.palette_number << 4) + pal_idx + 0x100 if pal_idx > 0
         end
       end
     end
