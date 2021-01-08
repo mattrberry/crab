@@ -175,10 +175,17 @@ class PPU
           sprite_x = width - sprite_x - 1 if bit?(sprite.attr1, 12)
           x = sprite_x & 7
           tile_id = sprite.character_name
-          tile_id_offset = (sprite_x >> 3) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
-          palettes = @vram[base + (tile_id + tile_id_offset) * 0x20 + y * 4 + (x >> 1)]
-          pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
-          scanline[col] = (sprite.palette_number << 4) + pal_idx + 0x100 if pal_idx > 0
+          if sprite.color_mode # 8bpp
+            tile_id += (sprite_x >> 2) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+            tile_id &= ~1 unless @dispcnt.obj_character_vram_mapping # bottom bit is ignored in 2D mapping mode
+            pal_idx = @vram[base + tile_id * 0x20 + y * 8 + x]
+          else # 4bpp
+            tile_id += (sprite_x >> 3) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+            palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
+            pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
+            pal_idx += (sprite.palette_number << 4) if pal_idx > 0
+          end
+          scanline[col] = pal_idx.to_u16 + 0x100 if pal_idx > 0 # 0x100 vs 0x200 because palette is read as 16 bit
         end
       end
     end
@@ -290,7 +297,7 @@ record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, unused_space : UI
     bits(attr0, 14..15)
   end
 
-  def colors
+  def color_mode
     bit?(attr0, 13)
   end
 
