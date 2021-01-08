@@ -72,8 +72,8 @@ class DMA
       enabled = dmacnt_h.enable
       dmacnt_h.value = (dmacnt_h.value & ~mask) | value
       if dmacnt_h.enable && !enabled
-        trigger dma_number, on_write: true
         @src[dma_number], @dst[dma_number] = @dmasad[dma_number], @dmadad[dma_number]
+        trigger dma_number, on_write: true
       end
     else abort "Unmapped DMA write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
