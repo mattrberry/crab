@@ -74,6 +74,7 @@ class Channel3 < SoundChannel
       @enabled = false if !@dac_enabled
       @wave_ram_dimension = bit?(value, 5)
       @wave_ram_bank = bits(value, 6..6)
+    when 0x71 # not used
     when 0x72
       @length_load = value
       # Internal values
