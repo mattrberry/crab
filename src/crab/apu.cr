@@ -117,9 +117,9 @@ class APU
     vol_a = ((100 >> (1 - @soundcnt_h.dma_sound_a_volume)) / 100).to_f32
     vol_b = ((100 >> (1 - @soundcnt_h.dma_sound_b_volume)) / 100).to_f32
     dma_left = ((dma_a * @soundcnt_h.dma_sound_a_left * vol_a) +
-                (dma_b * @soundcnt_h.dma_sound_b_left * vol_a)) / 2
+                (dma_b * @soundcnt_h.dma_sound_b_left * vol_b)) / 2
     dma_right = ((dma_a * @soundcnt_h.dma_sound_a_right * vol_a) +
-                 (dma_b * @soundcnt_h.dma_sound_b_right * vol_a)) / 2
+                 (dma_b * @soundcnt_h.dma_sound_b_right * vol_b)) / 2
 
     @buffer[@buffer_pos] = (psg_left + 2*dma_left) / 3
     @buffer[@buffer_pos + 1] = (psg_right + 2*dma_right) / 3
