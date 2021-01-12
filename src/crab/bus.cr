@@ -8,6 +8,8 @@ class Bus
   end
 
   def [](index : Int) : Byte
+    return 0x62_u8 if index == 0x0E000000
+    return 0x13_u8 if index == 0x0E000001
     log "read #{hex_str index.to_u32}"
     case bits(index, 24..27)
     when 0x0 then @bios[index & 0x3FFF]
