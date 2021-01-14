@@ -12,6 +12,19 @@ module Reg
     end
   end
 
+  module Base32
+    def read_byte(byte_num : Int) : Byte
+      (@value >> (8 * byte_num)).to_u8!
+    end
+
+    def write_byte(byte_num : Int, byte : Byte) : Byte
+      shift = 8 * byte_num
+      mask = ~(0xFF_u32 << shift)
+      @value = (@value & mask) | byte.to_u32 << shift
+      byte
+    end
+  end
+
   ####################
   # APU
 
@@ -101,6 +114,21 @@ module Reg
     include Base16
     num not_used, 7, lock: true
     num offset, 9
+  end
+
+  class BGAFF < BitField(UInt16)
+    include Base16
+    bool sign
+    num integer, 7
+    num fraction, 8
+  end
+
+  class BGREF < BitField(UInt32)
+    include Base32
+    num not_used, 4, lock: true
+    bool sign
+    num integer, 19
+    num fraction, 8
   end
 
   class WINH < BitField(UInt16)

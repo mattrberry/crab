@@ -11,6 +11,8 @@ class PPU
   getter bgcnt = Array(Reg::BGCNT).new 4 { Reg::BGCNT.new 0 }
   getter bghofs = Array(Reg::BGOFS).new 4 { Reg::BGOFS.new 0 }
   getter bgvofs = Array(Reg::BGOFS).new 4 { Reg::BGOFS.new 0 }
+  getter bgaff = Array(Array(Reg::BGAFF)).new 2 { Array(Reg::BGAFF).new 4 { Reg::BGAFF.new 0 } }
+  getter bgref = Array(Array(Reg::BGREF)).new 2 { Array(Reg::BGREF).new 4 { Reg::BGREF.new 0 } }
   getter win0h = Reg::WINH.new 0
   getter win1h = Reg::WINH.new 0
   getter win0V = Reg::WINV.new 0
@@ -83,7 +85,16 @@ class PPU
         end
       end
       240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
-    when 1, 2
+    when 1
+      4.times do |priority|
+        render_sprites(scanline, row, priority)
+        2.times do |bg|
+          render_background(scanline, row, bg) if @bgcnt[bg].priority == priority
+        end
+        render_affine(scanline, row, 2) if @bgcnt[2].priority == priority
+      end
+      240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
+    when 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
       240.times do |col|
@@ -191,6 +202,39 @@ class PPU
     end
   end
 
+  def render_affine(scanline : Slice(UInt16), row : Int, bg : Int) : Nil
+    return unless bit?(@dispcnt.value, 8 + bg)
+
+    pa, pb, pc, pd = @bgaff[bg - 2].map { |p| p.value.to_i16! }
+    aff_x, aff_y = @bgref[bg - 2].map { |p| (p.value << 4).to_i32! >> 4 }
+
+    size = 16 << @bgcnt[bg].screen_size # tiles, always a square
+    size_pixels = size << 3
+
+    screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
+    character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
+    240.times do |col|
+      next if scanline[col] > 0
+
+      x = (aff_x >> 8) + pa
+      y = (aff_y >> 8) + pc
+
+      if @bgcnt[bg].affine_wrap
+        puts "Wrap not supported yet (bg:#{bg})".colorize.fore(:red)
+      end
+      next unless 0 <= x < size_pixels && 0 <= y < size_pixels
+
+      screen_entry = @vram[screen_base + (y >> 3) * size + (x >> 3)]
+
+      tile_id = bits(screen_entry, 0..9)
+      y = (y & 7) ^ (7 * (screen_entry >> 11 & 1))
+      x = (x & 7) ^ (7 * (screen_entry >> 10 & 1))
+
+      pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
+      scanline[col] = pal_idx.to_u16
+    end
+  end
+
   def read_io(io_addr : Int) : Byte
     case io_addr
     when 0x000..0x001 then @dispcnt.read_byte(io_addr & 1)
@@ -204,6 +248,15 @@ class PPU
         @bgvofs[bg_num].read_byte(io_addr & 1)
       else
         @bghofs[bg_num].read_byte(io_addr & 1)
+      end
+    when 0x020..0x03F
+      bg_num = (io_addr & 0x10) >> 4 # (bg 0/1 represents bg 2/3, since those are the only aff bgs)
+      offs = io_addr & 0xF
+      if offs >= 8
+        offs -= 8
+        @bgref[bg_num][offs >> 2].read_byte(offs & 3)
+      else
+        @bgaff[bg_num][offs >> 1].read_byte(offs & 1)
       end
     when 0x040 then 0xFF_u8 & @win0h.value
     when 0x041 then 0xFF_u8 & @win0h.value >> 8
@@ -242,6 +295,15 @@ class PPU
         @bgvofs[bg_num].write_byte(io_addr & 1, value)
       else
         @bghofs[bg_num].write_byte(io_addr & 1, value)
+      end
+    when 0x020..0x03F
+      bg_num = (io_addr & 0x10) >> 4 # (bg 0/1 represents bg 2/3, since those are the only aff bgs)
+      offs = io_addr & 0xF
+      if offs >= 8
+        offs -= 8
+        @bgref[bg_num][offs >> 2].read_byte(offs & 3)
+      else
+        @bgaff[bg_num][offs >> 1].read_byte(offs & 1)
       end
     when 0x040 then @win0h.value = (@win0h.value & 0xFF00) | value
     when 0x041 then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
