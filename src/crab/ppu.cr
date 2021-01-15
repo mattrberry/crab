@@ -205,8 +205,8 @@ class PPU
   def render_affine(scanline : Slice(UInt16), row : Int, bg : Int) : Nil
     return unless bit?(@dispcnt.value, 8 + bg)
 
-    pa, pb, pc, pd = @bgaff[bg - 2].map { |p| p.value.to_i16! }
-    aff_x, aff_y = @bgref[bg - 2].map { |p| (p.value << 4).to_i32! >> 4 }
+    pa, pb, pc, pd = @bgaff[bg - 2].map { |p| p.value.to_i16!.to_i32! }
+    dx, dy = @bgref[bg - 2].map { |p| (p.value << 4).to_i32! >> 4 }
 
     size = 16 << @bgcnt[bg].screen_size # tiles, always a square
     size_pixels = size << 3
@@ -216,15 +216,15 @@ class PPU
     240.times do |col|
       next if scanline[col] > 0
 
-      x = (aff_x >> 8) + pa
-      y = (aff_y >> 8) + pc
+      x = ((pa * col + pb * row) + dx) >> 8
+      y = ((pc * col + pd * row) + dy) >> 8
 
       if @bgcnt[bg].affine_wrap
-        puts "Wrap not supported yet (bg:#{bg})".colorize.fore(:red)
+        # puts "Wrap not supported yet (bg:#{bg})".colorize.fore(:red)
       end
       next unless 0 <= x < size_pixels && 0 <= y < size_pixels
 
-      screen_entry = @vram[screen_base + (y >> 3) * size + (x >> 3)]
+      screen_entry = @vram[screen_base + (y >> 3) * size + (x >> 3)].to_u16
 
       tile_id = bits(screen_entry, 0..9)
       y = (y & 7) ^ (7 * (screen_entry >> 11 & 1))
@@ -301,9 +301,9 @@ class PPU
       offs = io_addr & 0xF
       if offs >= 8
         offs -= 8
-        @bgref[bg_num][offs >> 2].read_byte(offs & 3)
+        @bgref[bg_num][offs >> 2].write_byte(offs & 3, value)
       else
-        @bgaff[bg_num][offs >> 1].read_byte(offs & 1)
+        @bgaff[bg_num][offs >> 1].write_byte(offs & 1, value)
       end
     when 0x040 then @win0h.value = (@win0h.value & 0xFF00) | value
     when 0x041 then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
