@@ -167,23 +167,38 @@ class PPU
   end
 
   def render_sprites(scanline : Slice(UInt16), row : Int, priority : Int) : Nil
-    # todo: need to touch all of this up at some point for affine sprites
     base = 0x10000_u32
-    Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128).each do |sprite|
+    sprites = Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128)
+    sprites.each do |sprite|
       next unless sprite.priority == priority
       next if sprite.obj_shape == 3 # prohibited
-      # Treating these as signed integers to support wrapping. Note: Won't necessarily work for affine sprites. Thanks, Tonc.
       x_coord, y_coord = (sprite.x_coord << 7).to_i16! >> 7, sprite.y_coord.to_i8!.to_i16!
       width, height = SIZES[sprite.obj_shape][sprite.obj_size]
+      if sprite.affine
+        oam_affine_entry = sprite.attr1_bits_9_13
+        # signed 8.8 fixed-point numbers, need to shr 8
+        pa = sprites[oam_affine_entry * 4].aff_param.to_i32
+        pb = sprites[oam_affine_entry * 4 + 1].aff_param.to_i32
+        pc = sprites[oam_affine_entry * 4 + 2].aff_param.to_i32
+        pd = sprites[oam_affine_entry * 4 + 3].aff_param.to_i32
+        if sprite.attr0_bit_9 # double-size (rotated sprites won't clip unless scaled)
+          x_coord += width >> 1
+          y_coord += height >> 1
+          width <<= 1
+          height <<= 1
+        end
+      else # identity matrix if sprite isn't affine (shifted left 8 to match the 8.8 fixed-point)
+        pa, pb, pc, pd = 0x100, 0, 0, 0x100
+      end
       if y_coord <= row < y_coord + height
         sprite_y = row - y_coord
-        sprite_y = height - sprite_y - 1 if bit?(sprite.attr1, 13)
+        sprite_y = height - sprite_y - 1 if bit?(sprite.attr1, 13) && !sprite.affine
         y = sprite_y & 7
-        x_min, x_max = x_coord, Math.min(240, x_coord + width)
-        (x_min...x_max).each_with_index do |col, sprite_x|
-          next if col < 0
+        (x_coord...x_coord + width).each_with_index do |col, sprite_x|
+          next unless 0 <= col < 240
           next if scanline[col] > 0
-          sprite_x = width - sprite_x - 1 if bit?(sprite.attr1, 12)
+          # puts "#{sprite_x},#{sprite_y} #{pa},#{pb},#{pc},#{pd} #{row},#{col} #{sprite.affine}"
+          sprite_x = width - sprite_x - 1 if bit?(sprite.attr1, 12) && !sprite.affine
           x = sprite_x & 7
           tile_id = sprite.character_name
           if sprite.color_mode # 8bpp
@@ -353,7 +368,7 @@ SIZES = [
   ],
 ]
 
-record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, unused_space : UInt16 do
+record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, aff_param : Int16 do
   # OBJ Attribute 0
 
   def obj_shape
@@ -376,7 +391,7 @@ record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, unused_space : UI
     bit?(attr0, 9)
   end
 
-  def scaling_flag
+  def affine
     bit?(attr0, 8)
   end
 
