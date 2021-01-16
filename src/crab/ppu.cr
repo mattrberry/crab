@@ -220,7 +220,8 @@ class PPU
       y = ((pc * col + pd * row) + dy) >> 8
 
       if @bgcnt[bg].affine_wrap
-        # puts "Wrap not supported yet (bg:#{bg})".colorize.fore(:red)
+        x %= size_pixels
+        y %= size_pixels
       end
       next unless 0 <= x < size_pixels && 0 <= y < size_pixels
 
