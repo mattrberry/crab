@@ -79,6 +79,18 @@ class DMA
     end
   end
 
+  # todo: clean up _all_ of the trigger logic. this is nasty.
+  # todo: vdma
+  def trigger_hdma : Nil
+    4.times do |channel|
+      dmacnt_h = @dmacnt_h[channel]
+      if dmacnt_h.start_timing == 2 && dmacnt_h.enable
+        trigger channel
+        dmacnt_h.enable = false unless dmacnt_h.repeat
+      end
+    end
+  end
+
   def trigger(channel : Int, on_write = false) : Nil
     dmacnt_h = @dmacnt_h[channel]
     log "DMA channel ##{channel} enabled, #{hex_str @dmasad[channel]} -> #{hex_str @dmadad[channel]}, len: #{hex_str @dmacnt_l[channel]}"
@@ -100,7 +112,7 @@ class DMA
       when 0 then 1
       when 1 then -1
       when 2 then 0
-      when 3 then puts "todo: DMA dst addr reload not yet supported".colorize.fore(:yellow); 1
+      when 3 then 1
       else        abort "Impossible source control: #{dmacnt_h.dest_control}"
       end
       dd = 0 if fifo_dma # fifo audio doesn't increment destination
@@ -113,7 +125,8 @@ class DMA
         @src[channel] += ds
         @dst[channel] += dd
       end
-      dmacnt_h.enable = false unless dmacnt_h.dest_control == 3
+      @dst[channel] = @dmadad[channel] if dmacnt_h.dest_control == 3
+      dmacnt_h.enable = false unless dmacnt_h.repeat
     end
   end
 end

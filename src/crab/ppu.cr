@@ -38,6 +38,7 @@ class PPU
     @gba.interrupts.reg_if.hblank = @dispstat.hblank_irq_enable
     @gba.interrupts.schedule_interrupt_check if @dispstat.hblank_irq_enable
     scanline if @vcount < 160
+    @gba.dma.trigger_hdma if @vcount < 160
   end
 
   def end_hblank : Nil
