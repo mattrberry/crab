@@ -173,7 +173,9 @@ class PPU
       next unless sprite.priority == priority
       next if sprite.obj_shape == 3 # prohibited
       x_coord, y_coord = (sprite.x_coord << 7).to_i16! >> 7, sprite.y_coord.to_i8!.to_i16!
-      width, height = SIZES[sprite.obj_shape][sprite.obj_size]
+      orig_width, orig_height = SIZES[sprite.obj_shape][sprite.obj_size]
+      width, height = orig_width, orig_height
+      center_x, center_y = x_coord + width // 2, y_coord + height // 2 # off of center
       if sprite.affine
         oam_affine_entry = sprite.attr1_bits_9_13
         # signed 8.8 fixed-point numbers, need to shr 8
@@ -182,8 +184,8 @@ class PPU
         pc = sprites[oam_affine_entry * 4 + 2].aff_param.to_i32
         pd = sprites[oam_affine_entry * 4 + 3].aff_param.to_i32
         if sprite.attr0_bit_9 # double-size (rotated sprites won't clip unless scaled)
-          x_coord += width >> 1
-          y_coord += height >> 1
+          center_x += width >> 1
+          center_y += height >> 1
           width <<= 1
           height <<= 1
         end
@@ -191,42 +193,34 @@ class PPU
         pa, pb, pc, pd = 0x100, 0, 0, 0x100
       end
       if y_coord <= row < y_coord + height
-        (x_coord...x_coord + width).each_with_index do |col, sprite_x|
-          next unless 0 <= col < 240
+        iy = row.to_i16 - center_y
+        min_x, max_x = Math.max(0, x_coord), Math.min(240, x_coord + width)
+        (-center_x...center_x).each do |ix|
+          col = center_x + ix
+          next unless min_x <= col < max_x
           next if scanline[col] > 0
-          sprite_y = row - y_coord
-
-          # at this point, sprite_x and sprite_y represent the x,y coordinates inside the sprite
-
-          # ix,iy have an origin at the center of the sprite
-          ix = sprite_x.to_i32 - (width // 2)
-          iy = sprite_y.to_i32 - (height // 2)
           # transform to texture coordinates
           px = (pa * ix + pb * iy) >> 8
           py = (pc * ix + pd * iy) >> 8
-          # bring origin back to top-left of sprite
-          px += (width // 2)
-          py += (height // 2)
+          # bring origin back to top-left of the sprite
+          px += (orig_width // 2)
+          py += (orig_height // 2)
 
-          next unless 0 <= px < width && 0 <= py < height
+          next unless 0 <= px < orig_width && 0 <= py < orig_height
 
-          px = width - px - 1 if bit?(sprite.attr1, 12) && !sprite.affine
-          py = height - py - 1 if bit?(sprite.attr1, 13) && !sprite.affine
+          px = orig_width - px - 1 if bit?(sprite.attr1, 12) && !sprite.affine
+          py = orig_height - py - 1 if bit?(sprite.attr1, 13) && !sprite.affine
 
-          tile_x = px >> 3
-          tile_y = py >> 3
           x = px & 7
           y = py & 7
 
-          # puts "#{sprite_x},#{sprite_y} #{pa},#{pb},#{pc},#{pd} #{row},#{col} #{ix},#{iy} #{px},#{py} #{sprite.affine}"
-
           tile_id = sprite.character_name
           if sprite.color_mode # 8bpp
-            tile_id += (px >> 2) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+            tile_id += (px >> 2) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? orig_width >> 3 : 0x20)
             tile_id &= ~1 unless @dispcnt.obj_character_vram_mapping # bottom bit is ignored in 2D mapping mode
             pal_idx = @vram[base + tile_id * 0x20 + y * 8 + x]
           else # 4bpp
-            tile_id += (px >> 3) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+            tile_id += (px >> 3) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? orig_width >> 3 : 0x20)
             palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
             pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
