@@ -191,22 +191,42 @@ class PPU
         pa, pb, pc, pd = 0x100, 0, 0, 0x100
       end
       if y_coord <= row < y_coord + height
-        sprite_y = row - y_coord
-        sprite_y = height - sprite_y - 1 if bit?(sprite.attr1, 13) && !sprite.affine
-        y = sprite_y & 7
         (x_coord...x_coord + width).each_with_index do |col, sprite_x|
           next unless 0 <= col < 240
           next if scanline[col] > 0
-          # puts "#{sprite_x},#{sprite_y} #{pa},#{pb},#{pc},#{pd} #{row},#{col} #{sprite.affine}"
-          sprite_x = width - sprite_x - 1 if bit?(sprite.attr1, 12) && !sprite.affine
-          x = sprite_x & 7
+          sprite_y = row - y_coord
+
+          # at this point, sprite_x and sprite_y represent the x,y coordinates inside the sprite
+
+          # ix,iy have an origin at the center of the sprite
+          ix = sprite_x.to_i32 - (width // 2)
+          iy = sprite_y.to_i32 - (height // 2)
+          # transform to texture coordinates
+          px = (pa * ix + pb * iy) >> 8
+          py = (pc * ix + pd * iy) >> 8
+          # bring origin back to top-left of sprite
+          px += (width // 2)
+          py += (height // 2)
+
+          next unless 0 <= px < width && 0 <= py < height
+
+          px = width - px - 1 if bit?(sprite.attr1, 12) && !sprite.affine
+          py = height - py - 1 if bit?(sprite.attr1, 13) && !sprite.affine
+
+          tile_x = px >> 3
+          tile_y = py >> 3
+          x = px & 7
+          y = py & 7
+
+          # puts "#{sprite_x},#{sprite_y} #{pa},#{pb},#{pc},#{pd} #{row},#{col} #{ix},#{iy} #{px},#{py} #{sprite.affine}"
+
           tile_id = sprite.character_name
           if sprite.color_mode # 8bpp
-            tile_id += (sprite_x >> 2) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+            tile_id += (px >> 2) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
             tile_id &= ~1 unless @dispcnt.obj_character_vram_mapping # bottom bit is ignored in 2D mapping mode
             pal_idx = @vram[base + tile_id * 0x20 + y * 8 + x]
           else # 4bpp
-            tile_id += (sprite_x >> 3) + (sprite_y >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
+            tile_id += (px >> 3) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? width >> 3 : 0x20)
             palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
             pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
