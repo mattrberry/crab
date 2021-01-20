@@ -3,6 +3,7 @@ require "./reg"
 require "./util"
 require "./scheduler"
 require "./cartridge"
+require "./flash"
 require "./mmio"
 require "./timer"
 require "./keypad"
@@ -18,6 +19,7 @@ require "./debugger"
 class GBA
   getter! scheduler : Scheduler
   getter! cartridge : Cartridge
+  getter! flash : Flash
   getter! mmio : MMIO
   getter! timer : Timer
   getter! keypad : Keypad
@@ -33,6 +35,7 @@ class GBA
   def initialize(@bios_path : String, rom_path : String)
     @scheduler = Scheduler.new
     @cartridge = Cartridge.new rom_path
+    @flash = Flash.new rom_path
     handle_events
 
     SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
