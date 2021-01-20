@@ -216,12 +216,23 @@ class PPU
           y = py & 7
 
           tile_id = sprite.character_name
+          offset = py >> 3
+          if @dispcnt.obj_character_vram_mapping
+            offset *= orig_width >> 3
+          else
+            if sprite.color_mode
+              offset *= 0x10
+            else
+              offset *= 0x20
+            end
+          end
+          offset += px >> 3
           if sprite.color_mode # 8bpp
-            tile_id += (px >> 2) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? orig_width >> 3 : 0x20)
-            tile_id &= ~1 unless @dispcnt.obj_character_vram_mapping # bottom bit is ignored in 2D mapping mode
-            pal_idx = @vram[base + tile_id * 0x20 + y * 8 + x]
+            tile_id >>= 1
+            tile_id += offset
+            pal_idx = @vram[base + tile_id * 0x40 + y * 8 + x]
           else # 4bpp
-            tile_id += (px >> 3) + (py >> 3) * (@dispcnt.obj_character_vram_mapping ? orig_width >> 3 : 0x20)
+            tile_id += offset
             palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
             pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
