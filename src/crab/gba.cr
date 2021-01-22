@@ -37,6 +37,7 @@ class GBA
     @cartridge = Cartridge.new rom_path
     @flash = Flash.new rom_path
     handle_events
+    handle_saves
 
     SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
     LibSDL.joystick_open 0
@@ -68,6 +69,11 @@ class GBA
       else nil
       end
     end
+  end
+
+  def handle_saves : Nil
+    scheduler.schedule 280896, ->handle_saves
+    flash.write_save
   end
 
   def run : Nil

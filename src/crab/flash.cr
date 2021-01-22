@@ -35,6 +35,7 @@ class Flash
   SANYO = 0x1362_u16
 
   getter! type : Type
+  @dirty = false
   @save_path : String
   @memory = Bytes.new 0x20000, 0xFF
   @bank = 0_u8
@@ -53,10 +54,13 @@ class Flash
     @save_path = rom_path.gsub(/\.gba$/, ".sav")
     @save_path += ".sav" unless @save_path.ends_with?(".sav")
     puts "Save path: #{@save_path}"
-    if File.exists?(@save_path)
-      File.open(@save_path) { |file| file.read @memory }
-    else
+    File.open(@save_path) { |file| file.read @memory } if File.exists?(@save_path)
+  end
+
+  def write_save : Nil
+    if @dirty
       File.write(@save_path, @memory)
+      @dirty = false
     end
   end
 
@@ -72,7 +76,7 @@ class Flash
     case @state
     when .includes? State::PREPARE_WRITE
       @memory[0x10000 * @bank + index] &= value
-      File.write(@save_path, @memory)
+      @dirty = true
       @state ^= State::PREPARE_WRITE
     when .includes? State::SET_BANK
       @bank = value & 1
@@ -96,7 +100,7 @@ class Flash
         when Command::ERASE_ALL.value
           if @state.includes? State::PREPARE_ERASE
             @memory.size.times { |i| @memory[i] = 0xFF }
-            File.write(@save_path, @memory)
+            @dirty = true
             @state ^= State::PREPARE_ERASE
           end
         when Command::PREPARE_WRITE.value then @state |= State::PREPARE_WRITE
@@ -105,7 +109,7 @@ class Flash
         end
       elsif @state.includes?(State::PREPARE_ERASE) && index & 0x0FFF == 0 && value == Command::ERASE_CHUNK.value
         0x1000.times { |i| @memory[0x10000 * @bank + index + i] = 0xFF }
-        File.write(@save_path, @memory)
+        @dirty = true
         @state ^= State::PREPARE_ERASE
       end
       @state ^= State::CMD_2
