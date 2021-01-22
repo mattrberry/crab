@@ -11,10 +11,15 @@ class Flash
     end
   end
 
+  @[Flags]
   enum State
     READY
     CMD_1
     CMD_2
+    IDENTIFICATION
+    PREPARE_WRITE
+    PREPARE_ERASE
+    SET_BANK
   end
 
   enum Command : Byte
@@ -31,20 +36,15 @@ class Flash
 
   getter! type : Type
   @save_path : String
-  @sram = Bytes.new 0x10000, 0xFF
+  @memory = Bytes.new 0x20000, 0xFF
+  @bank = 0_u8
   @state = State::READY
+
   @identification_mode = false
+  @prepare_write = false
 
   def initialize(rom_path : String)
-    File.open(rom_path, "rb") do |file|
-      str = file.gets_to_end
-      Type.each do |type|
-        if type.regex.matches?(str)
-          @type = type
-          break
-        end
-      end
-    end
+    @type = File.open(rom_path, "rb") { |file| find_type(file) }
     unless @type
       puts "Falling back to SRAM since backup type could not be identified.".colorize.fore(:red)
       @type = Type::SRAM
@@ -53,37 +53,68 @@ class Flash
     @save_path = rom_path.gsub(/\.gba$/, ".sav")
     @save_path += ".sav" unless @save_path.ends_with?(".sav")
     puts "Save path: #{@save_path}"
+    if File.exists?(@save_path)
+      File.open(@save_path) { |file| file.read @memory }
+    else
+      File.write(@save_path, @memory)
+    end
   end
 
   def [](index : Int) : Byte
-    puts "#{hex_str index.to_u16}"
-    if @identification_mode && 0 <= index <= 1
+    if @state.includes?(State::IDENTIFICATION) && 0 <= index <= 1
       (SANYO >> (8 * index) & 0xFF).to_u8!
     else
-      @sram[index]
+      @memory[0x10000 * @bank + index]
     end
   end
 
   def []=(index : Int, value : Byte) : Nil
-    puts "#{hex_str index.to_u16} -> #{hex_str value}        #{@state}"
     case @state
-    in State::READY
-      @state = State::CMD_1 if value == 0xAA
-    in State::CMD_1
-      @state = State::CMD_2 if value == 0x55
-    in State::CMD_2
-      case value
-      when Command::ENTER_IDENT.value then @identification_mode = true
-      when Command::EXIT_IDENT.value  then @identification_mode = false
-      when Command::PREPARE_ERASE.value
-      when Command::ERASE_ALL.value
-      when Command::ERASE_CHUNK.value
-      when Command::PREPARE_WRITE.value
-      when Command::SET_BANK.value
-      else puts "Unsupported command #{hex_str value}"
+    when .includes? State::PREPARE_WRITE
+      @memory[0x10000 * @bank + index] &= value
+      File.write(@save_path, @memory)
+      @state ^= State::PREPARE_WRITE
+    when .includes? State::SET_BANK
+      @bank = value & 1
+      @state ^= State::SET_BANK
+    when .includes? State::READY
+      if index == 0x5555 && value == 0xAA
+        @state ^= State::READY
+        @state |= State::CMD_1
       end
+    when .includes? State::CMD_1
+      if index == 0x2AAA && value == 0x55
+        @state ^= State::CMD_1
+        @state |= State::CMD_2
+      end
+    when .includes? State::CMD_2
+      if index == 0x5555
+        case value
+        when Command::ENTER_IDENT.value   then @state |= State::IDENTIFICATION
+        when Command::EXIT_IDENT.value    then @state ^= State::IDENTIFICATION
+        when Command::PREPARE_ERASE.value then @state |= State::PREPARE_ERASE
+        when Command::ERASE_ALL.value
+          if @state.includes? State::PREPARE_ERASE
+            @memory.size.times { |i| @memory[i] = 0xFF }
+            File.write(@save_path, @memory)
+            @state ^= State::PREPARE_ERASE
+          end
+        when Command::PREPARE_WRITE.value then @state |= State::PREPARE_WRITE
+        when Command::SET_BANK.value      then @state |= State::SET_BANK
+        else                                   puts "Unsupported flash command #{hex_str value}"
+        end
+      elsif @state.includes?(State::PREPARE_ERASE) && index & 0x0FFF == 0 && value == Command::ERASE_CHUNK.value
+        0x1000.times { |i| @memory[0x10000 * @bank + index + i] = 0xFF }
+        File.write(@save_path, @memory)
+        @state ^= State::PREPARE_ERASE
+      end
+      @state ^= State::CMD_2
+      @state |= State::READY
     end
-    puts "  #{@state}"
-    @sram[index] = value
+  end
+
+  private def find_type(file : File) : Type?
+    str = file.gets_to_end
+    Type.each { |type| return type if type.regex.matches?(str) }
   end
 end
