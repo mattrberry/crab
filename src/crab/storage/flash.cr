@@ -1,16 +1,4 @@
-class Flash
-  enum Type
-    EEPROM
-    SRAM
-    FLASH
-    FLASH512
-    FLASH1M
-
-    def regex : Regex
-      /#{self}_V\d{3}/
-    end
-  end
-
+class Flash < Storage
   @[Flags]
   enum State
     READY
@@ -34,34 +22,11 @@ class Flash
 
   SANYO = 0x1362_u16
 
-  getter! type : Type
-  @dirty = false
-  @save_path : String
-  @memory = Bytes.new 0x20000, 0xFF
-  @bank = 0_u8
   @state = State::READY
+  @bank = 0_u8
 
-  @identification_mode = false
-  @prepare_write = false
-
-  def initialize(rom_path : String)
-    @type = File.open(rom_path, "rb") { |file| find_type(file) }
-    unless @type
-      puts "Falling back to SRAM since backup type could not be identified.".colorize.fore(:red)
-      @type = Type::SRAM
-    end
-    puts "Backup type: #{@type}"
-    @save_path = rom_path.gsub(/\.gba$/, ".sav")
-    @save_path += ".sav" unless @save_path.ends_with?(".sav")
-    puts "Save path: #{@save_path}"
-    File.open(@save_path) { |file| file.read @memory } if File.exists?(@save_path)
-  end
-
-  def write_save : Nil
-    if @dirty
-      File.write(@save_path, @memory)
-      @dirty = false
-    end
+  def initialize(@type : Type)
+    @memory = Bytes.new(@type.bytes, 0xFF)
   end
 
   def [](index : Int) : Byte
@@ -115,10 +80,5 @@ class Flash
       @state ^= State::CMD_2
       @state |= State::READY
     end
-  end
-
-  private def find_type(file : File) : Type?
-    str = file.gets_to_end
-    Type.each { |type| return type if type.regex.matches?(str) }
   end
 end

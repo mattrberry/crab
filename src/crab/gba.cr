@@ -3,7 +3,8 @@ require "./reg"
 require "./util"
 require "./scheduler"
 require "./cartridge"
-require "./flash"
+require "./storage"
+require "./storage/*"
 require "./mmio"
 require "./timer"
 require "./keypad"
@@ -19,7 +20,7 @@ require "./debugger"
 class GBA
   getter! scheduler : Scheduler
   getter! cartridge : Cartridge
-  getter! flash : Flash
+  getter! storage : Storage
   getter! mmio : MMIO
   getter! timer : Timer
   getter! keypad : Keypad
@@ -35,7 +36,7 @@ class GBA
   def initialize(@bios_path : String, rom_path : String)
     @scheduler = Scheduler.new
     @cartridge = Cartridge.new rom_path
-    @flash = Flash.new rom_path
+    @storage = Storage.new rom_path
     handle_events
     handle_saves
 
@@ -73,7 +74,7 @@ class GBA
 
   def handle_saves : Nil
     scheduler.schedule 280896, ->handle_saves
-    flash.write_save
+    storage.write_save
   end
 
   def run : Nil
