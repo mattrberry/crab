@@ -1,5 +1,8 @@
 class PPU
+  record SpritePixel, color : UInt16, blends : Bool
   @framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
+  @layer_palettes : Array(Bytes) = Array.new 4 { Bytes.new 240 }
+  @sprite_layers = Slice(SpritePixel).new 240
 
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
@@ -77,6 +80,7 @@ class PPU
     row_base = 240 * row
     scanline = @framebuffer + row_base
     scanline.to_unsafe.clear(240)
+    @layer_palettes.each &.to_unsafe.clear 240
     case @dispcnt.bg_mode
     when 0
       4.times do |priority|
@@ -86,6 +90,11 @@ class PPU
         end
       end
       240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
+      # render_reg_bg(0)
+      # render_reg_bg(1)
+      # render_reg_bg(2)
+      # render_reg_bg(3)
+      # composite(scanline)
     when 1
       4.times do |priority|
         render_sprites(scanline, row, priority)
@@ -95,6 +104,10 @@ class PPU
         render_affine(scanline, row, 2) if @bgcnt[2].priority == priority
       end
       240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
+      # render_reg_bg(0)
+      # render_reg_bg(1)
+      # render_aff_bg(2)
+      # composite(scanline)
     when 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
@@ -124,6 +137,116 @@ class PPU
         end
       end
     else abort "Invalid background mode: #{@dispcnt.bg_mode}"
+    end
+  end
+
+  def render_reg_bg(bg : Int) : Nil
+    return unless bit?(@dispcnt.value, 8 + bg)
+    pal_buf = @layer_palettes[bg]
+
+    tw, th = case @bgcnt[bg].screen_size
+             when 0b00 then {32, 32} # 32x32
+             when 0b01 then {64, 32} # 64x32
+             when 0b10 then {32, 64} # 32x64
+             when 0b11 then {64, 64} # 64x64
+             else           raise "Impossible bgcnt screen size: #{@bgcnt[bg].screen_size}"
+             end
+
+    screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
+    character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
+    effective_row = (@vcount.to_u32 + @bgvofs[bg].value) % (th << 3)
+    ty = effective_row >> 3
+    240.times do |col|
+      effective_col = (col + @bghofs[bg].value) % (tw << 3)
+      tx = effective_col >> 3
+
+      se_idx = se_index(tx, ty, @bgcnt[bg].screen_size)
+      screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
+
+      tile_id = bits(screen_entry, 0..9)
+      y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
+      x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
+
+      if @bgcnt[bg].color_mode # 8bpp
+        pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
+      else # 4bpp
+        palette_bank = bits(screen_entry, 12..15)
+        palettes = @vram[character_base + tile_id * 0x20 + y * 4 + (x >> 1)]
+        pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
+        pal_idx = (palette_bank << 4) + pal_idx if pal_idx > 0
+      end
+      pal_buf[col] = pal_idx.to_u8
+    end
+  end
+
+  def render_aff_bg(bg : Int) : Nil
+    return unless bit?(@dispcnt.value, 8 + bg)
+    pal_buf = @layer_palettes[bg]
+    row = @vcount.to_u32
+
+    pa, pb, pc, pd = @bgaff[bg - 2].map { |p| p.value.to_i16!.to_i32! }
+    dx, dy = @bgref[bg - 2].map { |p| (p.value << 4).to_i32! >> 4 }
+
+    size = 16 << @bgcnt[bg].screen_size # tiles, always a square
+    size_pixels = size << 3
+
+    screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
+    character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
+    240.times do |col|
+      x = ((pa * col + pb * row) + dx) >> 8
+      y = ((pc * col + pd * row) + dy) >> 8
+
+      if @bgcnt[bg].affine_wrap
+        x %= size_pixels
+        y %= size_pixels
+      end
+      next unless 0 <= x < size_pixels && 0 <= y < size_pixels
+
+      screen_entry = @vram[screen_base + (y >> 3) * size + (x >> 3)].to_u16
+
+      tile_id = bits(screen_entry, 0..9)
+      y = (y & 7) ^ (7 * (screen_entry >> 11 & 1))
+      x = (x & 7) ^ (7 * (screen_entry >> 10 & 1))
+
+      pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
+      pal_buf[col] = pal_idx.to_u8
+    end
+  end
+
+  def calculate_color(col : Int) : UInt16
+    log = col == 0x13 * 8 + 2 && @vcount == 0x6 * 8 + 1 && false
+    top_color = nil
+    4.times do |priority|
+      4.times do |bg|
+        if @bgcnt[bg].priority == priority
+          palette = @layer_palettes[bg][col]
+          next if palette == 0
+          selected_color = @pram.to_unsafe.as(UInt16*)[palette]
+          puts "selecting color #{hex_str selected_color} from bg #{bg} priority #{priority}, effect #{@bldcnt.color_special_effect} target #{@bldcnt.is_bg_target(bg, target: 1)}" if log
+          if top_color.nil?
+            top_color = selected_color
+            # todo: brightness increase/decrease
+            return top_color if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) # no color effect
+          else
+            if @bldcnt.is_bg_target(bg, target: 2)
+              color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+              puts "blending color #{hex_str top_color} eva #{@bldalpha.eva_coefficient} with #{hex_str selected_color} evb #{@bldalpha.evb_coefficient}, result: #{hex_str color.value}" if log
+              puts "#{hex_str top_color}, #{hex_str BGR16.new(top_color).value}, #{hex_str (BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16)).value}, #{(Math.min(16, @bldalpha.eva_coefficient) / 16)}" if log
+              puts "#{hex_str selected_color}, #{hex_str BGR16.new(selected_color).value}, #{hex_str (BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)).value}, #{(Math.min(16, @bldalpha.evb_coefficient) / 16)}" if log
+              return color.value
+            else # second layer isn't set in bldcnt, don't blend
+              return top_color
+            end
+          end
+        end
+      end
+    end
+    top_color || @pram.to_unsafe.as(UInt16*)[0]
+  end
+
+  def composite(scanline : Slice(UInt16)) : Nil
+    240.times do |col|
+      scanline[col] = calculate_color(col)
     end
   end
 

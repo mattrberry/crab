@@ -191,6 +191,10 @@ module Reg
     bool bg2_1st_target_pixel
     bool bg1_1st_target_pixel
     bool bg0_1st_target_pixel
+
+    def is_bg_target(bg : Int, target : Int) : Bool
+      bit?(value, bg + ((target - 1) * 8))
+    end
   end
 
   class BLDALPHA < BitField(UInt16)
