@@ -69,7 +69,7 @@ class Flash < Storage
             @state ^= State::PREPARE_ERASE
           end
         when Command::PREPARE_WRITE.value then @state |= State::PREPARE_WRITE
-        when Command::SET_BANK.value      then @state |= State::SET_BANK
+        when Command::SET_BANK.value      then @state |= State::SET_BANK if @type == Type::FLASH1M
         else                                   puts "Unsupported flash command #{hex_str value}"
         end
       elsif @state.includes?(State::PREPARE_ERASE) && index & 0x0FFF == 0 && value == Command::ERASE_CHUNK.value
