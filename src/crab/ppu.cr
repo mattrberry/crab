@@ -1,8 +1,7 @@
 class PPU
-  record SpritePixel, color : UInt16, blends : Bool
   @framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
   @layer_palettes : Array(Bytes) = Array.new 4 { Bytes.new 240 }
-  @sprite_layers = Slice(SpritePixel).new 240
+  @sprite_layers : Array(Slice(SpritePixel)) = Array.new 4 { Slice(SpritePixel).new 240, SpritePixel.new 0, false }
 
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
@@ -81,40 +80,25 @@ class PPU
     scanline = @framebuffer + row_base
     scanline.to_unsafe.clear(240)
     @layer_palettes.each &.to_unsafe.clear 240
+    @sprite_layers.each &.to_unsafe.clear 240
     case @dispcnt.bg_mode
     when 0
-      4.times do |priority|
-        render_sprites(scanline, row, priority)
-        4.times do |bg|
-          render_background(scanline, row, bg) if @bgcnt[bg].priority == priority
-        end
-      end
-      240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
-      # render_reg_bg(0)
-      # render_reg_bg(1)
-      # render_reg_bg(2)
-      # render_reg_bg(3)
-      # composite(scanline)
+      render_reg_bg(0)
+      render_reg_bg(1)
+      render_reg_bg(2)
+      render_reg_bg(3)
+      render_sprites
+      composite(scanline)
     when 1
-      4.times do |priority|
-        render_sprites(scanline, row, priority)
-        2.times do |bg|
-          render_background(scanline, row, bg) if @bgcnt[bg].priority == priority
-        end
-        render_affine(scanline, row, 2) if @bgcnt[2].priority == priority
-      end
-      240.times { |idx| scanline[idx] = @pram.to_unsafe.as(UInt16*)[scanline[idx]] }
-      # render_reg_bg(0)
-      # render_reg_bg(1)
-      # render_aff_bg(2)
-      # composite(scanline)
+      render_reg_bg(0)
+      render_reg_bg(1)
+      render_aff_bg(2)
+      render_sprites
+      composite(scanline)
     when 2
       puts "Unsupported background mode: #{@dispcnt.bg_mode}"
     when 3
-      240.times do |col|
-        idx = row_base + col
-        scanline[col] = @vram.to_unsafe.as(UInt16*)[idx]
-      end
+      240.times { |col| scanline[col] = @vram.to_unsafe.as(UInt16*)[row_base + col] }
     when 4
       base = @dispcnt.display_frame_select ? 0xA000 : 0
       240.times do |col|
@@ -213,10 +197,100 @@ class PPU
     end
   end
 
+  def render_sprites : Nil
+    base = 0x10000_u32
+    sprites = Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128)
+    sprites.each do |sprite|
+      next if sprite.obj_shape == 3 # prohibited
+      x_coord, y_coord = (sprite.x_coord << 7).to_i16! >> 7, sprite.y_coord.to_i8!.to_i16!
+      orig_width, orig_height = SIZES[sprite.obj_shape][sprite.obj_size]
+      width, height = orig_width, orig_height
+      center_x, center_y = x_coord + width // 2, y_coord + height // 2 # off of center
+      if sprite.affine
+        oam_affine_entry = sprite.attr1_bits_9_13
+        # signed 8.8 fixed-point numbers, need to shr 8
+        pa = sprites[oam_affine_entry * 4].aff_param.to_i32
+        pb = sprites[oam_affine_entry * 4 + 1].aff_param.to_i32
+        pc = sprites[oam_affine_entry * 4 + 2].aff_param.to_i32
+        pd = sprites[oam_affine_entry * 4 + 3].aff_param.to_i32
+        if sprite.attr0_bit_9 # double-size (rotated sprites won't clip unless scaled)
+          center_x += width >> 1
+          center_y += height >> 1
+          width <<= 1
+          height <<= 1
+        end
+      else # identity matrix if sprite isn't affine (shifted left 8 to match the 8.8 fixed-point)
+        pa, pb, pc, pd = 0x100, 0, 0, 0x100
+      end
+      if y_coord <= @vcount < y_coord + height
+        iy = @vcount.to_i16 - center_y
+        min_x, max_x = Math.max(0, x_coord), Math.min(240, x_coord + width)
+        (-center_x...center_x).each do |ix|
+          col = center_x + ix
+          next unless min_x <= col < max_x
+          next if @sprite_layers[sprite.priority][col].palette > 0
+          # transform to texture coordinates
+          px = (pa * ix + pb * iy) >> 8
+          py = (pc * ix + pd * iy) >> 8
+          # bring origin back to top-left of the sprite
+          px += (orig_width // 2)
+          py += (orig_height // 2)
+
+          next unless 0 <= px < orig_width && 0 <= py < orig_height
+
+          px = orig_width - px - 1 if bit?(sprite.attr1, 12) && !sprite.affine
+          py = orig_height - py - 1 if bit?(sprite.attr1, 13) && !sprite.affine
+
+          x = px & 7
+          y = py & 7
+
+          tile_id = sprite.character_name
+          offset = py >> 3
+          if @dispcnt.obj_character_vram_mapping
+            offset *= orig_width >> 3
+          else
+            if sprite.color_mode
+              offset *= 0x10
+            else
+              offset *= 0x20
+            end
+          end
+          offset += px >> 3
+          if sprite.color_mode # 8bpp
+            tile_id >>= 1
+            tile_id += offset
+            pal_idx = @vram[base + tile_id * 0x40 + y * 8 + x]
+          else # 4bpp
+            tile_id += offset
+            palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
+            pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
+            pal_idx += (sprite.palette_number << 4) if pal_idx > 0
+          end
+          @sprite_layers[sprite.priority][col] = SpritePixel.new(pal_idx.to_u16, sprite.obj_mode == 0b01) # alpha blending
+        end
+      end
+    end
+  end
+
   def calculate_color(col : Int) : UInt16
     log = col == 0x13 * 8 + 2 && @vcount == 0x6 * 8 + 1 && false
     top_color = nil
     4.times do |priority|
+      sprite_pixel = @sprite_layers[priority][col]
+      if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
+        selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
+        if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
+          top_color = selected_color
+          return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(5, target: 1)
+        else
+          if @bldcnt.is_bg_target(5, target: 2)
+            color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+            return color.value
+          else
+            return top_color
+          end
+        end
+      end
       4.times do |bg|
         if @bgcnt[bg].priority == priority
           palette = @layer_palettes[bg][col]
@@ -576,3 +650,5 @@ record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, aff_param : Int16
     bits(attr2, 12..15)
   end
 end
+
+record SpritePixel, palette : UInt16, blends : Bool
