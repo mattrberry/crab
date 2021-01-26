@@ -33,7 +33,7 @@ class DMAChannels
   end
 
   def timer_overflow(timer : Int) : Nil
-    (0..1).each do |channel|
+    2.times do |channel|
       if timer == @timers[channel].call
         if @sizes[channel] > 0
           log "Timer overflow good; channel:#{channel}, timer:#{timer}".colorize.fore(:yellow)
@@ -45,7 +45,7 @@ class DMAChannels
           @latches[channel] = 0
         end
       end
-      @gba.dma.trigger channel + 1 if @sizes[channel] < 16
+      @gba.dma.trigger_fifo(channel) if @sizes[channel] < 16
     end
   end
 

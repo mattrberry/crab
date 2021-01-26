@@ -1,17 +1,23 @@
 class DMA
-  class DMACNT < BitField(UInt16)
-    bool enable
-    bool irq_enable
-    num start_timing, 2
-    bool game_pak
-    num type, 1
-    bool repeat
-    num source_control, 2
-    num dest_control, 2
-    num not_used, 5
+  enum StartTiming
+    Immediate = 0
+    VBlank    = 1
+    HBlank    = 2
+    Special   = 3
+  end
 
-    def to_s(io)
-      io << "enable:#{enable}, irq:#{irq_enable}, timing:#{start_timing}, game_pak:#{game_pak}, type:#{type}, repeat:#{repeat}, srcctl:#{source_control}, dstctl:#{dest_control}"
+  enum AddressControl
+    Increment       = 0
+    Decrement       = 1
+    Fixed           = 2
+    IncrementReload = 3
+
+    def delta : Int
+      case self
+      in Increment, IncrementReload then 1
+      in Decrement                  then -1
+      in Fixed                      then 0
+      end
     end
   end
 
@@ -19,7 +25,7 @@ class DMA
     @dmasad = Array(UInt32).new 4, 0
     @dmadad = Array(UInt32).new 4, 0
     @dmacnt_l = Array(UInt16).new 4, 0
-    @dmacnt_h = Array(DMACNT).new 4 { DMACNT.new 0 }
+    @dmacnt_h = Array(Reg::DMACNT).new 4 { Reg::DMACNT.new 0 }
     @src = Array(UInt32).new 4, 0
     @dst = Array(UInt32).new 4, 0
     @src_mask = [0x07FFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF]
@@ -28,105 +34,105 @@ class DMA
   end
 
   def read_io(io_addr : Int) : UInt8
-    dma_number = (io_addr - 0xB0) // 12
+    channel = (io_addr - 0xB0) // 12
     reg = (io_addr - 0xB0) % 12
     case reg
     when 0, 1, 2, 3 # dmasad
-      (@dmasad[dma_number] >> 8 * reg).to_u8!
+      (@dmasad[channel] >> 8 * reg).to_u8!
     when 4, 5, 6, 7 # dmadad
-      (@dmadad[dma_number] >> 8 * (reg - 4)).to_u8!
+      (@dmadad[channel] >> 8 * (reg - 4)).to_u8!
     when 8, 9 # dmacnt_l
-      (@dmacnt_l[dma_number] >> 8 * (reg - 8)).to_u8!
+      (@dmacnt_l[channel] >> 8 * (reg - 8)).to_u8!
     when 10, 11 # dmacnt_h
-      (@dmacnt_h[dma_number].value >> 8 * (reg - 10)).to_u8!
+      (@dmacnt_h[channel].value >> 8 * (reg - 10)).to_u8!
     else abort "Unmapped DMA read ~ addr:#{hex_str io_addr.to_u8}"
     end
   end
 
-  def write_io(io_addr : Int, value : UInt8) : Nil
-    dma_number = (io_addr - 0xB0) // 12
+  def write_io(io_addr : Int, value : UInt8, caller = __FILE__) : Nil
+    channel = (io_addr - 0xB0) // 12
     reg = (io_addr - 0xB0) % 12
     case reg
     when 0, 1, 2, 3 # dmasad
       mask = 0xFF_u32 << (8 * reg)
       value = value.to_u32 << (8 * reg)
-      dmasad = @dmasad[dma_number]
-      @dmasad[dma_number] = ((dmasad & ~mask) | value) & @src_mask[dma_number]
+      dmasad = @dmasad[channel]
+      @dmasad[channel] = ((dmasad & ~mask) | value) & @src_mask[channel]
     when 4, 5, 6, 7 # dmadad
       reg -= 4
       mask = 0xFF_u32 << (8 * reg)
       value = value.to_u32 << (8 * reg)
-      dmadad = @dmadad[dma_number]
-      @dmadad[dma_number] = ((dmadad & ~mask) | value) & @dst_mask[dma_number]
+      dmadad = @dmadad[channel]
+      @dmadad[channel] = ((dmadad & ~mask) | value) & @dst_mask[channel]
     when 8, 9 # dmacnt_l
       reg -= 8
       mask = 0xFF_u32 << (8 * reg)
       value = value.to_u16 << (8 * reg)
-      dmacnt_l = @dmacnt_l[dma_number]
-      @dmacnt_l[dma_number] = ((dmacnt_l & ~mask) | value) & @len_mask[dma_number]
+      dmacnt_l = @dmacnt_l[channel]
+      @dmacnt_l[channel] = ((dmacnt_l & ~mask) | value) & @len_mask[channel]
     when 10, 11 # dmacnt_h
       reg -= 10
       mask = 0xFF_u32 << (8 * reg)
       value = value.to_u16 << (8 * reg)
-      dmacnt_h = @dmacnt_h[dma_number]
+      dmacnt_h = @dmacnt_h[channel]
       enabled = dmacnt_h.enable
       dmacnt_h.value = (dmacnt_h.value & ~mask) | value
       if dmacnt_h.enable && !enabled
-        @src[dma_number], @dst[dma_number] = @dmasad[dma_number], @dmadad[dma_number]
-        trigger dma_number, on_write: true
+        @src[channel], @dst[channel] = @dmasad[channel], @dmadad[channel]
+        trigger channel if dmacnt_h.start_timing == StartTiming::Immediate.value
       end
     else abort "Unmapped DMA write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
   end
 
-  # todo: clean up _all_ of the trigger logic. this is nasty.
   # todo: vdma
   def trigger_hdma : Nil
     4.times do |channel|
       dmacnt_h = @dmacnt_h[channel]
-      if dmacnt_h.start_timing == 2 && dmacnt_h.enable
-        trigger channel
-        dmacnt_h.enable = false unless dmacnt_h.repeat
-      end
+      trigger channel if dmacnt_h.enable && dmacnt_h.start_timing == StartTiming::HBlank.value
     end
   end
 
-  def trigger(channel : Int, on_write = false) : Nil
+  # todo: maybe abstract these various triggers
+  def trigger_fifo(fifo_channel : Int) : Nil
+    dmacnt_h = @dmacnt_h[fifo_channel + 1]
+    trigger fifo_channel + 1 if dmacnt_h.enable && dmacnt_h.start_timing == StartTiming::Special.value
+  end
+
+  def trigger(channel : Int) : Nil
     dmacnt_h = @dmacnt_h[channel]
-    log "DMA channel ##{channel} enabled, #{hex_str @dmasad[channel]} -> #{hex_str @dmadad[channel]}, len: #{hex_str @dmacnt_l[channel]}"
-    log "  DMACNT: #{dmacnt_h.to_s}"
-    log "  TM#{@gba.apu.soundcnt_h.dma_sound_a_timer}CNT: #{@gba.timer.tmcnt[@gba.apu.soundcnt_h.dma_sound_a_timer]}"
-    if dmacnt_h.start_timing == 0 || !on_write
-      special = dmacnt_h.start_timing == 3
-      fifo_dma = special && 1 <= channel <= 2
-      delta = 2 << dmacnt_h.type # transfer either halfwords or words
-      delta = 4 if fifo_dma      # fifo audio always transfers in words
-      ds = delta * case dmacnt_h.source_control
-      when 0 then 1
-      when 1 then -1
-      when 2 then 0
-      when 3 then puts "Prohibited source control".colorize.fore(:red); 1
-      else        abort "Impossible source control: #{dmacnt_h.source_control}"
+
+    start_timing = StartTiming.from_value(dmacnt_h.start_timing)
+    source_control = AddressControl.from_value(dmacnt_h.source_control)
+    dest_control = AddressControl.from_value(dmacnt_h.dest_control)
+    word_size = 2 << dmacnt_h.type # 2 or 4 bytes
+
+    len = @dmacnt_l[channel]
+
+    puts "Prohibited source address control".colorize.fore(:yellow) if source_control == AddressControl::IncrementReload
+
+    if start_timing == StartTiming::Special
+      if channel == 1 || channel == 2 # fifo
+        len = 4
+        word_size = 4
+        dest_control = AddressControl::Fixed
+      elsif channel == 3 # video capture
+        puts "todo: video capture dma"
+      else # prohibited
+        puts "Prohibited special dma".colorize.fore(:yellow)
       end
-      dd = delta * case dmacnt_h.dest_control
-      when 0 then 1
-      when 1 then -1
-      when 2 then 0
-      when 3 then 1
-      else        abort "Impossible source control: #{dmacnt_h.dest_control}"
-      end
-      dd = 0 if fifo_dma # fifo audio doesn't increment destination
-      len = @dmacnt_l[channel]
-      len = 4 if fifo_dma
-      log "  Starting transfer of #{len} #{"half" if dmacnt_h.type == 0}words from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
-      len.times do |idx|
-        log "transferring #{dmacnt_h.type == 0 ? "16" : "32"} bits from #{hex_str @src[channel]} to #{hex_str @dst[channel]}"
-        @gba.bus[@dst[channel]] = !fifo_dma && dmacnt_h.type == 0 ? @gba.bus.read_half(@src[channel]).to_u16! : @gba.bus.read_word(@src[channel])
-        @src[channel] += ds
-        @dst[channel] += dd
-      end
-      @dst[channel] = @dmadad[channel] if dmacnt_h.dest_control == 3
-      dmacnt_h.enable = false unless dmacnt_h.repeat
     end
+
+    delta_source = word_size * source_control.delta
+    delta_dest = word_size * dest_control.delta
+
+    len.times do |idx|
+      @gba.bus[@dst[channel]] = word_size == 4 ? @gba.bus.read_word(@src[channel]) : @gba.bus.read_half(@src[channel]).to_u16!
+      @src[channel] += delta_source
+      @dst[channel] += delta_dest
+    end
+
+    @dst[channel] = @dmadad[channel] if dest_control == AddressControl::IncrementReload
+    dmacnt_h.enable = false unless dmacnt_h.repeat && start_timing != StartTiming::Immediate
   end
 end
