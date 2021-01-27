@@ -22,7 +22,7 @@ class APU
   @sound_enabled : Bool = false
   @soundbias = Reg::SOUNDBIAS.new 0
 
-  @buffer = Slice(Float32).new BUFFER_SIZE
+  @buffer = Slice(Int16).new BUFFER_SIZE
   @buffer_pos = 0
   @frame_sequencer_stage = 0
   getter first_half_of_length_period = false
@@ -35,7 +35,7 @@ class APU
   def initialize(@gba : GBA)
     @audiospec = LibSDL::AudioSpec.new
     @audiospec.freq = SAMPLE_RATE
-    @audiospec.format = LibSDL::AUDIO_F32SYS
+    @audiospec.format = LibSDL::AUDIO_S16
     @audiospec.channels = CHANNELS
     @audiospec.samples = BUFFER_SIZE
     @audiospec.callback = nil
@@ -101,48 +101,41 @@ class APU
 
   def get_sample : Nil
     abort "Prohibited sound 1-4 volume #{@soundcnt_h.sound_volume}" if @soundcnt_h.sound_volume >= 3
-    psg_master_volume = ((100 >> (2 - @soundcnt_h.sound_volume)) / 100).to_f32
+    # Puts PSGs on scale of 0...0x40
     psg_sound = ((@channel1.get_amplitude * @soundcnt_l.channel_1_left) +
                  (@channel2.get_amplitude * @soundcnt_l.channel_2_left) +
                  (@channel3.get_amplitude * @soundcnt_l.channel_3_left) +
-                 (@channel4.get_amplitude * @soundcnt_l.channel_4_left)) / 4
-    psg_left = psg_master_volume *
-               (@soundcnt_l.left_volume / 7) *
-               psg_sound
-    psg_right = psg_master_volume *
-                (@soundcnt_l.right_volume / 7) *
-                psg_sound
+                 (@channel4.get_amplitude * @soundcnt_l.channel_4_left))# * 2 - 0x80
+    # Puts PSGs on scale of 0...0x200
+    psg_left = (psg_sound * @soundcnt_l.left_volume) >> (2 - @soundcnt_h.sound_volume)
+    psg_right = (psg_sound * @soundcnt_l.right_volume) >> (2 - @soundcnt_h.sound_volume)
 
+    # Gets DMAs on scale of -0x100...0x100
     dma_a, dma_b = @dma_channels.get_amplitude
-    vol_a = ((100 >> (1 - @soundcnt_h.dma_sound_a_volume)) / 100).to_f32
-    vol_b = ((100 >> (1 - @soundcnt_h.dma_sound_b_volume)) / 100).to_f32
-    dma_left = ((dma_a * @soundcnt_h.dma_sound_a_left * vol_a) +
-                (dma_b * @soundcnt_h.dma_sound_b_left * vol_b)) / 2
-    dma_right = ((dma_a * @soundcnt_h.dma_sound_a_right * vol_a) +
-                 (dma_b * @soundcnt_h.dma_sound_b_right * vol_b)) / 2
+    dma_a <<= 1
+    dma_b <<= 1
+    # Puts DMAs on scale of -0x200...0x200
+    dma_a <<= @soundcnt_h.dma_sound_a_volume
+    dma_b <<= @soundcnt_h.dma_sound_b_volume
+    dma_left = dma_a * @soundcnt_h.dma_sound_a_left + dma_b * @soundcnt_h.dma_sound_b_left
+    dma_right = dma_a * @soundcnt_h.dma_sound_a_right + dma_b * @soundcnt_h.dma_sound_b_right
 
-    @buffer[@buffer_pos] = (psg_left + 2*dma_left) / 3
-    @buffer[@buffer_pos + 1] = (psg_right + 2*dma_right) / 3
+    bias = 0x200
 
-    if @buffer[@buffer_pos].abs > 1 || @buffer[@buffer_pos + 1].abs > 1
-      STDERR.puts "Left:  #{@buffer[@buffer_pos]}"
-      STDERR.puts "  PSG: #{psg_left}"
-      STDERR.puts "  DMA: #{dma_right}"
-      STDERR.puts "Right: #{@buffer[@buffer_pos + 1]}"
-      STDERR.puts "  PSG: #{psg_right}"
-      STDERR.puts "  DMA: #{dma_right}"
-      exit 1
-    end
+    total_left = (psg_left + dma_left + bias).clamp(0_i16..0x3FF_i16)
+    total_right = (psg_right + dma_right + bias).clamp(0_i16..0x3FF_i16)
 
+    @buffer[@buffer_pos] = total_left * 32
+    @buffer[@buffer_pos + 1] = total_right * 32
     @buffer_pos += 2
 
     # push to SDL if buffer is full
     if @buffer_pos >= BUFFER_SIZE
       LibSDL.clear_queued_audio 1 unless @sync
-      while LibSDL.get_queued_audio_size(1) > BUFFER_SIZE * sizeof(Float32) * 2
+      while LibSDL.get_queued_audio_size(1) > BUFFER_SIZE * sizeof(Int16) * 2
         LibSDL.delay(1)
       end
-      LibSDL.queue_audio 1, @buffer, BUFFER_SIZE * sizeof(Float32)
+      LibSDL.queue_audio 1, @buffer, BUFFER_SIZE * sizeof(Int16)
       @buffer_pos = 0
     end
 

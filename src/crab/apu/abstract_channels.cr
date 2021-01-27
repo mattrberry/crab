@@ -39,7 +39,7 @@ abstract class SoundChannel
   # Called when @period reaches 0
   abstract def step_wave_generation : Nil
 
-  abstract def get_amplitude : Float32
+  abstract def get_amplitude : Int16
 
   abstract def read_io(index : Int) : UInt8
   abstract def write_io(index : Int, value : UInt8) : Nil

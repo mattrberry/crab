@@ -8,7 +8,7 @@ class Channel3 < SoundChannel
 
   @wave_ram = Array(Bytes).new 2, Bytes.new(WAVE_RAM_RANGE.size) { |idx| idx & 1 == 0 ? 0x00_u8 : 0xFF_u8 }
   @wave_ram_position : UInt8 = 0
-  @wave_ram_sample_buffer : UInt8 = 0x00
+  @wave_ram_sample_buffer : Int16 = 0x00
 
   # NR30
   @wave_ram_dimension : Bool = false
@@ -21,15 +21,13 @@ class Channel3 < SoundChannel
   @volume_code : UInt8 = 0x00
   @volume_force : Bool = false
 
-  @volume_multiplier : Float32 = 0
-
   # NR33 / NR34
   @frequency : UInt16 = 0x00
 
   def step_wave_generation : Nil
     @wave_ram_position = (@wave_ram_position + 1) % (WAVE_RAM_RANGE.size * 2)
     @wave_ram_bank ^= 1 if @wave_ram_position == 0 && @wave_ram_dimension
-    @wave_ram_sample_buffer = @wave_ram[@wave_ram_bank][@wave_ram_position // 2]
+    @wave_ram_sample_buffer = @wave_ram[@wave_ram_bank][@wave_ram_position // 2].to_i16
   end
 
   def frequency_timer : UInt32
@@ -40,14 +38,14 @@ class Channel3 < SoundChannel
     @gba.scheduler.schedule frequency_timer, ->step, Scheduler::EventType::APUChannel3
   end
 
-  def get_amplitude : Float32
+  # Outputs a value 0..0xF
+  def get_amplitude : Int16
     if @enabled && @dac_enabled
-      dac_input = @volume_multiplier * ((@wave_ram_sample_buffer >> (@wave_ram_position & 1 == 0 ? 4 : 0)) & 0x0F)
-      dac_output = (dac_input / 7.5) - 1
-      dac_output
+      volume_shift = (-1 + @volume_code) % 4
+      (((@wave_ram_sample_buffer >> (@wave_ram_position & 1 == 0 ? 4 : 0)) & 0x0F) >> volume_shift)
     else
-      0
-    end.to_f32
+      0_i16
+    end
   end
 
   def read_io(index : Int) : UInt8
@@ -82,15 +80,6 @@ class Channel3 < SoundChannel
     when 0x73
       @volume_code = (value & 0x60) >> 5
       @volume_force = bit?(value, 7)
-      # Internal values
-      @volume_multiplier = case {@volume_force, @volume_code}
-                           when {true, _} then 0.75_f32
-                           when {_, 0b00} then 0_f32
-                           when {_, 0b01} then 1_f32
-                           when {_, 0b10} then 0.5_f32
-                           when {_, 0b11} then 0.25_f32
-                           else                raise "Impossible volume code #{@volume_code}"
-                           end
     when 0x74
       @frequency = (@frequency & 0x0700) | value
     when 0x75

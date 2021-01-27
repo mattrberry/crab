@@ -57,14 +57,13 @@ class Channel1 < VolumeEnvelopeChannel
     end
   end
 
-  def get_amplitude : Float32
+  # Outputs a value 0..0xF
+  def get_amplitude : Int16
     if @enabled && @dac_enabled
-      dac_input = WAVE_DUTY[@duty][@wave_duty_position] * @current_volume
-      dac_output = (dac_input / 7.5) - 1
-      dac_output
+      WAVE_DUTY[@duty][@wave_duty_position].to_i16 * @current_volume
     else
-      0
-    end.to_f32
+      0_i16
+    end
   end
 
   # Calculate the new shadow frequency, disable channel if overflow 11 bits

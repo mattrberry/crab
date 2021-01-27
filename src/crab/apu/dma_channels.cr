@@ -5,7 +5,7 @@ class DMAChannels
   @positions = Array(Int32).new 2, 0
   @sizes = Array(Int32).new 2, 0
   @timers : Array(Proc(UInt16))
-  @latches = Array(Float32).new 2, 0
+  @latches = Array(Int16).new 2, 0
 
   def ===(value) : Bool
     value.is_a?(Int) && RANGE.includes?(value)
@@ -21,7 +21,7 @@ class DMAChannels
   def read_io(index : Int) : UInt8
     0_u8
   end
-
+  
   def write_io(index : Int, value : Byte) : Nil
     channel = bit?(index, 2).to_unsafe
     if @sizes[channel] < 32
@@ -37,7 +37,7 @@ class DMAChannels
       if timer == @timers[channel].call
         if @sizes[channel] > 0
           log "Timer overflow good; channel:#{channel}, timer:#{timer}".colorize.fore(:yellow)
-          @latches[channel] = (@fifos[channel][@positions[channel]] / 128).to_f32
+          @latches[channel] = @fifos[channel][@positions[channel]].to_i16
           @positions[channel] = (@positions[channel] + 1) % 32
           @sizes[channel] -= 1
         else
@@ -49,7 +49,8 @@ class DMAChannels
     end
   end
 
-  def get_amplitude : Tuple(Float32, Float32)
+  # Outputs a value -0x100...0x100
+  def get_amplitude : Tuple(Int16, Int16)
     {@latches[0], @latches[1]}
   end
 end
