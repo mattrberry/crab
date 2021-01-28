@@ -32,7 +32,7 @@ module ARM
         @gba.bus[address] &+= 4 if rd == 15
       end
     when 0b10 # ldrsb
-      set_reg(rd, @gba.bus[address].to_i8!.to_u32)
+      set_reg(rd, @gba.bus[address].to_i8!.to_u32!)
     when 0b11 # ldrsh
       set_reg(rd, @gba.bus.read_half_signed(address))
     else raise "Invalid halfword data transfer imm op: #{sh}"

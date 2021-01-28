@@ -44,9 +44,9 @@ class Bus
   #   LDRSH Rd,[odd]  -->  LDRSB Rd,[odd]         ;sign-expand BYTE value
   def read_half_signed(index : Int) : Word
     if bit?(index, 0)
-      self[index].to_i8!.to_u32
+      self[index].to_i8!.to_u32!
     else
-      read_half(index).to_i16!.to_u32
+      read_half(index).to_i16!.to_u32!
     end
   end
 

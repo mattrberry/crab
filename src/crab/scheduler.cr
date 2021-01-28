@@ -33,7 +33,7 @@ class Scheduler
   end
 
   def clear(type : EventType) : Nil
-    @events.delete_if { |event| event.type == type }
+    @events.reject! { |event| event.type == type }
   end
 
   def tick(cycles : Int) : Nil
