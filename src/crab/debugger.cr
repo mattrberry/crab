@@ -33,7 +33,7 @@ class Debugger
       when "list"  then print_breakpoints
       when /(b|break) (0x\d+)/
         match = /(b|break) (0x\d+)/.match(input.not_nil!).not_nil!
-        breakpoints << match[2].to_i(base: 16, prefix: true).to_u32
+        breakpoints << match[2].to_i(base: 16, prefix: true).to_u32!
         print_breakpoints
       when "clear"
         breakpoints.clear

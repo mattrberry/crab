@@ -28,6 +28,9 @@ abstract class SoundChannel
     end
   end
 
+  # Used so that channels can be matched with case..when statements
+  abstract def ===(value)
+
   # Calculate the frequency timer
   abstract def frequency_timer : UInt32
 

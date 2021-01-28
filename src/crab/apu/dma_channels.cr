@@ -21,7 +21,7 @@ class DMAChannels
   def read_io(index : Int) : UInt8
     0_u8
   end
-  
+
   def write_io(index : Int, value : Byte) : Nil
     channel = bit?(index, 2).to_unsafe
     if @sizes[channel] < 32
