@@ -129,19 +129,19 @@ class PPU
     pal_buf = @layer_palettes[bg]
 
     tw, th = case @bgcnt[bg].screen_size
-             when 0b00 then {32, 32} # 32x32
-             when 0b01 then {64, 32} # 64x32
-             when 0b10 then {32, 64} # 32x64
-             when 0b11 then {64, 64} # 64x64
+             when 0b00 then {0x0FF, 0x0FF} # 32x32
+             when 0b01 then {0x1FF, 0x0FF} # 64x32
+             when 0b10 then {0x0FF, 0x1FF} # 32x64
+             when 0b11 then {0x1FF, 0x1FF} # 64x64
              else           raise "Impossible bgcnt screen size: #{@bgcnt[bg].screen_size}"
              end
 
     screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
     character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
-    effective_row = (@vcount.to_u32 + @bgvofs[bg].value) % (th << 3)
+    effective_row = (@vcount.to_u32 + @bgvofs[bg].value) & th
     ty = effective_row >> 3
     240.times do |col|
-      effective_col = (col + @bghofs[bg].value) % (tw << 3)
+      effective_col = (col + @bghofs[bg].value) & tw
       tx = effective_col >> 3
 
       se_idx = se_index(tx, ty, @bgcnt[bg].screen_size)
