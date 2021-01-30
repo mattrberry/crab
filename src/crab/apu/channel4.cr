@@ -33,10 +33,10 @@ class Channel4 < VolumeEnvelopeChannel
     @gba.scheduler.schedule frequency_timer, ->step, Scheduler::EventType::APUChannel4
   end
 
-  # Outputs a value 0..0xF
+  # Outputs a value -0x80..0x80
   def get_amplitude : Int16
     if @enabled && @dac_enabled
-      ((~@lfsr & 1) * @current_volume).to_i16
+      ((~@lfsr & 1).to_i16 * 16 - 8) * @current_volume
     else
       0_i16
     end

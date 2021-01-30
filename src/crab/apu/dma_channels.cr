@@ -37,7 +37,7 @@ class DMAChannels
       if timer == @timers[channel].call
         if @sizes[channel] > 0
           log "Timer overflow good; channel:#{channel}, timer:#{timer}".colorize.fore(:yellow)
-          @latches[channel] = @fifos[channel][@positions[channel]].to_i16
+          @latches[channel] = @fifos[channel][@positions[channel]].to_i16 << 1 # put on scale of -0x100..0x100
           @positions[channel] = (@positions[channel] + 1) % 32
           @sizes[channel] -= 1
         else

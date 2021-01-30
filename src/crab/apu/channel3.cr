@@ -8,7 +8,7 @@ class Channel3 < SoundChannel
 
   @wave_ram = Array(Bytes).new 2, Bytes.new(WAVE_RAM_RANGE.size) { |idx| idx & 1 == 0 ? 0x00_u8 : 0xFF_u8 }
   @wave_ram_position : UInt8 = 0
-  @wave_ram_sample_buffer : Int16 = 0x00
+  @wave_ram_sample_buffer : UInt8 = 0x00
 
   # NR30
   @wave_ram_dimension : Bool = false
@@ -27,7 +27,8 @@ class Channel3 < SoundChannel
   def step_wave_generation : Nil
     @wave_ram_position = (@wave_ram_position + 1) % (WAVE_RAM_RANGE.size * 2)
     @wave_ram_bank ^= 1 if @wave_ram_position == 0 && @wave_ram_dimension
-    @wave_ram_sample_buffer = @wave_ram[@wave_ram_bank][@wave_ram_position // 2].to_i16
+    full_sample = @wave_ram[@wave_ram_bank][@wave_ram_position // 2]
+    @wave_ram_sample_buffer = (full_sample >> (@wave_ram_position & 1 == 0 ? 4 : 0)) & 0xF
   end
 
   def frequency_timer : UInt32
@@ -38,11 +39,10 @@ class Channel3 < SoundChannel
     @gba.scheduler.schedule frequency_timer, ->step, Scheduler::EventType::APUChannel3
   end
 
-  # Outputs a value 0..0xF
+  # Outputs a value -0x80..0x80
   def get_amplitude : Int16
     if @enabled && @dac_enabled
-      volume_shift = (-1 + @volume_code) % 4
-      (((@wave_ram_sample_buffer >> (@wave_ram_position & 1 == 0 ? 4 : 0)) & 0x0F) >> volume_shift)
+      (@wave_ram_sample_buffer.to_i16 - 8) * 4 * (@volume_force ? 3 : {0, 4, 2, 1}[@volume_code])
     else
       0_i16
     end

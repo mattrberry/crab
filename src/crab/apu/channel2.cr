@@ -1,9 +1,9 @@
 class Channel2 < VolumeEnvelopeChannel
   WAVE_DUTY = [
-    [0, 0, 0, 0, 0, 0, 0, 1], # 12.5%
-    [1, 0, 0, 0, 0, 0, 0, 1], # 25%
-    [1, 0, 0, 0, 0, 1, 1, 1], # 50%
-    [0, 1, 1, 1, 1, 1, 1, 0], # 75%
+    [-8, -8, -8, -8, -8, -8, -8, +8], # 12.5%
+    [+8, -8, -8, -8, -8, -8, -8, +8], # 25%
+    [+8, -8, -8, -8, -8, +8, +8, +8], # 50%
+    [-8, +8, +8, +8, +8, +8, +8, -8], # 75%
   ]
 
   RANGE = 0x68..0x6F
@@ -33,7 +33,7 @@ class Channel2 < VolumeEnvelopeChannel
     @gba.scheduler.schedule frequency_timer, ->step, Scheduler::EventType::APUChannel2
   end
 
-  # Outputs a value 0..0xF
+  # Outputs a value -0x80..0x80
   def get_amplitude : Int16
     if @enabled && @dac_enabled
       WAVE_DUTY[@duty][@wave_duty_position].to_i16 * @current_volume
