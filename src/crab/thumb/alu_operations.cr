@@ -22,7 +22,7 @@ module THUMB
       res = set_reg(rd, ror(@r[rd], @r[rs], false, pointerof(barrel_shifter_carry_out)))
       @cpsr.carry = barrel_shifter_carry_out
     when 0b1000 then res = @r[rd] & @r[rs]
-    when 0b1001 then res = set_reg(rd, ~(@r[rs] &- 1))
+    when 0b1001 then res = set_reg(rd, sub(0, @r[rs], set_conditions: true))
     when 0b1010 then res = sub(@r[rd], @r[rs], set_conditions: true)
     when 0b1011 then res = add(@r[rd], @r[rs], set_conditions: true)
     when 0b1100 then res = set_reg(rd, @r[rd] | @r[rs])
