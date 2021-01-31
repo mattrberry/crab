@@ -104,12 +104,12 @@ class CPU
     end
     while @pipeline.size < 2
       if @cpsr.thumb
-        log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_half(@r[15]).to_u16}"
-        @pipeline.push @gba.bus.read_half @r[15]
+        log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_half(@r[15])}"
+        @pipeline.push(@gba.bus.read_half(@r[15]).to_u32!)
         @r[15] &+= 2
       else
         log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_word @r[15]}"
-        @pipeline.push @gba.bus.read_word @r[15]
+        @pipeline.push(@gba.bus.read_word(@r[15]))
         @r[15] &+= 4
       end
     end
@@ -156,9 +156,9 @@ class CPU
   end
 
   @[AlwaysInline]
-  def set_reg(reg : Int, value : UInt32) : UInt32
+  def set_reg(reg : Int, value : Int) : UInt32
     clear_pipeline if reg == 15
-    @r[reg] = value
+    @r[reg] = value.to_u32!
   end
 
   @[AlwaysInline]

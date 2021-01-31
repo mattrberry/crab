@@ -15,8 +15,4 @@ class Cartridge
   def initialize(rom_path : String)
     File.open(rom_path) { |file| file.read @rom }
   end
-
-  def [](index : Int) : Byte
-    @rom[index]
-  end
 end

@@ -22,19 +22,40 @@ class Bus
     when 0x7 then @gba.ppu.oam[index & 0x3FF]
     when 0x8, 0x9,
          0xA, 0xB,
-         0xC, 0xD then @gba.cartridge[index & 0x01FFFFFF]
+         0xC, 0xD then @gba.cartridge.rom[index & 0x01FFFFFF]
     when 0xE then @gba.storage[index & 0xFFFF]
     else          abort "Unmapped read: #{hex_str index.to_u32}"
     end
   end
 
-  def read_half(index : Int) : Word
-    self[index & ~1].to_u32 |
-      (self[(index & ~1) + 1].to_u32 << 8)
+  def read_half_slow(index : Int) : HalfWord
+    self[index].to_u16 |
+      (self[index + 1].to_u16 << 8)
+  end
+
+  def read_half(index : Int) : HalfWord
+    index &= ~1
+    case bits(index, 24..27)
+    when 0x0 then (@bios.to_unsafe + (index & 0x3FFF)).as(HalfWord*).value
+    when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(HalfWord*).value
+    when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(HalfWord*).value
+    when 0x4 then read_half_slow(index)
+    when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(HalfWord*).value
+    when 0x6
+      address = 0x1FFFF_u32 & index
+      address -= 0x8000 if address > 0x17FFF
+      (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value
+    when 0x7 then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(HalfWord*).value
+    when 0x8, 0x9,
+         0xA, 0xB,
+         0xC, 0xD then (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(HalfWord*).value
+    when 0xE then read_half_slow(index)
+    else          abort "Unmapped read: #{hex_str index.to_u32}"
+    end
   end
 
   def read_half_rotate(index : Int) : Word
-    half = read_half index
+    half = read_half(index).to_u32!
     bits = (index & 1) << 3
     half >> bits | half << (32 - bits)
   end
@@ -50,11 +71,32 @@ class Bus
     end
   end
 
+  private def read_word_slow(index : Int) : Word
+    self[index].to_u32 |
+      (self[index + 1].to_u32 << 8) |
+      (self[index + 2].to_u32 << 16) |
+      (self[index + 3].to_u32 << 24)
+  end
+
   def read_word(index : Int) : Word
-    self[index & ~3].to_u32 |
-      (self[(index & ~3) + 1].to_u32 << 8) |
-      (self[(index & ~3) + 2].to_u32 << 16) |
-      (self[(index & ~3) + 3].to_u32 << 24)
+    index &= ~3
+    case bits(index, 24..27)
+    when 0x0 then (@bios.to_unsafe + (index & 0x3FFF)).as(Word*).value
+    when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(Word*).value
+    when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(Word*).value
+    when 0x4 then read_word_slow(index)
+    when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(Word*).value
+    when 0x6
+      address = 0x1FFFF_u32 & index
+      address -= 0x8000 if address > 0x17FFF
+      (@gba.ppu.vram.to_unsafe + address).as(Word*).value
+    when 0x7 then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(Word*).value
+    when 0x8, 0x9,
+         0xA, 0xB,
+         0xC, 0xD then (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(Word*).value
+    when 0xE then read_word_slow(index)
+    else          abort "Unmapped read: #{hex_str index.to_u32}"
+    end
   end
 
   def read_word_rotate(index : Int) : Word
