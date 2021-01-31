@@ -7,8 +7,7 @@ module ARM
     rs = bits(instr, 8..11)
     rm = bits(instr, 0..3)
 
-    set_reg(rd, @r[rm] &* @r[rs])
-    set_reg(rd, @r[rd] &+ @r[rn]) if accumulate
+    set_reg(rd, @r[rm] &* @r[rs] &+ (accumulate ? @r[rn] : 0))
     set_neg_and_zero_flags(@r[rd]) if set_conditions
   end
 end
