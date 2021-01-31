@@ -111,6 +111,8 @@ class Channel3 < SoundChannel
         # Init wave ram position
         @wave_ram_position = 0
       end
+    when 0x76 # not used
+    when 0x77 # not used
     when WAVE_RAM_RANGE
       if @enabled
         @wave_ram[@wave_ram_bank][@wave_ram_position // 2] = value

@@ -169,7 +169,7 @@ class APU
 
   # write to apu memory
   def write_io(io_addr : Int, value : UInt8) : Nil
-    return unless @sound_enabled || io_addr == 0x84 || Channel3::WAVE_RAM_RANGE.includes?(io_addr)
+    return unless @sound_enabled || 0x82 <= io_addr <= 0x89 || Channel3::WAVE_RAM_RANGE.includes?(io_addr)
     case io_addr
     when @channel1     then @channel1.write_io io_addr, value
     when @channel2     then @channel2.write_io io_addr, value
@@ -182,7 +182,7 @@ class APU
     when 0x83          then @soundcnt_h.value = (@soundcnt_h.value & 0x00FF) | value.to_u16 << 8
     when 0x84
       if value & 0x80 == 0 && @sound_enabled
-        (0xFF10..0xFF25).each { |addr| self.write_io addr, 0x00 }
+        (0x60..0x81).each { |addr| self.write_io addr, 0x00 }
         @sound_enabled = false
       elsif value & 0x80 > 0 && !@sound_enabled
         @sound_enabled = true
@@ -198,7 +198,5 @@ class APU
     when 0xA8..0xAF # unused
     else puts "Unmapped APU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
-
-    puts "SOUNDCNT_H(vol:#{@soundcnt_h.sound_volume}, a_vol:#{@soundcnt_h.dma_sound_a_volume}, b_vol:#{@soundcnt_h.dma_sound_b_volume}, a_right:#{@soundcnt_h.dma_sound_a_right}, a_left:#{@soundcnt_h.dma_sound_a_left}, a_timer:#{@soundcnt_h.dma_sound_a_timer}, b_right:#{@soundcnt_h.dma_sound_b_right}, b_left:#{@soundcnt_h.dma_sound_b_left}, b_timer:#{@soundcnt_h.dma_sound_b_timer}".colorize.fore(:blue) if 0x82 <= io_addr <= 0x83
   end
 end

@@ -61,6 +61,8 @@ class Channel2 < VolumeEnvelopeChannel
       @length_counter = 0x40 - @length_load
     when 0x69
       write_NRx2 value
+    when 0x6A # not used
+    when 0x6B # not used
     when 0x6C
       @frequency = (@frequency & 0x0700) | value
     when 0x6D
@@ -87,6 +89,8 @@ class Channel2 < VolumeEnvelopeChannel
         # Init volume envelope
         init_volume_envelope
       end
+    when 0x6E # not used
+    when 0x6F # not used
     else raise "Writing to invalid Channel2 register: #{hex_str index.to_u16}"
     end
   end

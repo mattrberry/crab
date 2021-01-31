@@ -48,7 +48,7 @@ class Channel4 < VolumeEnvelopeChannel
     when 0x79 then read_NRx2
     when 0x7C then @clock_shift << 4 | @width_mode << 3 | @divisor_code
     when 0x7D then 0xBF | (@length_enable ? 0x40 : 0)
-    else             raise "Reading from invalid Channel4 register: #{hex_str index.to_u16}"
+    else           raise "Reading from invalid Channel4 register: #{hex_str index.to_u16}"
     end.to_u8
   end
 
@@ -60,6 +60,8 @@ class Channel4 < VolumeEnvelopeChannel
       @length_counter = 0x40 - @length_load
     when 0x79
       write_NRx2 value
+    when 0x7A # not used
+    when 0x7B # not used
     when 0x7C
       @clock_shift = value >> 4
       @width_mode = (value & 0x08) >> 3
@@ -89,6 +91,8 @@ class Channel4 < VolumeEnvelopeChannel
         # Init lfsr
         @lfsr = 0x7FFF
       end
+    when 0x7E # not used
+    when 0x7F # not used
     else raise "Writing to invalid Channel4 register: #{hex_str index.to_u16}"
     end
   end

@@ -34,6 +34,7 @@ class DMA
   end
 
   def read_io(io_addr : Int) : UInt8
+    return 0_u8 if io_addr >= 0xE0 # todo: OOB read
     channel = (io_addr - 0xB0) // 12
     reg = (io_addr - 0xB0) % 12
     case reg
@@ -49,7 +50,8 @@ class DMA
     end
   end
 
-  def write_io(io_addr : Int, value : UInt8, caller = __FILE__) : Nil
+  def write_io(io_addr : Int, value : UInt8) : Nil
+    return if io_addr >= 0xE0 # todo: OOB write
     channel = (io_addr - 0xB0) // 12
     reg = (io_addr - 0xB0) % 12
     case reg

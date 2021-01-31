@@ -137,6 +137,8 @@ class Channel1 < VolumeEnvelopeChannel
           frequency_calculation
         end
       end
+    when 0x66 # not used
+    when 0x67 # not used
     else raise "Writing to invalid Channel1 register: #{hex_str index.to_u16}"
     end
   end
