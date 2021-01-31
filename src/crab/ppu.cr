@@ -202,7 +202,9 @@ class PPU
     sprites = Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128)
     sprites.each do |sprite|
       next if sprite.obj_shape == 3 # prohibited
-      x_coord, y_coord = (sprite.x_coord << 7).to_i16! >> 7, sprite.y_coord.to_i8!.to_i16!
+      x_coord, y_coord = sprite.x_coord.to_i16, sprite.y_coord.to_i16
+      x_coord -= 512 if x_coord > 239
+      y_coord -= 256 if y_coord > 159
       orig_width, orig_height = SIZES[sprite.obj_shape][sprite.obj_size]
       width, height = orig_width, orig_height
       center_x, center_y = x_coord + width // 2, y_coord + height // 2 # off of center
@@ -225,7 +227,7 @@ class PPU
       if y_coord <= @vcount < y_coord + height
         iy = @vcount.to_i16 - center_y
         min_x, max_x = Math.max(0, x_coord), Math.min(240, x_coord + width)
-        (-center_x...center_x).each do |ix|
+        (-(width // 2)...(width // 2)).each do |ix|
           col = center_x + ix
           next unless min_x <= col < max_x
           next if @sprite_layers[sprite.priority][col].palette > 0
