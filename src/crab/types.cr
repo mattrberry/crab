@@ -26,7 +26,11 @@ record BGR16, value : UInt16 do # xBBBBBGGGGGRRRRR
     BGR16.new(blue + other.blue, green + other.green, red + other.red)
   end
 
-  def *(operand : Float) : BGR16
+  def -(other : BGR16) : BGR16
+    BGR16.new(blue.to_i - other.blue, green.to_i - other.green, red.to_i - other.red)
+  end
+
+  def *(operand : Number) : BGR16
     BGR16.new(blue * operand, green * operand, red * operand)
   end
 end

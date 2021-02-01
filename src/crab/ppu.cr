@@ -272,7 +272,7 @@ class PPU
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
           end
 
-          obj_window = @sprite_pixels[col].window || sprite.obj_mode == 0b10
+          obj_window = @sprite_pixels[col].window || (sprite.obj_mode == 0b10 && pal_idx > 0)
           if @sprite_pixels[col].palette > 0 && @sprite_pixels[col].priority <= sprite.priority # existing sprite is higher priority
             pixel = @sprite_pixels[col]
           else
@@ -304,9 +304,9 @@ class PPU
         if sprite_pixel.priority == priority
           if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
             selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
-            if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
+            if top_color.nil? # todo: brightness for sprites
               top_color = selected_color
-              return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1)
+              return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1) && effects
             else
               if @bldcnt.is_bg_target(4, target: 2)
                 color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
@@ -325,9 +325,17 @@ class PPU
             next if palette == 0
             selected_color = @pram.to_unsafe.as(UInt16*)[palette]
             if top_color.nil?
-              top_color = selected_color
-              # todo: brightness increase/decrease
-              return top_color if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) # no color effect
+              if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) || !effects
+                return selected_color
+              elsif @bldcnt.color_special_effect == 1 # alpha blending
+                top_color = selected_color
+              elsif @bldcnt.color_special_effect == 2 # brightness increase
+                bgr16 = BGR16.new(selected_color)
+                return (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+              else # brightness decrease
+                bgr16 = BGR16.new(selected_color)
+                return (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+              end
             else
               if @bldcnt.is_bg_target(bg, target: 2)
                 color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
