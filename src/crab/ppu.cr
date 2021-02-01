@@ -1,7 +1,7 @@
 class PPU
   @framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
   @layer_palettes : Array(Bytes) = Array.new 4 { Bytes.new 240 }
-  @sprite_layers : Array(Slice(SpritePixel)) = Array.new 4 { Slice(SpritePixel).new 240, SpritePixel.new 0, false }
+  @sprite_pixels : Slice(SpritePixel) = Slice(SpritePixel).new 240, SpritePixel.new 0, 0, false, false
 
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
@@ -80,7 +80,7 @@ class PPU
     scanline = @framebuffer + row_base
     scanline.to_unsafe.clear(240)
     @layer_palettes.each &.to_unsafe.clear 240
-    @sprite_layers.each &.to_unsafe.clear 240
+    @sprite_pixels.to_unsafe.clear(240)
     case @dispcnt.bg_mode
     when 0
       render_reg_bg(0)
@@ -198,10 +198,12 @@ class PPU
   end
 
   def render_sprites : Nil
+    return unless @dispcnt.screen_display_obj
     base = 0x10000_u32
     sprites = Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128)
     sprites.each do |sprite|
-      next if sprite.obj_shape == 3 # prohibited
+      next if sprite.obj_shape == 3      # prohibited
+      next if sprite.affine_mode == 0b10 # sprite disabled
       x_coord, y_coord = sprite.x_coord.to_i16, sprite.y_coord.to_i16
       x_coord -= 512 if x_coord > 239
       y_coord -= 256 if y_coord > 159
@@ -230,7 +232,8 @@ class PPU
         (-(width // 2)...(width // 2)).each do |ix|
           col = center_x + ix
           next unless min_x <= col < max_x
-          next if @sprite_layers[sprite.priority][col].palette > 0
+          # sprite already exists at this pixel && that sprite has higher priority than this one && object window is not enabled
+          next if @sprite_pixels[col].palette > 0 && @sprite_pixels[col].priority <= sprite.priority && !@dispcnt.obj_window_display
           # transform to texture coordinates
           px = (pa * ix + pb * iy) >> 8
           py = (pc * ix + pd * iy) >> 8
@@ -268,28 +271,36 @@ class PPU
             pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
           end
-          @sprite_layers[sprite.priority][col] = SpritePixel.new(pal_idx.to_u16, sprite.obj_mode == 0b01) # alpha blending
+
+          obj_window = @sprite_pixels[col].window || sprite.obj_mode == 0b10
+          if @sprite_pixels[col].palette > 0 && @sprite_pixels[col].priority <= sprite.priority # existing sprite is higher priority
+            pixel = @sprite_pixels[col]
+          else
+            pixel = SpritePixel.new(sprite.priority, pal_idx.to_u16, sprite.obj_mode == 0b01, obj_window)
+          end
+          @sprite_pixels[col] = pixel.copy_with window: obj_window
         end
       end
     end
   end
 
   def calculate_color(col : Int) : UInt16
-    log = col == 0x13 * 8 + 2 && @vcount == 0x6 * 8 + 1 && false
     top_color = nil
     4.times do |priority|
-      sprite_pixel = @sprite_layers[priority][col]
-      if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
-        selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
-        if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
-          top_color = selected_color
-          return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(5, target: 1)
-        else
-          if @bldcnt.is_bg_target(5, target: 2)
-            color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-            return color.value
+      sprite_pixel = @sprite_pixels[col]
+      if sprite_pixel.priority == priority
+        if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
+          selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
+          if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
+            top_color = selected_color
+            return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(5, target: 1)
           else
-            return top_color
+            if @bldcnt.is_bg_target(5, target: 2)
+              color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+              return color.value
+            else
+              return top_color
+            end
           end
         end
       end
@@ -298,7 +309,6 @@ class PPU
           palette = @layer_palettes[bg][col]
           next if palette == 0
           selected_color = @pram.to_unsafe.as(UInt16*)[palette]
-          puts "selecting color #{hex_str selected_color} from bg #{bg} priority #{priority}, effect #{@bldcnt.color_special_effect} target #{@bldcnt.is_bg_target(bg, target: 1)}" if log
           if top_color.nil?
             top_color = selected_color
             # todo: brightness increase/decrease
@@ -306,9 +316,6 @@ class PPU
           else
             if @bldcnt.is_bg_target(bg, target: 2)
               color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-              puts "blending color #{hex_str top_color} eva #{@bldalpha.eva_coefficient} with #{hex_str selected_color} evb #{@bldalpha.evb_coefficient}, result: #{hex_str color.value}" if log
-              puts "#{hex_str top_color}, #{hex_str BGR16.new(top_color).value}, #{hex_str (BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16)).value}, #{(Math.min(16, @bldalpha.eva_coefficient) / 16)}" if log
-              puts "#{hex_str selected_color}, #{hex_str BGR16.new(selected_color).value}, #{hex_str (BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)).value}, #{(Math.min(16, @bldalpha.evb_coefficient) / 16)}" if log
               return color.value
             else # second layer isn't set in bldcnt, don't blend
               return top_color
@@ -470,6 +477,10 @@ record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, aff_param : Int16
     bit?(attr0, 8)
   end
 
+  def affine_mode
+    bits(attr0, 8..9)
+  end
+
   def y_coord
     bits(attr0, 0..7)
   end
@@ -503,4 +514,4 @@ record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, aff_param : Int16
   end
 end
 
-record SpritePixel, palette : UInt16, blends : Bool
+record SpritePixel, priority : UInt16, palette : UInt16, blends : Bool, window : Bool
