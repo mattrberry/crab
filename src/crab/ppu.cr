@@ -285,40 +285,56 @@ class PPU
   end
 
   def calculate_color(col : Int) : UInt16
+    enables, effects = if @dispcnt.window_0_display && @win0h.x1 <= col < @win0h.x2 && @win0v.y1 <= @vcount < @win0v.y2 # win0
+                         {bits(@winin.value, 0..4), @winin.window_0_color_special_effect}
+                       elsif @dispcnt.window_1_display && @win1h.x1 <= col < @win1h.x2 && @win1v.y1 <= @vcount < @win1v.y2 # win1
+                         {bits(@winin.value, 8..12), @winin.window_1_color_special_effect}
+                       elsif @dispcnt.obj_window_display && @sprite_pixels[col].window # obj win
+                         {bits(@winout.value, 8..12), @winout.obj_window_color_special_effect}
+                       elsif @dispcnt.window_0_display || @dispcnt.window_1_display || @dispcnt.obj_window_display # winout
+                         {bits(@winout.value, 0..4), @winout.outside_color_special_effect}
+                       else # no windows
+                         {bits(@dispcnt.value, 8..12), true}
+                       end
+
     top_color = nil
     4.times do |priority|
-      sprite_pixel = @sprite_pixels[col]
-      if sprite_pixel.priority == priority
-        if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
-          selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
-          if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
-            top_color = selected_color
-            return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1)
-          else
-            if @bldcnt.is_bg_target(4, target: 2)
-              color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-              return color.value
+      if bit?(enables, 4)
+        sprite_pixel = @sprite_pixels[col]
+        if sprite_pixel.priority == priority
+          if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
+            selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
+            if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
+              top_color = selected_color
+              return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1)
             else
-              return top_color
+              if @bldcnt.is_bg_target(4, target: 2)
+                color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+                return color.value
+              else
+                return top_color
+              end
             end
           end
         end
       end
       4.times do |bg|
-        if @bgcnt[bg].priority == priority
-          palette = @layer_palettes[bg][col]
-          next if palette == 0
-          selected_color = @pram.to_unsafe.as(UInt16*)[palette]
-          if top_color.nil?
-            top_color = selected_color
-            # todo: brightness increase/decrease
-            return top_color if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) # no color effect
-          else
-            if @bldcnt.is_bg_target(bg, target: 2)
-              color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-              return color.value
-            else # second layer isn't set in bldcnt, don't blend
-              return top_color
+        if bit?(enables, bg)
+          if @bgcnt[bg].priority == priority
+            palette = @layer_palettes[bg][col]
+            next if palette == 0
+            selected_color = @pram.to_unsafe.as(UInt16*)[palette]
+            if top_color.nil?
+              top_color = selected_color
+              # todo: brightness increase/decrease
+              return top_color if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) # no color effect
+            else
+              if @bldcnt.is_bg_target(bg, target: 2)
+                color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+                return color.value
+              else # second layer isn't set in bldcnt, don't blend
+                return top_color
+              end
             end
           end
         end
