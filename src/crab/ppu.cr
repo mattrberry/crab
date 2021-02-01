@@ -17,8 +17,8 @@ class PPU
   getter bgref = Array(Array(Reg::BGREF)).new 2 { Array(Reg::BGREF).new 4 { Reg::BGREF.new 0 } }
   getter win0h = Reg::WINH.new 0
   getter win1h = Reg::WINH.new 0
-  getter win0V = Reg::WINV.new 0
-  getter win1V = Reg::WINV.new 0
+  getter win0v = Reg::WINV.new 0
+  getter win1v = Reg::WINV.new 0
   getter winin = Reg::WININ.new 0
   getter winout = Reg::WINOUT.new 0
   getter mosaic = Reg::MOSAIC.new 0
@@ -293,9 +293,9 @@ class PPU
           selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
           if top_color.nil? # todo: adding the ability to blend sprites _under_ bg broke tonc's bld_demo
             top_color = selected_color
-            return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(5, target: 1)
+            return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1)
           else
-            if @bldcnt.is_bg_target(5, target: 2)
+            if @bldcnt.is_bg_target(4, target: 2)
               color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
               return color.value
             else
@@ -360,10 +360,10 @@ class PPU
     when 0x041 then 0xFF_u8 & @win0h.value >> 8
     when 0x042 then 0xFF_u8 & @win1h.value
     when 0x043 then 0xFF_u8 & @win1h.value >> 8
-    when 0x044 then 0xFF_u8 & @win0V.value
-    when 0x045 then 0xFF_u8 & @win0V.value >> 8
-    when 0x046 then 0xFF_u8 & @win1V.value
-    when 0x047 then 0xFF_u8 & @win1V.value >> 8
+    when 0x044 then 0xFF_u8 & @win0v.value
+    when 0x045 then 0xFF_u8 & @win0v.value >> 8
+    when 0x046 then 0xFF_u8 & @win1v.value
+    when 0x047 then 0xFF_u8 & @win1v.value >> 8
     when 0x048 then 0xFF_u8 & @winin.value
     when 0x049 then 0xFF_u8 & @winin.value >> 8
     when 0x04A then 0xFF_u8 & @winout.value
@@ -407,10 +407,10 @@ class PPU
     when 0x041 then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
     when 0x042 then @win1h.value = (@win1h.value & 0xFF00) | value
     when 0x043 then @win1h.value = (@win1h.value & 0x00FF) | value.to_u16 << 8
-    when 0x044 then @win0V.value = (@win0V.value & 0xFF00) | value
-    when 0x045 then @win0V.value = (@win0V.value & 0x00FF) | value.to_u16 << 8
-    when 0x046 then @win1V.value = (@win1V.value & 0xFF00) | value
-    when 0x047 then @win1V.value = (@win1V.value & 0x00FF) | value.to_u16 << 8
+    when 0x044 then @win0v.value = (@win0v.value & 0xFF00) | value
+    when 0x045 then @win0v.value = (@win0v.value & 0x00FF) | value.to_u16 << 8
+    when 0x046 then @win1v.value = (@win1v.value & 0xFF00) | value
+    when 0x047 then @win1v.value = (@win1v.value & 0x00FF) | value.to_u16 << 8
     when 0x048 then @winin.value = (@winin.value & 0xFF00) | value
     when 0x049 then @winin.value = (@winin.value & 0x00FF) | value.to_u16 << 8
     when 0x04A then @winout.value = (@winout.value & 0xFF00) | value
