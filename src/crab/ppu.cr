@@ -305,8 +305,10 @@ class PPU
           if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
             selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
             if top_color.nil? # todo: brightness for sprites
-              top_color = selected_color
-              return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1) && effects
+              if !sprite_pixel.window
+                top_color = selected_color
+                return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1) && effects
+              end
             else
               if @bldcnt.is_bg_target(4, target: 2)
                 color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
