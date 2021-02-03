@@ -296,7 +296,6 @@ class PPU
                        else # no windows
                          {bits(@dispcnt.value, 8..12), true}
                        end
-
     top_color = nil
     4.times do |priority|
       if bit?(enables, 4)
@@ -304,17 +303,17 @@ class PPU
         if sprite_pixel.priority == priority
           if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
             selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
-            if top_color.nil? # todo: brightness for sprites
-              if !sprite_pixel.window
+            if !sprite_pixel.window
+              if top_color.nil? # todo: brightness for sprites
                 top_color = selected_color
-                return top_color unless sprite_pixel.blends && @bldcnt.is_bg_target(4, target: 1) && effects
-              end
-            else
-              if @bldcnt.is_bg_target(4, target: 2)
-                color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-                return color.value
+                return top_color unless sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects)
               else
-                return top_color
+                if @bldcnt.is_bg_target(4, target: 2)
+                  color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+                  return color.value
+                else
+                  return top_color
+                end
               end
             end
           end
