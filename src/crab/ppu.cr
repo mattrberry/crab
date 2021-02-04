@@ -1,7 +1,9 @@
 class PPU
+  SPRITE_PIXEL = SpritePixel.new 4, 0, false, false # base sprite pixel to fill buffer with on each scanline
+
   @framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
   @layer_palettes : Array(Bytes) = Array.new 4 { Bytes.new 240 }
-  @sprite_pixels : Slice(SpritePixel) = Slice(SpritePixel).new 240, SpritePixel.new 0, 0, false, false
+  @sprite_pixels : Slice(SpritePixel) = Slice(SpritePixel).new 240, SPRITE_PIXEL
 
   getter pram = Bytes.new 0x400
   getter vram = Bytes.new 0x18000
@@ -80,7 +82,7 @@ class PPU
     scanline = @framebuffer + row_base
     scanline.to_unsafe.clear(240)
     @layer_palettes.each &.to_unsafe.clear 240
-    @sprite_pixels.to_unsafe.clear(240)
+    @sprite_pixels.map! { SPRITE_PIXEL }
     case @dispcnt.bg_mode
     when 0
       render_reg_bg(0)
@@ -96,7 +98,10 @@ class PPU
       render_sprites
       composite(scanline)
     when 2
-      puts "Unsupported background mode: #{@dispcnt.bg_mode}"
+      render_aff_bg(2)
+      render_aff_bg(3)
+      render_sprites
+      composite(scanline)
     when 3
       240.times { |col| scanline[col] = @vram.to_unsafe.as(UInt16*)[row_base + col] }
     when 4
@@ -232,8 +237,6 @@ class PPU
         (-(width // 2)...(width // 2)).each do |ix|
           col = center_x + ix
           next unless min_x <= col < max_x
-          # sprite already exists at this pixel && that sprite has higher priority than this one && object window is not enabled
-          next if @sprite_pixels[col].palette > 0 && @sprite_pixels[col].priority <= sprite.priority && !@dispcnt.obj_window_display
           # transform to texture coordinates
           px = (pa * ix + pb * iy) >> 8
           py = (pc * ix + pd * iy) >> 8
@@ -272,13 +275,11 @@ class PPU
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
           end
 
-          obj_window = @sprite_pixels[col].window || (sprite.obj_mode == 0b10 && pal_idx > 0)
-          if @sprite_pixels[col].palette > 0 && @sprite_pixels[col].priority <= sprite.priority # existing sprite is higher priority
-            pixel = @sprite_pixels[col]
-          else
-            pixel = SpritePixel.new(sprite.priority, pal_idx.to_u16, sprite.obj_mode == 0b01, obj_window)
+          if sprite.obj_mode == 0b10 && pal_idx > 0
+            @sprite_pixels[col] = @sprite_pixels[col].copy_with window: true
+          elsif @sprite_pixels[col].palette == 0 || @sprite_pixels[col].priority > sprite.priority
+            @sprite_pixels[col] = SpritePixel.new(sprite.priority, pal_idx.to_u16, sprite.obj_mode == 0b01, @sprite_pixels[col].window)
           end
-          @sprite_pixels[col] = pixel.copy_with window: obj_window
         end
       end
     end
@@ -300,21 +301,17 @@ class PPU
     4.times do |priority|
       if bit?(enables, 4)
         sprite_pixel = @sprite_pixels[col]
-        if sprite_pixel.priority == priority
-          if sprite_pixel.palette > 0 # todo: abstract out this duplicated work
-            selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
-            if !sprite_pixel.window
-              if top_color.nil? # todo: brightness for sprites
-                top_color = selected_color
-                return top_color unless sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects)
-              else
-                if @bldcnt.is_bg_target(4, target: 2)
-                  color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-                  return color.value
-                else
-                  return top_color
-                end
-              end
+        if sprite_pixel.priority == priority && sprite_pixel.palette > 0
+          selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
+          if top_color.nil? # todo: brightness for sprites
+            top_color = selected_color
+            return top_color unless sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects)
+          else
+            if @bldcnt.is_bg_target(4, target: 2) || sprite_pixel.blends
+              color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
+              return color.value
+            else
+              return top_color
             end
           end
         end
