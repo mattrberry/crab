@@ -304,8 +304,17 @@ class PPU
         if sprite_pixel.priority == priority && sprite_pixel.palette > 0
           selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
           if top_color.nil? # todo: brightness for sprites
-            top_color = selected_color
-            return top_color unless sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects)
+            if !(sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects))
+              return selected_color
+            elsif @bldcnt.color_special_effect == 1 # alpha blending
+              top_color = selected_color
+            elsif @bldcnt.color_special_effect == 2 # brightness increase
+              bgr16 = BGR16.new(selected_color)
+              return (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+            else # brightness decrease
+              bgr16 = BGR16.new(selected_color)
+              return (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+            end
           else
             if @bldcnt.is_bg_target(4, target: 2) || sprite_pixel.blends
               color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
