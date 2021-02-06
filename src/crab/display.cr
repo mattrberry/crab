@@ -53,7 +53,6 @@ class Display
     LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_PROFILE_MASK, LibSDL::GLprofile::PROFILE_CORE)
     LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_MAJOR_VERSION, 3)
     LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_MINOR_VERSION, 3)
-    LibSDL.gl_set_swap_interval(0) # disable vsync
 
     {% unless flag?(:darwin) %}
       # todo: proper debug messages for mac
@@ -63,6 +62,7 @@ class Display
     {% end %}
 
     LibSDL.gl_create_context @window
+    LibSDL.gl_set_swap_interval(0) # disable vsync
     shader_program = LibGL.create_program
 
     puts "OpenGL version: #{String.new(LibGL.get_string(LibGL::VERSION))}"
