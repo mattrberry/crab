@@ -1,5 +1,6 @@
 module THUMB
-  def thumb_high_reg_branch_exchange(instr : Word) : Nil
+  macro thumb_high_reg_branch_exchange
+    ->(gba : GBA, instr : Word) {
     op = bits(instr, 8..9)
     h1 = bit?(instr, 7)
     h2 = bit?(instr, 6)
@@ -11,16 +12,17 @@ module THUMB
 
     # In this group only CMP (Op = 01) sets the CPSR condition codes.
     case op
-    when 0b00 then set_reg(rd, add(@r[rd], @r[rs], false))
-    when 0b01 then sub(@r[rd], @r[rs], true)
-    when 0b10 then set_reg(rd, @r[rs])
+    when 0b00 then gba.cpu.set_reg(rd, gba.cpu.add(gba.cpu.r[rd], gba.cpu.r[rs], false))
+    when 0b01 then gba.cpu.sub(gba.cpu.r[rd], gba.cpu.r[rs], true)
+    when 0b10 then gba.cpu.set_reg(rd, gba.cpu.r[rs])
     when 0b11
-      if bit?(@r[rs], 0)
-        set_reg(15, @r[rs])
+      if bit?(gba.cpu.r[rs], 0)
+        gba.cpu.set_reg(15, gba.cpu.r[rs])
       else
-        @cpsr.thumb = false
-        set_reg(15, @r[rs])
+        gba.cpu.cpsr.thumb = false
+        gba.cpu.set_reg(15, gba.cpu.r[rs])
       end
     end
+  }
   end
 end

@@ -1,9 +1,11 @@
 module THUMB
-  def thumb_conditional_branch(instr : Word) : Nil
+  macro thumb_conditional_branch
+    ->(gba : GBA, instr : Word) {
     cond = bits(instr, 8..11)
     offset = bits(instr, 0..7).to_i8!.to_i32
-    if check_cond cond
-      set_reg(15, @r[15] &+ (offset * 2))
+    if gba.cpu.check_cond cond
+      gba.cpu.set_reg(15, gba.cpu.r[15] &+ (offset * 2))
     end
+  }
   end
 end

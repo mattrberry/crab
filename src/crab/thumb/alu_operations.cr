@@ -1,36 +1,38 @@
 module THUMB
-  def thumb_alu_operations(instr : Word) : Nil
+  macro thumb_alu_operations
+    ->(gba : GBA, instr : Word) {
     op = bits(instr, 6..9)
     rs = bits(instr, 3..5)
     rd = bits(instr, 0..2)
-    barrel_shifter_carry_out = @cpsr.carry
+    barrel_shifter_carry_out = gba.cpu.cpsr.carry
     case op
-    when 0b0000 then res = set_reg(rd, @r[rd] & @r[rs])
-    when 0b0001 then res = set_reg(rd, @r[rd] ^ @r[rs])
+    when 0b0000 then res = gba.cpu.set_reg(rd, gba.cpu.r[rd] & gba.cpu.r[rs])
+    when 0b0001 then res = gba.cpu.set_reg(rd, gba.cpu.r[rd] ^ gba.cpu.r[rs])
     when 0b0010
-      res = set_reg(rd, lsl(@r[rd], @r[rs], pointerof(barrel_shifter_carry_out)))
-      @cpsr.carry = barrel_shifter_carry_out
+      res = gba.cpu.set_reg(rd, gba.cpu.lsl(gba.cpu.r[rd], gba.cpu.r[rs], pointerof(barrel_shifter_carry_out)))
+      gba.cpu.cpsr.carry = barrel_shifter_carry_out
     when 0b0011
-      res = set_reg(rd, lsr(@r[rd], @r[rs], false, pointerof(barrel_shifter_carry_out)))
-      @cpsr.carry = barrel_shifter_carry_out
+      res = gba.cpu.set_reg(rd, gba.cpu.lsr(gba.cpu.r[rd], gba.cpu.r[rs], false, pointerof(barrel_shifter_carry_out)))
+      gba.cpu.cpsr.carry = barrel_shifter_carry_out
     when 0b0100
-      res = set_reg(rd, asr(@r[rd], @r[rs], false, pointerof(barrel_shifter_carry_out)))
-      @cpsr.carry = barrel_shifter_carry_out
-    when 0b0101 then res = set_reg(rd, adc(@r[rd], @r[rs], set_conditions: true))
-    when 0b0110 then res = set_reg(rd, sbc(@r[rd], @r[rs], set_conditions: true))
+      res = gba.cpu.set_reg(rd, gba.cpu.asr(gba.cpu.r[rd], gba.cpu.r[rs], false, pointerof(barrel_shifter_carry_out)))
+      gba.cpu.cpsr.carry = barrel_shifter_carry_out
+    when 0b0101 then res = gba.cpu.set_reg(rd, gba.cpu.adc(gba.cpu.r[rd], gba.cpu.r[rs], set_conditions: true))
+    when 0b0110 then res = gba.cpu.set_reg(rd, gba.cpu.sbc(gba.cpu.r[rd], gba.cpu.r[rs], set_conditions: true))
     when 0b0111
-      res = set_reg(rd, ror(@r[rd], @r[rs], false, pointerof(barrel_shifter_carry_out)))
-      @cpsr.carry = barrel_shifter_carry_out
-    when 0b1000 then res = @r[rd] & @r[rs]
-    when 0b1001 then res = set_reg(rd, sub(0, @r[rs], set_conditions: true))
-    when 0b1010 then res = sub(@r[rd], @r[rs], set_conditions: true)
-    when 0b1011 then res = add(@r[rd], @r[rs], set_conditions: true)
-    when 0b1100 then res = set_reg(rd, @r[rd] | @r[rs])
-    when 0b1101 then res = set_reg(rd, @r[rs] &* @r[rd])
-    when 0b1110 then res = set_reg(rd, @r[rd] & ~@r[rs])
-    when 0b1111 then res = set_reg(rd, ~@r[rs])
+      res = gba.cpu.set_reg(rd, gba.cpu.ror(gba.cpu.r[rd], gba.cpu.r[rs], false, pointerof(barrel_shifter_carry_out)))
+      gba.cpu.cpsr.carry = barrel_shifter_carry_out
+    when 0b1000 then res = gba.cpu.r[rd] & gba.cpu.r[rs]
+    when 0b1001 then res = gba.cpu.set_reg(rd, gba.cpu.sub(0, gba.cpu.r[rs], set_conditions: true))
+    when 0b1010 then res = gba.cpu.sub(gba.cpu.r[rd], gba.cpu.r[rs], set_conditions: true)
+    when 0b1011 then res = gba.cpu.add(gba.cpu.r[rd], gba.cpu.r[rs], set_conditions: true)
+    when 0b1100 then res = gba.cpu.set_reg(rd, gba.cpu.r[rd] | gba.cpu.r[rs])
+    when 0b1101 then res = gba.cpu.set_reg(rd, gba.cpu.r[rs] &* gba.cpu.r[rd])
+    when 0b1110 then res = gba.cpu.set_reg(rd, gba.cpu.r[rd] & ~gba.cpu.r[rs])
+    when 0b1111 then res = gba.cpu.set_reg(rd, ~gba.cpu.r[rs])
     else             raise "Invalid alu op: #{op}"
     end
-    set_neg_and_zero_flags(res)
+    gba.cpu.set_neg_and_zero_flags(res)
+  }
   end
 end

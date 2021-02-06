@@ -1,5 +1,6 @@
 require "./arm/*"
 require "./thumb/*"
+require "./thumb.cr"
 require "./pipeline"
 
 class CPU
@@ -41,12 +42,12 @@ class CPU
     num mode, 5
   end
 
-  getter r = Slice(Word).new 16
-  @cpsr : PSR = PSR.new CPU::Mode::SYS.value
-  @spsr : PSR = PSR.new CPU::Mode::SYS.value
+  getter r : Slice(Word) = Slice(Word).new 16
+  getter cpsr : PSR = PSR.new CPU::Mode::SYS.value
+  getter spsr : PSR = PSR.new CPU::Mode::SYS.value
   getter pipeline = Pipeline.new
   getter lut : Slice(Proc(Word, Nil)) { fill_lut }
-  getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
+  # getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
   @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 7, 0 }
   @spsr_banks = Array(Word).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
   property halted = false
@@ -126,7 +127,7 @@ class CPU
       instr = @pipeline.shift
       {% if flag? :trace %} print_state instr {% end %}
       if @cpsr.thumb
-        thumb_execute instr
+        thumb_execute @gba, instr
       else
         arm_execute instr
       end

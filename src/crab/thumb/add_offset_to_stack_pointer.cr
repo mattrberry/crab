@@ -1,11 +1,13 @@
 module THUMB
-  def thumb_add_offset_to_stack_pointer(instr : Word) : Nil
+  macro thumb_add_offset_to_stack_pointer
+    ->(gba : GBA, instr : Word) {
     sign = bit?(instr, 7)
     offset = bits(instr, 0..6)
     if sign # negative
-      set_reg(13, @r[13] &- (offset << 2))
+      gba.cpu.set_reg(13, gba.cpu.r[13] &- (offset << 2))
     else # positive
-      set_reg(13, @r[13] &+ (offset << 2))
+      gba.cpu.set_reg(13, gba.cpu.r[13] &+ (offset << 2))
     end
+  }
   end
 end
