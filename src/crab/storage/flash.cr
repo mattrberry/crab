@@ -20,18 +20,20 @@ class Flash < Storage
     SET_BANK      = 0xB0
   end
 
-  SANYO = 0x1362_u16
-
   @state = State::READY
   @bank = 0_u8
 
   def initialize(@type : Type)
     @memory = Bytes.new(@type.bytes, 0xFF)
+    @id = case @type
+          when Type::FLASH1M then 0x1362 # Sanyo
+          else                    0x1B32 # Panasonic
+          end
   end
 
   def [](index : Int) : Byte
     if @state.includes?(State::IDENTIFICATION) && 0 <= index <= 1
-      (SANYO >> (8 * index) & 0xFF).to_u8!
+      (@id >> (8 * index) & 0xFF).to_u8!
     else
       @memory[0x10000 * @bank + index]
     end
