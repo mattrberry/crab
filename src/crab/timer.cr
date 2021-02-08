@@ -42,7 +42,7 @@ class Timer
       @gba.apu.timer_overflow timer_number if timer_number <= 1
       @interrupt_events[timer_number].call
       @gba.interrupts.schedule_interrupt_check if tmcnt.irq_enable
-      cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0xFFFF - @tm[timer_number])
+      cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0x10000 - @tm[timer_number])
       log "  scheduling overflow for timer #{timer_number} in #{cycles_until_overflow} cycles" unless tmcnt.cascade
       @gba.scheduler.schedule cycles_until_overflow, @events[timer_number], @event_types[timer_number] unless tmcnt.cascade
     }
@@ -81,8 +81,8 @@ class Timer
         log "  TMCNT: #{tmcnt.to_s}"
         @cycle_enabled[timer_number] = @gba.scheduler.cycles
         @tm[timer_number] = @tmd[timer_number]
-        log "  freq_to_cycles(#{tmcnt.frequency}) -> #{hex_str freq_to_cycles(tmcnt.frequency)}, @tm[#{timer_number}] -> #{hex_str @tm[timer_number]}, 0xFFFF - @tm[#{timer_number}] -> #{0xFFFF - @tm[timer_number]}"
-        cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0xFFFF - @tm[timer_number])
+        log "  freq_to_cycles(#{tmcnt.frequency}) -> #{hex_str freq_to_cycles(tmcnt.frequency)}, @tm[#{timer_number}] -> #{hex_str @tm[timer_number]}, 0x10000 - @tm[#{timer_number}] -> #{0x10000 - @tm[timer_number]}"
+        cycles_until_overflow = freq_to_cycles(tmcnt.frequency) * (0x10000 - @tm[timer_number])
         log "  Scheduling overflow for timer #{timer_number} in #{cycles_until_overflow} cycles"
         @gba.scheduler.schedule cycles_until_overflow, @events[timer_number], @event_types[timer_number] unless tmcnt.cascade
       elsif !tmcnt.enable && enabled # disabled
