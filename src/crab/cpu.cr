@@ -55,7 +55,8 @@ class CPU
     @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
     @reg_banks[Mode::IRQ.bank][5] = 0x03007FA0
     @reg_banks[Mode::SVC.bank][5] = 0x03007FE0
-    @r[15] = 0x08000008
+    @r[15] = 0x08000000
+    clear_pipeline
   end
 
   def switch_mode(new_mode : Mode, caller = __FILE__) : Nil
@@ -91,6 +92,18 @@ class CPU
     end
   end
 
+  def fill_pipeline : Nil
+    if @cpsr.thumb
+      pc = @r[15] & ~1
+      @pipeline.push @gba.bus.read_half(@r[15] &- 2).to_u32!
+      @pipeline.push @gba.bus.read_half(@r[15]).to_u32!
+    else
+      pc = @r[15] & ~3
+      @pipeline.push @gba.bus.read_half(@r[15] &- 4).to_u32!
+      @pipeline.push @gba.bus.read_half(@r[15]).to_u32!
+    end
+  end
+
   def clear_pipeline : Nil
     @pipeline.clear
     if @cpsr.thumb
@@ -101,12 +114,16 @@ class CPU
   end
 
   def read_instr : Word
-    if @cpsr.thumb
-      @r[15] &= ~1
-      @gba.bus.read_half(@r[15] &- 4).to_u32!
+    if @pipeline.size == 0
+      if @cpsr.thumb
+        @r[15] &= ~1
+        @gba.bus.read_half(@r[15] &- 4).to_u32!
+      else
+        @r[15] &= ~3
+        @gba.bus.read_word(@r[15] &- 8)
+      end
     else
-      @r[15] &= ~3
-      @gba.bus.read_word(@r[15] &- 8)
+      @pipeline.shift
     end
   end
 

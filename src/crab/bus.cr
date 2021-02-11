@@ -108,6 +108,7 @@ class Bus
   def []=(index : Int, value : Byte) : Nil
     log "write #{hex_str index.to_u32} -> #{hex_str value}"
     return if bits(index, 28..31) > 0
+    @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
     case bits(index, 24..27)
     when 0x0 then log "Writing to bios - #{hex_str index.to_u32}: #{hex_str value}"
     when 0x2 then @wram_board[index & 0x3FFFF] = value

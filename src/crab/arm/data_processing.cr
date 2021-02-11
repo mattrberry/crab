@@ -93,7 +93,7 @@ module ARM
       step_arm unless rd == 15
     else raise "Unimplemented execution of data processing opcode: #{hex_str opcode}"
     end
-    @r[15] &-= 4 if pc_reads_12_ahead
+    @r[15] &-= 4 if pc_reads_12_ahead # todo: this is probably borked if there's a write to r15, but it needs some more thought..
     if rd == 15 && set_conditions
       @r[15] &-= 4 if @spsr.thumb # writing to r15 will have already cleared the pipeline and bumped r15 for arm mode
       old_spsr = @spsr.value
