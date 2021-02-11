@@ -9,5 +9,7 @@ module THUMB
     else
       @gba.bus[address] = @r[rd]
     end
+
+    step_thumb
   end
 end

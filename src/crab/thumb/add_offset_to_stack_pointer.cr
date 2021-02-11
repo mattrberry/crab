@@ -7,5 +7,7 @@ module THUMB
     else # positive
       set_reg(13, @r[13] &+ (offset << 2))
     end
+
+    step_thumb
   end
 end

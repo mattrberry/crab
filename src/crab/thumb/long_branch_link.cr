@@ -9,6 +9,7 @@ module THUMB
     else
       offset = (offset << 5).to_i16! >> 5
       set_reg(14, @r[15] &+ (offset.to_u32! << 12))
+      step_thumb
     end
   end
 end

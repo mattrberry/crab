@@ -12,5 +12,7 @@ module THUMB
     when 0b11 then set_reg(rd, sub(@r[rd], offset, true))
     else           raise "Invalid move/compare/add/subtract op: #{op}"
     end
+
+    step_thumb
   end
 end

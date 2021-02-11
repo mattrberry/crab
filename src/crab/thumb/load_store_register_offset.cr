@@ -11,5 +11,7 @@ module THUMB
     when 0b10 then set_reg(rd, @gba.bus.read_word_rotate(address)) # ldr
     when 0b11 then set_reg(rd, @gba.bus[address].to_u32!)          # ldrb
     end
+
+    step_thumb
   end
 end

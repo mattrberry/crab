@@ -13,5 +13,7 @@ module THUMB
     end
     set_neg_and_zero_flags(@r[rd])
     @cpsr.carry = carry_out
+
+    step_thumb
   end
 end

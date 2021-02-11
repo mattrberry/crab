@@ -13,5 +13,7 @@ module ARM
       @gba.bus[@r[rn]] = @r[rm]
       set_reg(rd, tmp)
     end
+
+    step_arm unless rd == 15
   end
 end

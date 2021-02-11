@@ -10,6 +10,7 @@ module ARM
       lut[hash].call instr
     else
       log "Skipping instruction, cond: #{hex_str instr >> 28}"
+      step_arm
     end
   end
 

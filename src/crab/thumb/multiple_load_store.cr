@@ -32,5 +32,7 @@ module THUMB
       end
       set_reg(rb, address &+ 0x40)
     end
+
+    step_thumb unless list == 0 && load
   end
 end

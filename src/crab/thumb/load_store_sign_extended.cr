@@ -12,5 +12,7 @@ module THUMB
     when 0b11 then set_reg(rd, @gba.bus.read_half_signed(address)) # ldsh
     else           raise "Invalid load/store signed extended: #{hs}"
     end
+
+    step_thumb
   end
 end

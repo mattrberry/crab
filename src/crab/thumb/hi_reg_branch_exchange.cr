@@ -22,5 +22,7 @@ module THUMB
         set_reg(15, @r[rs])
       end
     end
+
+    step_thumb unless rd == 15 || op == 0b11
   end
 end

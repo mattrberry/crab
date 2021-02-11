@@ -28,5 +28,7 @@ module THUMB
       end
     end
     set_reg(13, address)
+
+    step_thumb unless pop && pclr
   end
 end

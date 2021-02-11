@@ -9,5 +9,7 @@ module ARM
 
     set_reg(rd, @r[rm] &* @r[rs] &+ (accumulate ? @r[rn] : 0))
     set_neg_and_zero_flags(@r[rd]) if set_conditions
+
+    step_arm unless rd == 15
   end
 end

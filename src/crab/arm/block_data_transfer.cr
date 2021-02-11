@@ -62,5 +62,7 @@ module ARM
     end
 
     set_reg(rn, address) if write_back && !(load && bit?(list, rn))
+
+    step_arm unless load && (bit?(list, 15) || list == 0)
   end
 end

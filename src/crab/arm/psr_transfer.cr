@@ -37,5 +37,7 @@ module ARM
         set_reg(rd, @cpsr.value)
       end
     end
+
+    step_arm unless !bit?(instr, 21) && bits(instr, 12..15) == 15
   end
 end

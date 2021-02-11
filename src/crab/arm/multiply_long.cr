@@ -21,5 +21,7 @@ module ARM
       @cpsr.negative = bit?(@r[rdhi], 31)
       @cpsr.zero = res == 0
     end
+
+    step_arm unless rdhi == 15 || rdlo == 15
   end
 end

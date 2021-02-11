@@ -10,5 +10,7 @@ module THUMB
     else
       @gba.bus[address] = @r[rd].to_u16!
     end
+
+    step_thumb
   end
 end

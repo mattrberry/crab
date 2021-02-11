@@ -16,5 +16,7 @@ module THUMB
       set_reg(rd, add(@r[rs], operand, true))
     end
     set_neg_and_zero_flags(@r[rd])
+
+    step_thumb
   end
 end

@@ -54,5 +54,7 @@ module ARM
     # zero, since the old base value can be retained by setting the offset to zero. Therefore
     # post-indexed data transfers always write back the modified base.
     set_reg(rn, address) if (write_back || !pre_indexing) && (rd != rn || !load)
+
+    step_arm unless load && rd == 15
   end
 end

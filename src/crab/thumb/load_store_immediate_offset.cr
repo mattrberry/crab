@@ -11,5 +11,7 @@ module THUMB
     when 0b10 then @gba.bus[base_address &+ offset] = @r[rd].to_u8!                      # strb
     when 0b11 then set_reg(rd, @gba.bus[base_address &+ offset].to_u32)                  # ldrb
     end
+
+    step_thumb
   end
 end

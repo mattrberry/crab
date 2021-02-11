@@ -32,5 +32,7 @@ module THUMB
     else             raise "Invalid alu op: #{op}"
     end
     set_neg_and_zero_flags(res)
+
+    step_thumb
   end
 end

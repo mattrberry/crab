@@ -55,7 +55,7 @@ class CPU
     @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
     @reg_banks[Mode::IRQ.bank][5] = 0x03007FA0
     @reg_banks[Mode::SVC.bank][5] = 0x03007FE0
-    @r[15] = 0x08000000
+    @r[15] = 0x08000008
   end
 
   def switch_mode(new_mode : Mode, caller = __FILE__) : Nil
@@ -63,9 +63,7 @@ class CPU
     return if new_mode == old_mode
     new_bank = new_mode.bank
     old_bank = old_mode.bank
-    # puts "switching mode from #{old_mode} to #{new_mode}, cpsr:#{hex_str @cpsr.value}, spsr:#{hex_str @spsr.value}, new bank:#{new_bank}, caller:#{caller}"
     if new_mode == Mode::FIQ || old_mode == Mode::FIQ
-      # puts "  One of the modes is FIQ, switching out FIQ regs"
       5.times do |idx|
         @reg_banks[old_bank][idx] = @r[8 + idx]
         @r[8 + idx] = @reg_banks[new_bank][idx]
@@ -80,13 +78,10 @@ class CPU
     @r[14] = @reg_banks[new_bank][6]
     @spsr.value = @cpsr.value
     @cpsr.mode = new_mode.value
-    # puts "                                cpsr:#{hex_str @cpsr.value}, spsr:#{hex_str @spsr.value}"
   end
 
   def irq : Nil
-    # puts "ime is enabled, cpsr:#{hex_str @cpsr.value}, cpsr.irq_disable:#{@cpsr.irq_disable}"
     unless @cpsr.irq_disable
-      fill_pipeline
       lr = @r[15] - (@cpsr.thumb ? 0 : 4)
       switch_mode CPU::Mode::IRQ
       @cpsr.thumb = false
@@ -96,34 +91,28 @@ class CPU
     end
   end
 
-  def fill_pipeline : Nil
-    if @cpsr.thumb # moved alignment to interpreter loop to fix exception returning
-      @r[15] &= ~1
+  def clear_pipeline : Nil
+    @pipeline.clear
+    if @cpsr.thumb
+      @r[15] &+= 4
     else
-      @r[15] &= ~3
-    end
-    while @pipeline.size < 2
-      if @cpsr.thumb
-        log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_half(@r[15])}"
-        @pipeline.push(@gba.bus.read_half(@r[15]).to_u32!)
-        @r[15] &+= 2
-      else
-        log "Fetch pc: #{hex_str @r[15]}, instr: #{hex_str @gba.bus.read_word @r[15]}"
-        @pipeline.push(@gba.bus.read_word(@r[15]))
-        @r[15] &+= 4
-      end
+      @r[15] &+= 8
     end
   end
 
-  def clear_pipeline : Nil
-    log "Clearing pipeline"
-    @pipeline.clear
+  def read_instr : Word
+    if @cpsr.thumb
+      @r[15] &= ~1
+      @gba.bus.read_half(@r[15] &- 4).to_u32!
+    else
+      @r[15] &= ~3
+      @gba.bus.read_word(@r[15] &- 8)
+    end
   end
 
   def tick : Nil
-    fill_pipeline
     unless @halted
-      instr = @pipeline.shift
+      instr = read_instr
       {% if flag? :trace %} print_state instr {% end %}
       if @cpsr.thumb
         thumb_execute instr
@@ -155,10 +144,19 @@ class CPU
     end
   end
 
+  def step_arm : Nil
+    @r[15] &+= 4
+  end
+
+  def step_thumb : Nil
+    @r[15] &+= 2
+  end
+
   @[AlwaysInline]
   def set_reg(reg : Int, value : Int) : UInt32
-    clear_pipeline if reg == 15
     @r[reg] = value.to_u32!
+    clear_pipeline if reg == 15
+    value.to_u32!
   end
 
   @[AlwaysInline]
