@@ -49,6 +49,7 @@ class CPU
   getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
   @reg_banks = Array(Array(Word)).new 6 { Array(Word).new 7, 0 }
   @spsr_banks = Array(Word).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
+  @condition_lut = Array(UInt16).new 16, 0 # A LUT of masks to simplify condition evaluation
   property halted = false
 
   def initialize(@gba : GBA)
@@ -57,6 +58,26 @@ class CPU
     @reg_banks[Mode::SVC.bank][5] = 0x03007FE0
     @r[15] = 0x08000000
     clear_pipeline
+
+    @condition_lut = [ # initialize CPSR masks for condition checking
+        0xF0F0, # EQ (z)
+        0x0F0F, # NE (!z)
+        0xCCCC, # CS (c)
+        0x3333, # CC (!c)
+        0xFF00, # MI (n)
+        0x00FF, # PL (!n)
+        0xAAAA, # VS (v)
+        0x5555, # VC (!v)
+        0x0C0C, # HI (c && !z)
+        0xF3F3, # LS (!c  z)
+        0xAA55, # GE (n == v)
+        0x55AA, # LT (n != v)
+        0x0A05, # GT (!z && n == v)
+        0xF5FA, # LE (z  n != v)
+        0xFFFF, # AL (always)
+        0x0000, # NV (never, used for special instructions in ARMv5+)
+    ]
+    
   end
 
   def switch_mode(new_mode : Mode, caller = __FILE__) : Nil
@@ -141,24 +162,7 @@ class CPU
   end
 
   def check_cond(cond : Word) : Bool
-    case cond
-    when 0x0 then @cpsr.zero
-    when 0x1 then !@cpsr.zero
-    when 0x2 then @cpsr.carry
-    when 0x3 then !@cpsr.carry
-    when 0x4 then @cpsr.negative
-    when 0x5 then !@cpsr.negative
-    when 0x6 then @cpsr.overflow
-    when 0x7 then !@cpsr.overflow
-    when 0x8 then @cpsr.carry && !@cpsr.zero
-    when 0x9 then !@cpsr.carry || @cpsr.zero
-    when 0xA then @cpsr.negative == @cpsr.overflow
-    when 0xB then @cpsr.negative != @cpsr.overflow
-    when 0xC then !@cpsr.zero && @cpsr.negative == @cpsr.overflow
-    when 0xD then @cpsr.zero || @cpsr.negative != @cpsr.overflow
-    when 0xE then true
-    else          raise "Cond 0xF is reserved"
-    end
+    (@condition_lut[cond] & 1 << (@cpsr.value >> 28)) != 0 # Bit packing magic to evaluate condition codes
   end
 
   def step_arm : Nil

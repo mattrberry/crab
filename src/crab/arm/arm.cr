@@ -10,6 +10,7 @@ module ARM
       lut[hash].call instr
     else
       log "Skipping instruction, cond: #{hex_str instr >> 28}"
+      raise "Condition code NV" if bits(instr, 28..31) == 0xF
       step_arm
     end
   end
