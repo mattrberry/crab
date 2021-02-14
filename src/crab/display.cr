@@ -4,11 +4,14 @@ class Display
   WIDTH  = 240
   HEIGHT = 160
   SCALE  =   4
-  @fps = 30
+
+  @microseconds = 0
+  @frames = 0
+  @last_time = Time.utc
   @seconds : Int32 = Time.utc.second
 
   def initialize
-    @window = SDL::Window.new(window_title, WIDTH * SCALE, HEIGHT * SCALE, flags: SDL::Window::Flags::OPENGL)
+    @window = SDL::Window.new(window_title(59.7), WIDTH * SCALE, HEIGHT * SCALE, flags: SDL::Window::Flags::OPENGL)
     setup_gl
   end
 
@@ -16,17 +19,25 @@ class Display
     LibGL.tex_image_2d(LibGL::TEXTURE_2D, 0, LibGL::RGB5, 240, 160, 0, LibGL::RGBA, LibGL::UNSIGNED_SHORT_1_5_5_5_REV, framebuffer)
     LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
     LibSDL.gl_swap_window(@window)
-
-    @fps += 1
-    if Time.utc.second != @seconds
-      @window.title = window_title
-      @fps = 0
-      @seconds = Time.utc.second
-    end
+    update_draw_count
   end
 
-  private def window_title : String
-    "crab - #{@fps} fps"
+  private def window_title(fps : Float) : String
+    "crab - #{fps.round(1)} fps"
+  end
+
+  private def update_draw_count : Nil
+    current_time = Time.utc
+    @microseconds += (current_time - @last_time).microseconds
+    @last_time = current_time
+    @frames += 1
+    if current_time.second != @seconds
+      fps = @frames * 1_000_000 / @microseconds
+      @window.title = window_title(fps)
+      @microseconds = 0
+      @frames = 0
+      @seconds = current_time.second
+    end
   end
 
   private def compile_shader(source : String, type : UInt32) : UInt32
