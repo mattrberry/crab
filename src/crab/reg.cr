@@ -85,6 +85,22 @@ module Reg
   end
 
   ####################
+  # Timer
+
+  class TMCNT < BitField(UInt16)
+    num not_used_1, 8, lock: true
+    bool enable
+    bool irq_enable
+    num not_used_2, 3, lock: true
+    bool cascade
+    num frequency, 2
+
+    def to_s(io)
+      io << "enable:#{enable}, irq:#{irq_enable}, cascade:#{cascade}, freq:#{frequency}"
+    end
+  end
+
+  ####################
   # PPU
 
   class DISPCNT < BitField(UInt16)
