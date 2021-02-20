@@ -14,7 +14,7 @@ module ARM
     operand_2 = if imm_flag # Operand 2 is an immediate
                   immediate_offset bits(instr, 0..11), pointerof(barrel_shifter_carry_out)
                 else # Operand 2 is a register
-                  rotate_register bits(instr, 0..11), pointerof(barrel_shifter_carry_out)
+                  rotate_register bits(instr, 0..11), pointerof(barrel_shifter_carry_out), allow_register_shifts: true
                 end
     case opcode
     when 0b0000 # AND

@@ -69,7 +69,7 @@ module ARM
     puts "Unused instruction: #{hex_str instr}"
   end
 
-  def rotate_register(instr : Word, carry_out : Pointer(Bool), allow_register_shifts = true) : Word
+  def rotate_register(instr : Word, carry_out : Pointer(Bool), allow_register_shifts : Bool) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
     if allow_register_shifts && bit?(instr, 4)
