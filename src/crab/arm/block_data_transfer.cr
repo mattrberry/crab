@@ -14,7 +14,6 @@ module ARM
       switch_mode CPU::Mode::USR
     end
 
-    step_arm # step in advance since str from r15 is 12 ahead
     address = @r[rn]
     bits_set = count_set_bits(list)
     if bits_set == 0 # odd behavior on empty list, tested in gba-suite
@@ -35,6 +34,7 @@ module ARM
           set_reg(idx, @gba.bus.read_word(address))
         else
           @gba.bus[address] = @r[idx]
+          @gba.bus[address] &+= 4 if idx == 15 # pc reads 12 ahead instead of 8
         end
         address += 4 # can always do these post since the address was accounted for up front
         set_reg(rn, final_addr) if write_back && !first_transfer && !(load && bit?(list, rn))
@@ -45,5 +45,7 @@ module ARM
     if s_bit
       switch_mode CPU::Mode.from_value mode.not_nil!
     end
+
+    step_arm unless load && bit?(list, 15)
   end
 end
