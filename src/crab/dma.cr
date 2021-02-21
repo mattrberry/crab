@@ -21,6 +21,8 @@ class DMA
     end
   end
 
+  @interrupt_flags : Array(Proc(Nil))
+
   def initialize(@gba : GBA)
     @dmasad = Array(UInt32).new 4, 0
     @dmadad = Array(UInt32).new 4, 0
@@ -28,6 +30,8 @@ class DMA
     @dmacnt_h = Array(Reg::DMACNT).new 4 { Reg::DMACNT.new 0 }
     @src = Array(UInt32).new 4, 0
     @dst = Array(UInt32).new 4, 0
+    @interrupt_flags = [->{ @gba.interrupts.reg_if.dma0 = true }, ->{ @gba.interrupts.reg_if.dma1 = true },
+                        ->{ @gba.interrupts.reg_if.dma2 = true }, ->{ @gba.interrupts.reg_if.dma3 = true }]
     @src_mask = [0x07FFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF]
     @dst_mask = [0x07FFFFFF, 0x07FFFFFF, 0x07FFFFFF, 0x0FFFFFFF]
     @len_mask = [0x3FFF, 0x3FFF, 0x3FFF, 0xFFFF]
@@ -136,5 +140,9 @@ class DMA
 
     @dst[channel] = @dmadad[channel] if dest_control == AddressControl::IncrementReload
     dmacnt_h.enable = false unless dmacnt_h.repeat && start_timing != StartTiming::Immediate
+    if dmacnt_h.irq_enable
+      @interrupt_flags[channel].call
+      @gba.interrupts.schedule_interrupt_check
+    end
   end
 end
