@@ -6,8 +6,8 @@ abstract class Storage
     FLASH512
     FLASH1M
 
-    def regex : Regex
-      /#{self}_V\d{3}/
+    def regex : Regex # don't rely on the 3 digits after this string
+      /#{self}_V/
     end
 
     def bytes : Int

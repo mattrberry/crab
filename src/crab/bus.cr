@@ -23,8 +23,8 @@ class Bus
     when 0x8, 0x9,
          0xA, 0xB,
          0xC, 0xD then @gba.cartridge.rom[index & 0x01FFFFFF]
-    when 0xE then @gba.storage[index & 0xFFFF]
-    else          abort "Unmapped read: #{hex_str index.to_u32}"
+    when 0xE, 0xF then @gba.storage[index & 0xFFFF]
+    else               abort "Unmapped read: #{hex_str index.to_u32}"
     end
   end
 
@@ -49,8 +49,8 @@ class Bus
     when 0x8, 0x9,
          0xA, 0xB,
          0xC, 0xD then (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(HalfWord*).value
-    when 0xE then read_half_slow(index)
-    else          abort "Unmapped read: #{hex_str index.to_u32}"
+    when 0xE, 0xF then read_half_slow(index)
+    else               abort "Unmapped read: #{hex_str index.to_u32}"
     end
   end
 

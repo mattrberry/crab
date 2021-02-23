@@ -1,5 +1,5 @@
 class SRAM < Storage
-  @memory = Bytes.new(Type::SRAM.bytes, 0x00)
+  @memory = Bytes.new(Type::SRAM.bytes, 0xFF)
 
   def [](index : Int) : Byte
     index < @memory.size ? @memory[index] : 0_u8
