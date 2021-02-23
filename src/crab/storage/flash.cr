@@ -32,6 +32,7 @@ class Flash < Storage
   end
 
   def [](index : Int) : Byte
+    index &= 0xFFFF
     if @state.includes?(State::IDENTIFICATION) && 0 <= index <= 1
       (@id >> (8 * index) & 0xFF).to_u8!
     else
@@ -40,6 +41,7 @@ class Flash < Storage
   end
 
   def []=(index : Int, value : Byte) : Nil
+    index &= 0xFFFF
     case @state
     when .includes? State::PREPARE_WRITE
       @memory[0x10000 * @bank + index] &= value

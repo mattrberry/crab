@@ -23,7 +23,7 @@ class Bus
     when 0x8, 0x9,
          0xA, 0xB,
          0xC, 0xD then @gba.cartridge.rom[index & 0x01FFFFFF]
-    when 0xE, 0xF then @gba.storage[index & 0xFFFF]
+    when 0xE, 0xF then @gba.storage[index]
     else               abort "Unmapped read: #{hex_str index.to_u32}"
     end
   end
@@ -123,7 +123,7 @@ class Bus
     when 0x8, 0x9,
          0xA, 0xB,
          0xC, 0xD then log "Writing to cart - #{hex_str index.to_u32}: #{hex_str value}"
-    when 0xE then @gba.storage[index & 0xFFFF] = value
+    when 0xE then @gba.storage[index] = value
     else          abort "Unmapped write: #{hex_str index.to_u32}"
     end
   end

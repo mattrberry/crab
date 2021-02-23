@@ -2,13 +2,11 @@ class SRAM < Storage
   @memory = Bytes.new(Type::SRAM.bytes, 0xFF)
 
   def [](index : Int) : Byte
-    index < @memory.size ? @memory[index] : 0_u8
+    @memory[index & 0x7FFF]
   end
 
   def []=(index : Int, value : Byte) : Nil
-    if index < @memory.size
-      @memory[index] = value
-      @dirty = true
-    end
+    @memory[index & 0x7FFF] = value
+    @dirty = true
   end
 end
