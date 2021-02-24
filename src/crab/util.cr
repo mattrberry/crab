@@ -34,6 +34,12 @@ def first_set_bit(n : Int) : Int
   count
 end
 
+def last_set_bit(n : Int) : Int
+  count = count_bits(n)
+  count.downto(0) { |idx| return idx if bit?(n, idx) }
+  count
+end
+
 macro trace(value, newline = true)
   {% if flag? :trace %}
     {% if newline %}
