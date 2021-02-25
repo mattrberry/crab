@@ -39,28 +39,28 @@ class PPU
   def start_hblank : Nil
     @gba.scheduler.schedule 272, ->end_hblank
     @dispstat.hblank = true
-    @gba.interrupts.reg_if.hblank = @dispstat.hblank_irq_enable
-    @gba.interrupts.schedule_interrupt_check if @dispstat.hblank_irq_enable
+    if @dispstat.hblank_irq_enable
+      @gba.interrupts.reg_if.hblank = true
+      @gba.interrupts.schedule_interrupt_check
+    end
     scanline if @vcount < 160
     @gba.dma.trigger_hdma if @vcount < 160
   end
 
   def end_hblank : Nil
+    @gba.scheduler.schedule 0, ->start_line
     @dispstat.hblank = false
-    @gba.interrupts.reg_if.hblank = false
     @vcount = (@vcount + 1) % 228
     @dispstat.vcounter = @vcount == @dispstat.vcount_setting
-    @gba.interrupts.reg_if.vcounter = @dispstat.vcounter_irq_enable && @dispstat.vcounter
+    @gba.interrupts.reg_if.vcounter = true if @dispstat.vcounter_irq_enable && @dispstat.vcounter
     if @vcount == 0
       @dispstat.vblank = false
-      @gba.interrupts.reg_if.vblank = false
     elsif @vcount == 160
       @dispstat.vblank = true
-      @gba.interrupts.reg_if.vblank = @dispstat.vblank_irq_enable
+      @gba.interrupts.reg_if.vblank = true if @dispstat.vblank_irq_enable
       draw
     end
     @gba.interrupts.schedule_interrupt_check
-    @gba.scheduler.schedule 0, ->start_line
   end
 
   def draw : Nil
