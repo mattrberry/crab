@@ -8,7 +8,6 @@ class Bus
   end
 
   def [](index : Int) : Byte
-    log "read #{hex_str index.to_u32}"
     case bits(index, 24..27)
     when 0x0 then @bios[index & 0x3FFF]
     when 0x2 then @wram_board[index & 0x3FFFF]
@@ -26,11 +25,6 @@ class Bus
     when 0xE, 0xF then @gba.storage[index]
     else               abort "Unmapped read: #{hex_str index.to_u32}"
     end
-  end
-
-  def read_half_slow(index : Int) : HalfWord
-    self[index].to_u16 |
-      (self[index + 1].to_u16 << 8)
   end
 
   def read_half(index : Int) : HalfWord
@@ -71,13 +65,6 @@ class Bus
     end
   end
 
-  private def read_word_slow(index : Int) : Word
-    self[index].to_u32 |
-      (self[index + 1].to_u32 << 8) |
-      (self[index + 2].to_u32 << 16) |
-      (self[index + 3].to_u32 << 24)
-  end
-
   def read_word(index : Int) : Word
     index &= ~3
     case bits(index, 24..27)
@@ -94,8 +81,8 @@ class Bus
     when 0x8, 0x9,
          0xA, 0xB,
          0xC, 0xD then (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(Word*).value
-    when 0xE then read_word_slow(index)
-    else          abort "Unmapped read: #{hex_str index.to_u32}"
+    when 0xE, 0xF then read_word_slow(index)
+    else               abort "Unmapped read: #{hex_str index.to_u32}"
     end
   end
 
@@ -106,11 +93,9 @@ class Bus
   end
 
   def []=(index : Int, value : Byte) : Nil
-    log "write #{hex_str index.to_u32} -> #{hex_str value}"
     return if bits(index, 28..31) > 0
     @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
     case bits(index, 24..27)
-    when 0x0 then log "Writing to bios - #{hex_str index.to_u32}: #{hex_str value}"
     when 0x2 then @wram_board[index & 0x3FFFF] = value
     when 0x3 then @wram_chip[index & 0x7FFF] = value
     when 0x4 then @gba.mmio[index] = value
@@ -119,24 +104,71 @@ class Bus
       address = 0x1FFFF_u32 & index
       address -= 0x8000 if address > 0x17FFF
       @gba.ppu.vram[address] = value
-    when 0x7 then @gba.ppu.oam[index & 0x3FF] = value
-    when 0x8, 0x9,
-         0xA, 0xB,
-         0xC, 0xD then log "Writing to cart - #{hex_str index.to_u32}: #{hex_str value}"
-    when 0xE then @gba.storage[index] = value
-    else          abort "Unmapped write: #{hex_str index.to_u32}"
+    when 0x7      then @gba.ppu.oam[index & 0x3FF] = value
+    when 0xE, 0xF then @gba.storage[index] = value
+    else               log "Unmapped write: #{hex_str index.to_u32}"
     end
   end
 
   def []=(index : Int, value : HalfWord) : Nil
-    self[index & ~1] = 0xFF_u8 & value
-    self[(index & ~1) + 1] = 0xFF_u8 & (value >> 8)
+    return if bits(index, 28..31) > 0
+    index &= ~1
+    @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
+    case bits(index, 24..27)
+    when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(HalfWord*).value = value
+    when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(HalfWord*).value = value
+    when 0x4 then write_half_slow(index, value)
+    when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(HalfWord*).value = value
+    when 0x6
+      address = 0x1FFFF_u32 & index
+      address -= 0x8000 if address > 0x17FFF
+      (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = value
+    when 0x7      then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(HalfWord*).value = value
+    when 0xE, 0xF then write_half_slow(index, value)
+    else               log "Unmapped write: #{hex_str index.to_u32}"
+    end
   end
 
   def []=(index : Int, value : Word) : Nil
-    self[index & ~3] = 0xFF_u8 & value
-    self[(index & ~3) + 1] = 0xFF_u8 & (value >> 8)
-    self[(index & ~3) + 2] = 0xFF_u8 & (value >> 16)
-    self[(index & ~3) + 3] = 0xFF_u8 & (value >> 24)
+    return if bits(index, 28..31) > 0
+    index &= ~3
+    @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
+    case bits(index, 24..27)
+    when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(Word*).value = value
+    when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(Word*).value = value
+    when 0x4 then write_word_slow(index, value)
+    when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(Word*).value = value
+    when 0x6
+      address = 0x1FFFF_u32 & index
+      address -= 0x8000 if address > 0x17FFF
+      (@gba.ppu.vram.to_unsafe + address).as(Word*).value = value
+    when 0x7      then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(Word*).value = value
+    when 0xE, 0xF then write_word_slow(index, value)
+    else               log "Unmapped write: #{hex_str index.to_u32}"
+    end
+  end
+
+  private def read_half_slow(index : Int) : HalfWord
+    self[index].to_u16! |
+      (self[index + 1].to_u16! << 8)
+  end
+
+  private def read_word_slow(index : Int) : Word
+    self[index].to_u32! |
+      (self[index + 1].to_u32! << 8) |
+      (self[index + 2].to_u32! << 16) |
+      (self[index + 3].to_u32! << 24)
+  end
+
+  private def write_half_slow(index : Int, value : HalfWord) : Nil
+    self[index] = value.to_u8!
+    self[index + 1] = (value >> 8).to_u8!
+  end
+
+  private def write_word_slow(index : Int, value : Word) : Nil
+    self[index] = value.to_u8!
+    self[index + 1] = (value >> 8).to_u8!
+    self[index + 2] = (value >> 16).to_u8!
+    self[index + 3] = (value >> 24).to_u8!
   end
 end
