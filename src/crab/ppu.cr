@@ -275,10 +275,11 @@ class PPU
             pal_idx += (sprite.palette_number << 4) if pal_idx > 0
           end
 
-          if sprite.obj_mode == 0b10 && pal_idx > 0
-            @sprite_pixels[col] = @sprite_pixels[col].copy_with window: true
-          elsif @sprite_pixels[col].palette == 0 || @sprite_pixels[col].priority > sprite.priority
-            @sprite_pixels[col] = SpritePixel.new(sprite.priority, pal_idx.to_u16, sprite.obj_mode == 0b01, @sprite_pixels[col].window)
+          if sprite.obj_mode == 0b10
+            @sprite_pixels[col] = @sprite_pixels[col].copy_with window: true if pal_idx > 0
+          elsif sprite.priority < @sprite_pixels[col].priority || @sprite_pixels[col].palette == 0
+            @sprite_pixels[col] = @sprite_pixels[col].copy_with priority: sprite.priority
+            @sprite_pixels[col] = @sprite_pixels[col].copy_with palette: pal_idx.to_u16, blends: sprite.obj_mode == 0b01 if pal_idx > 0
           end
         end
       end
