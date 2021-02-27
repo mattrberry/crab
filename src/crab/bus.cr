@@ -99,12 +99,10 @@ class Bus
     when 0x2 then @wram_board[index & 0x3FFFF] = value
     when 0x3 then @wram_chip[index & 0x7FFF] = value
     when 0x4 then @gba.mmio[index] = value
-    when 0x5 then @gba.ppu.pram[index & 0x3FF] = value
+    when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FE)).as(HalfWord*).value = 0x0101_u16 * value
     when 0x6
-      address = 0x1FFFF_u32 & index
-      address -= 0x8000 if address > 0x17FFF
-      @gba.ppu.vram[address] = value
-    when 0x7      then @gba.ppu.oam[index & 0x3FF] = value
+      address = 0x1FFFE_u32 & index # todo ignored range is different when in bitmap mode
+      (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = 0x0101_u16 * value if address <= 0x0FFFF
     when 0xE, 0xF then @gba.storage[index] = value
     else               log "Unmapped write: #{hex_str index.to_u32}"
     end
