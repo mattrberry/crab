@@ -455,7 +455,6 @@ class PPU
     when 0x053 then @bldalpha.value = (@bldalpha.value & 0x00FF) | value.to_u16 << 8
     when 0x054 then @bldy.value = (@bldy.value & 0xFF00) | value
     when 0x055 then @bldy.value = (@bldy.value & 0x00FF) | value.to_u16 << 8
-    else            puts "Unmapped PPU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
     end
   end
 end
