@@ -23,8 +23,10 @@ class Cartridge
     # mGBA behavior instead. Either way, if a ROM relies on this behavior, it's
     # a buggy ROM. This is just an attempt to match the some expected behavior.
     size = File.size(rom_path)
-    last_bit = last_set_bit(size)
-    next_power = 2 ** (last_bit + 1)
-    (size...next_power).each { |i| @rom[i] = 0 }
+    if count_set_bits(size) != 1
+      last_bit = last_set_bit(size)
+      next_power = 2 ** (last_bit + 1)
+      (size...next_power).each { |i| @rom[i] = 0 }
+    end
   end
 end
