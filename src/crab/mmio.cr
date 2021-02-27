@@ -30,6 +30,9 @@ class MMIO
       @gba.timer.read_io io_addr
     elsif 0x130 <= io_addr <= 0x133
       @gba.keypad.read_io io_addr
+    elsif 0x120 <= io_addr <= 0x12F || 0x134 <= io_addr <= 0x1FF
+      # todo: serial
+      0_u8
     elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
       @gba.interrupts.read_io io_addr
     elsif 0x204 <= io_addr <= 0x205
@@ -37,6 +40,7 @@ class MMIO
     elsif not_used? io_addr
       0xFF_u8 # todo what is returned here?
     else
+      # todo: oob reads
       puts "Unmapped MMIO read: #{hex_str index.to_u32}".colorize(:red)
       0_u8
     end
@@ -54,6 +58,8 @@ class MMIO
       @gba.timer.write_io io_addr, value
     elsif 0x130 <= io_addr <= 0x133
       @gba.keypad.read_io io_addr
+    elsif 0x120 <= io_addr <= 0x12F || 0x134 <= io_addr <= 0x1FF
+      # todo: serial
     elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
       @gba.interrupts.write_io io_addr, value
     elsif 0x204 <= io_addr <= 0x205
@@ -69,10 +75,10 @@ class MMIO
   end
 
   def not_used?(io_addr : Int) : Bool
-    (0x0E0..0x0FE).includes?(io_addr) || (0x110..0x11E).includes?(io_addr) ||
-      (0x12C..0x12E).includes?(io_addr) || (0x138..0x13E).includes?(io_addr) ||
-      (0x142..0x14E).includes?(io_addr) || (0x15A..0x1FE).includes?(io_addr) ||
-      0x206 == io_addr || (0x20A..0x2FF).includes?(io_addr) ||
+    (0x0E0..0x0FF).includes?(io_addr) || (0x110..0x11F).includes?(io_addr) ||
+      (0x12C..0x12F).includes?(io_addr) || (0x138..0x13F).includes?(io_addr) ||
+      (0x142..0x14F).includes?(io_addr) || (0x15A..0x1FF).includes?(io_addr) ||
+      (0x206..0x207).includes?(io_addr) || (0x20A..0x2FF).includes?(io_addr) ||
       (0x302..0x40F).includes?(io_addr) || (0x441..0x7FF).includes?(io_addr) ||
       (0x804..0xFFFF).includes?(io_addr)
   end
