@@ -49,6 +49,14 @@ abstract class Storage
 
   abstract def [](index : Int) : Byte
 
+  def read_half(index : Int) : HalfWord
+    0x0101_u16 * self[index & ~1]
+  end
+
+  def read_word(index : Int) : Word
+    0x01010101_u32 * self[index & ~3]
+  end
+
   abstract def []=(index : Int, value : Byte) : Nil
 
   private def self.find_type(file : File) : Type?
