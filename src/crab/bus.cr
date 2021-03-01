@@ -10,6 +10,7 @@ class Bus
   def [](index : Int) : Byte
     case bits(index, 24..27)
     when 0x0 then @bios[index & 0x3FFF]
+    when 0x1 then 0_u8 # todo: open bus
     when 0x2 then @wram_board[index & 0x3FFFF]
     when 0x3 then @wram_chip[index & 0x7FFF]
     when 0x4 then @gba.mmio[index]
@@ -31,6 +32,7 @@ class Bus
     index &= ~1
     case bits(index, 24..27)
     when 0x0 then (@bios.to_unsafe + (index & 0x3FFF)).as(HalfWord*).value
+    when 0x1 then 0_u16 # todo: open bus
     when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(HalfWord*).value
     when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(HalfWord*).value
     when 0x4 then read_half_slow(index)
@@ -69,6 +71,7 @@ class Bus
     index &= ~3
     case bits(index, 24..27)
     when 0x0 then (@bios.to_unsafe + (index & 0x3FFF)).as(Word*).value
+    when 0x1 then 0_u32 # todo: open bus
     when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(Word*).value
     when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(Word*).value
     when 0x4 then read_word_slow(index)

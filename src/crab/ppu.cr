@@ -408,7 +408,7 @@ class PPU
     when 0x053 then 0xFF_u8 & @bldalpha.value >> 8
     when 0x054 then 0xFF_u8 & @bldy.value
     when 0x055 then 0xFF_u8 & @bldy.value >> 8
-    else            abort "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"
+    else            log "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"; 0_u8 # todo: open bus
     end
   end
 
