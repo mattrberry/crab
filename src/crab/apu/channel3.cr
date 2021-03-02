@@ -61,7 +61,7 @@ class Channel3 < SoundChannel
       else
         @wave_ram[@wave_ram_bank][index - WAVE_RAM_RANGE.begin]
       end
-    else raise "Reading from invalid Channel3 register: #{hex_str index.to_u16}"
+    else puts "Reading from invalid Channel3 register: #{hex_str index.to_u16}".colorize.fore(:red); 0_u8 # todo: open bus
     end.to_u8
   end
 

@@ -163,7 +163,7 @@ class APU
     when 0x85 then 0_u8 # unused
     when 0x88 then @soundbias.value.to_u8!
     when 0x89 then (@soundbias.value >> 8).to_u8!
-    else           abort "Unmapped APU read ~ addr:#{hex_str io_addr.to_u8}"
+    else           puts "Unmapped APU read ~ addr:#{hex_str io_addr.to_u8}".colorize.fore(:red); 0_u8 # todo: open bus
     end
   end
 
