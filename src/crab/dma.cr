@@ -134,8 +134,8 @@ class DMA
 
     len.times do |idx|
       @gba.bus[@dst[channel]] = word_size == 4 ? @gba.bus.read_word(@src[channel]) : @gba.bus.read_half(@src[channel])
-      @src[channel] += delta_source
-      @dst[channel] += delta_dest
+      @src[channel] &+= delta_source
+      @dst[channel] &+= delta_dest
     end
 
     @dst[channel] = @dmadad[channel] if dest_control == AddressControl::IncrementReload
