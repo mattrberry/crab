@@ -16,7 +16,8 @@ class PPU
   getter bghofs = Array(Reg::BGOFS).new 4 { Reg::BGOFS.new 0 }
   getter bgvofs = Array(Reg::BGOFS).new 4 { Reg::BGOFS.new 0 }
   getter bgaff = Array(Array(Reg::BGAFF)).new 2 { Array(Reg::BGAFF).new 4 { Reg::BGAFF.new 0 } }
-  getter bgref = Array(Array(Reg::BGREF)).new 2 { Array(Reg::BGREF).new 4 { Reg::BGREF.new 0 } }
+  getter bgref = Array(Array(Reg::BGREF)).new 2 { Array(Reg::BGREF).new 2 { Reg::BGREF.new 0 } }
+  getter bgref_int = Array(Array(Int32)).new 2 { Array(Int32).new 2, 0 }
   getter win0h = Reg::WINH.new 0
   getter win1h = Reg::WINH.new 0
   getter win0v = Reg::WINV.new 0
@@ -43,8 +44,14 @@ class PPU
       @gba.interrupts.reg_if.hblank = true
       @gba.interrupts.schedule_interrupt_check
     end
-    scanline if @vcount < 160
-    @gba.dma.trigger_hdma if @vcount < 160
+    if @vcount < 160
+      scanline
+      @gba.dma.trigger_hdma
+      @bgref_int.each_with_index do |bgrefs, bg_num|
+        bgrefs[0] &+= @bgaff[bg_num][1].num # bgx += dmx
+        bgrefs[1] &+= @bgaff[bg_num][3].num # bgy += dmy
+      end
+    end
   end
 
   def end_hblank : Nil
@@ -58,6 +65,7 @@ class PPU
     elsif @vcount == 160
       @dispstat.vblank = true
       @gba.interrupts.reg_if.vblank = true if @dispstat.vblank_irq_enable
+      @bgref.each_with_index { |bgrefs, bg_num| bgrefs.each_with_index { |bgref, ref_num| @bgref_int[bg_num][ref_num] = bgref.num } }
       draw
     end
     @gba.interrupts.schedule_interrupt_check
@@ -173,8 +181,8 @@ class PPU
     pal_buf = @layer_palettes[bg]
     row = @vcount.to_u32
 
-    pa, pb, pc, pd = @bgaff[bg - 2].map { |p| p.value.to_i16!.to_i32! }
-    dx, dy = @bgref[bg - 2].map { |p| (p.value << 4).to_i32! >> 4 }
+    dx, _, dy, _ = @bgaff[bg - 2].map &.num
+    int_x, int_y = @bgref_int[bg - 2]
 
     size = 16 << @bgcnt[bg].screen_size # tiles, always a square
     size_pixels = size << 3
@@ -182,8 +190,10 @@ class PPU
     screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
     character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
     240.times do |col|
-      x = ((pa * col + pb * row) + dx) >> 8
-      y = ((pc * col + pd * row) + dy) >> 8
+      x = int_x >> 8
+      y = int_y >> 8
+      int_x += dx
+      int_y += dy
 
       if @bgcnt[bg].affine_wrap
         x %= size_pixels
@@ -432,6 +442,7 @@ class PPU
       if offs >= 8
         offs -= 8
         @bgref[bg_num][offs >> 2].write_byte(offs & 3, value)
+        @bgref_int[bg_num][offs >> 2] = @bgref[bg_num][offs >> 2].num
       else
         @bgaff[bg_num][offs >> 1].write_byte(offs & 1, value)
       end

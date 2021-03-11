@@ -156,6 +156,10 @@ module Reg
     bool sign
     num integer, 7
     num fraction, 8
+
+    def num : Int16
+      value.to_i16!
+    end
   end
 
   class BGREF < BitField(UInt32)
@@ -164,6 +168,10 @@ module Reg
     bool sign
     num integer, 19
     num fraction, 8
+
+    def num : Int32
+      (value << 4).to_i32! >> 4
+    end
   end
 
   class WINH < BitField(UInt16)
