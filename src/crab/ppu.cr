@@ -201,14 +201,10 @@ class PPU
       end
       next unless 0 <= x < size_pixels && 0 <= y < size_pixels
 
-      screen_entry = @vram[screen_base + (y >> 3) * size + (x >> 3)].to_u16
-
-      tile_id = bits(screen_entry, 0..9)
-      y = (y & 7) ^ (7 * (screen_entry >> 11 & 1))
-      x = (x & 7) ^ (7 * (screen_entry >> 10 & 1))
-
-      pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
-      pal_buf[col] = pal_idx.to_u8
+      # affine screen entries are merely one-byte tile indices
+      tile_id = @vram[screen_base + (y >> 3) * size + (x >> 3)]
+      pal_idx = @vram[character_base + 0x40 * tile_id + 8 * (y & 7) + (x & 7)]
+      pal_buf[col] = pal_idx
     end
   end
 
