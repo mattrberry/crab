@@ -10,6 +10,8 @@ class Display
   @last_time = Time.utc
   @seconds : Int32 = Time.utc.second
 
+  @blend : Bool = false
+
   def initialize
     @window = SDL::Window.new(window_title(59.7), WIDTH * SCALE, HEIGHT * SCALE, flags: SDL::Window::Flags::OPENGL)
     setup_gl
@@ -20,6 +22,15 @@ class Display
     LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
     LibSDL.gl_swap_window(@window)
     update_draw_count
+  end
+
+  def toggle_blending : Nil
+    if @blend
+      LibGL.disable(LibGL::BLEND)
+    else
+      LibGL.enable(LibGL::BLEND)
+    end
+    @blend = !@blend
   end
 
   private def window_title(fps : Float) : String
@@ -78,6 +89,8 @@ class Display
 
     puts "OpenGL version: #{String.new(LibGL.get_string(LibGL::VERSION))}"
     puts "Shader language version: #{String.new(LibGL.get_string(LibGL::SHADING_LANGUAGE_VERSION))}"
+
+    LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
     vert_shader_id = compile_shader(File.read("src/crab/shaders/gba_colors.vert"), LibGL::VERTEX_SHADER)
     frag_shader_id = compile_shader(File.read("src/crab/shaders/gba_colors.frag"), LibGL::FRAGMENT_SHADER)

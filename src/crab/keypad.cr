@@ -70,6 +70,7 @@ class Keypad
       when .r?          then @keyinput.r = bit
         # Extras
       when .tab? then @gba.apu.toggle_sync if event.pressed?
+      when .m?   then @gba.display.toggle_blending if event.pressed?
       else            nil
       end
     when SDL::Event::JoyHat
