@@ -22,6 +22,7 @@ module ARM
 
     case sh
     when 0b00 # swp, no docs on this?
+      abort "HalfwordDataTransferReg swp #{hex_str instr}"
     when 0b01 # ldrh/strh
       if load
         set_reg(rd, @gba.bus.read_half_rotate address)
