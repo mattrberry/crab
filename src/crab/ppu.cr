@@ -64,6 +64,7 @@ class PPU
       @dispstat.vblank = false
     elsif @vcount == 160
       @dispstat.vblank = true
+      @gba.dma.trigger_vdma
       @gba.interrupts.reg_if.vblank = true if @dispstat.vblank_irq_enable
       @bgref.each_with_index { |bgrefs, bg_num| bgrefs.each_with_index { |bgref, ref_num| @bgref_int[bg_num][ref_num] = bgref.num } }
       draw

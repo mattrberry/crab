@@ -91,11 +91,17 @@ class DMA
     end
   end
 
-  # todo: vdma
   def trigger_hdma : Nil
     4.times do |channel|
       dmacnt_h = @dmacnt_h[channel]
       trigger channel if dmacnt_h.enable && dmacnt_h.start_timing == StartTiming::HBlank.value
+    end
+  end
+
+  def trigger_vdma : Nil
+    4.times do |channel|
+      dmacnt_h = @dmacnt_h[channel]
+      trigger channel if dmacnt_h.enable && dmacnt_h.start_timing == StartTiming::VBlank.value
     end
   end
 
