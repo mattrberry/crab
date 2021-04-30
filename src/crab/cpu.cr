@@ -136,8 +136,10 @@ class CPU
       else
         arm_execute instr
       end
+      @gba.scheduler.tick 1
+    else
+      @gba.scheduler.fast_forward
     end
-    @gba.tick 1
   end
 
   def check_cond(cond : Word) : Bool

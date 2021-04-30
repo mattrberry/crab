@@ -67,7 +67,11 @@ class MMIO
       mask = 0xFF00_u16 >> shift
       @waitcnt.value = (@waitcnt.value & mask) | value.to_u16 << shift
     elsif io_addr == 0x301
-      @gba.cpu.halted = bit?(value, 7)
+      if bit?(value, 7)
+        abort "Stopping not supported"
+      else
+        @gba.cpu.halted = true
+      end
     elsif not_used? io_addr
     else
       puts "Unmapped MMIO write ~ addr:#{hex_str index.to_u32}, val:#{hex_str value}".colorize(:yellow)

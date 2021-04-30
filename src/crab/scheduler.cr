@@ -63,4 +63,9 @@ class Scheduler
       end
     end
   end
+
+  def fast_forward : Nil
+    @cycles = @next_event
+    call_current
+  end
 end

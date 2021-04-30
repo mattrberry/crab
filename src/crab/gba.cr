@@ -83,8 +83,4 @@ class GBA
       cpu.tick
     end
   end
-
-  def tick(cycles : Int) : Nil
-    scheduler.tick cycles
-  end
 end
