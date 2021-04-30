@@ -141,31 +141,34 @@ class PPU
   def render_reg_bg(bg : Int) : Nil
     return unless bit?(@dispcnt.value, 8 + bg)
     pal_buf = @layer_palettes[bg]
+    bgcnt = @bgcnt[bg]
+    bgvofs = @bgvofs[bg]
+    bghofs = @bghofs[bg]
 
-    tw, th = case @bgcnt[bg].screen_size
+    tw, th = case bgcnt.screen_size
              when 0b00 then {0x0FF, 0x0FF} # 32x32
              when 0b01 then {0x1FF, 0x0FF} # 64x32
              when 0b10 then {0x0FF, 0x1FF} # 32x64
              when 0b11 then {0x1FF, 0x1FF} # 64x64
-             else           raise "Impossible bgcnt screen size: #{@bgcnt[bg].screen_size}"
+             else           raise "Impossible bgcnt screen size: #{bgcnt.screen_size}"
              end
 
-    screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
-    character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
-    effective_row = (@vcount.to_u32 + @bgvofs[bg].value) & th
+    screen_base = 0x800_u32 * bgcnt.screen_base_block
+    character_base = bgcnt.character_base_block.to_u32 * 0x4000
+    effective_row = (@vcount.to_u32 + bgvofs.value) & th
     ty = effective_row >> 3
     240.times do |col|
-      effective_col = (col + @bghofs[bg].value) & tw
+      effective_col = (col + bghofs.value) & tw
       tx = effective_col >> 3
 
-      se_idx = se_index(tx, ty, @bgcnt[bg].screen_size)
+      se_idx = se_index(tx, ty, bgcnt.screen_size)
       screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
 
       tile_id = bits(screen_entry, 0..9)
       y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
       x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
 
-      if @bgcnt[bg].color_mode # 8bpp
+      if bgcnt.color_mode # 8bpp
         pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
       else # 4bpp
         palette_bank = bits(screen_entry, 12..15)
@@ -181,22 +184,23 @@ class PPU
     return unless bit?(@dispcnt.value, 8 + bg)
     pal_buf = @layer_palettes[bg]
     row = @vcount.to_u32
+    bgcnt = @bgcnt[bg]
 
     dx, _, dy, _ = @bgaff[bg - 2].map &.num
     int_x, int_y = @bgref_int[bg - 2]
 
-    size = 16 << @bgcnt[bg].screen_size # tiles, always a square
+    size = 16 << bgcnt.screen_size # tiles, always a square
     size_pixels = size << 3
 
-    screen_base = 0x800_u32 * @bgcnt[bg].screen_base_block
-    character_base = @bgcnt[bg].character_base_block.to_u32 * 0x4000
+    screen_base = 0x800_u32 * bgcnt.screen_base_block
+    character_base = bgcnt.character_base_block.to_u32 * 0x4000
     240.times do |col|
       x = int_x >> 8
       y = int_y >> 8
       int_x += dx
       int_y += dy
 
-      if @bgcnt[bg].affine_wrap
+      if bgcnt.affine_wrap
         x %= size_pixels
         y %= size_pixels
       end
