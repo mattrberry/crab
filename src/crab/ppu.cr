@@ -155,10 +155,10 @@ class PPU
 
     screen_base = 0x800_u32 * bgcnt.screen_base_block
     character_base = bgcnt.character_base_block.to_u32 * 0x4000
-    effective_row = (@vcount.to_u32 + bgvofs.value) & th
+    effective_row = (@vcount.to_u32 + bgvofs.offset) & th
     ty = effective_row >> 3
     240.times do |col|
-      effective_col = (col + bghofs.value) & tw
+      effective_col = (col + bghofs.offset) & tw
       tx = effective_col >> 3
 
       se_idx = se_index(tx, ty, bgcnt.screen_size)
