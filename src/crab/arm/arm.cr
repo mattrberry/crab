@@ -72,14 +72,13 @@ module ARM
   def rotate_register(instr : Word, carry_out : Pointer(Bool), allow_register_shifts : Bool) : Word
     reg = bits(instr, 0..3)
     shift_type = bits(instr, 5..6)
-    if allow_register_shifts && bit?(instr, 4)
+    immediate = !(allow_register_shifts && bit?(instr, 4))
+    if immediate
+      shift_amount = bits(instr, 7..11)
+    else
       shift_register = bits(instr, 8..11)
       # todo weird logic if bottom byte of reg > 31
       shift_amount = @r[shift_register] & 0xFF
-      immediate = false
-    else
-      shift_amount = bits(instr, 7..11)
-      immediate = true
     end
     case shift_type
     when 0b00 then lsl(@r[reg], shift_amount, carry_out)
