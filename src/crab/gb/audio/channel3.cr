@@ -32,7 +32,7 @@ module GB
     end
 
     def schedule_reload(frequency_timer : UInt32) : Nil
-      @gb.scheduler.schedule frequency_timer, Scheduler::EventType::APUChannel3, ->step
+      @gb.scheduler.schedule_gb frequency_timer, ->step, Scheduler::EventType::APUChannel3
     end
 
     def get_amplitude : Float32

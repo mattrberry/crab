@@ -11,7 +11,6 @@ require "./opcodes"
 require "./ppu"
 require "./scanline_ppu"
 require "./fifo_ppu"
-require "./scheduler"
 require "./timer"
 
 DISPLAY_SCALE = {% unless flag? :graphics_test %} 4 {% else %} 1 {% end %}
@@ -71,7 +70,7 @@ module GB
         else nil
         end
       end
-      scheduler.schedule 70224, Scheduler::EventType::HandleInput, ->handle_events
+      scheduler.schedule_gb 70224, ->handle_events, Scheduler::EventType::HandleInput
     end
 
     def run : Nil

@@ -4,7 +4,7 @@ require "http/client"
 require "json"
 
 OPCODE_JSON_URL = "https://raw.githubusercontent.com/izik1/gbops/master/dmgops.json"
-FILE_PATH       = "src/cryboy/opcodes.cr"
+FILE_PATH       = "src/crab/gb/opcodes.cr"
 
 module GB
   module DmgOps
@@ -306,7 +306,7 @@ module GB
         when "DI"
           ["cpu.ime = false"]
         when "EI"
-          ["cpu.scheduler.schedule(4, Scheduler::EventType::IME) { cpu.ime = true }"]
+          ["cpu.scheduler.schedule_gb(4, Proc(Nil).new { cpu.ime = true }, Scheduler::EventType::IME)"]
         when "HALT"
           ["cpu.halt"]
         when "INC"

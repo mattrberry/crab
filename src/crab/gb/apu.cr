@@ -92,7 +92,7 @@ module GB
       else nil
       end
       @frame_sequencer_stage = 0 if (@frame_sequencer_stage += 1) > 7
-      @gb.scheduler.schedule FRAME_SEQUENCER_PERIOD, Scheduler::EventType::APU, ->tick_frame_sequencer
+      @gb.scheduler.schedule_gb FRAME_SEQUENCER_PERIOD, ->tick_frame_sequencer, Scheduler::EventType::APU
     end
 
     def get_sample : Nil
@@ -122,7 +122,7 @@ module GB
         @buffer_pos = 0
       end
 
-      @gb.scheduler.schedule SAMPLE_PERIOD, Scheduler::EventType::APU, ->get_sample
+      @gb.scheduler.schedule_gb SAMPLE_PERIOD, ->get_sample, Scheduler::EventType::APU
     end
 
     # read from apu memory

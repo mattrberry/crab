@@ -2123,7 +2123,7 @@ module GB
       # 0xFB EI
       ->(cpu : CPU) {
         cpu.inc_pc
-        cpu.scheduler.schedule(4, Scheduler::EventType::IME) { cpu.ime = true }
+        cpu.scheduler.schedule_gb(4, Proc(Nil).new { cpu.ime = true }, Scheduler::EventType::IME)
         return 4
       },
       # 0xFC UNUSED
