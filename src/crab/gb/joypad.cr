@@ -47,7 +47,6 @@ module GB
         when .l?          then @select = event.pressed?
         when .b?, .j?     then @b = event.pressed?
         when .a?, .k?     then @a = event.pressed?
-        when .tab?        then @gb.apu.sync = !event.pressed?
         else                   nil
         end
       when SDL::Event::JoyHat

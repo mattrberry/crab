@@ -69,10 +69,7 @@ module GBA
         when .a?, .k?     then @keyinput.a = bit
         when .w?          then @keyinput.l = bit
         when .r?          then @keyinput.r = bit
-          # Extras
-        when .tab? then @gba.apu.toggle_sync if event.pressed?
-        when .m?   then @gba.display.toggle_blending if event.pressed?
-        else            nil
+        else                   nil
         end
       when SDL::Event::JoyHat
         @keyinput.value |= 0x00F0

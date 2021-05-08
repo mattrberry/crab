@@ -16,7 +16,7 @@ require "./dma"
 require "./debugger"
 
 module GBA
-  class GBA
+  class GBA < Emu
     getter! scheduler : Scheduler
     getter! cartridge : Cartridge
     getter! storage : Storage
@@ -36,7 +36,6 @@ module GBA
       @scheduler = Scheduler.new
       @cartridge = Cartridge.new rom_path
       @storage = Storage.new rom_path
-      handle_events
       handle_saves
 
       SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
@@ -58,29 +57,29 @@ module GBA
       @debugger = Debugger.new self
     end
 
-    def handle_events : Nil
-      scheduler.schedule 280896, ->handle_events
-      while event = SDL::Event.poll
-        case event
-        when SDL::Event::Quit then exit 0
-        when SDL::Event::Keyboard,
-             SDL::Event::JoyHat,
-             SDL::Event::JoyButton then keypad.handle_keypad_event event
-        else nil
-        end
+    def run : Nil
+      handle_events(280896)
+      loop do
+        {% if flag? :debugger %} debugger.check_debug {% end %}
+        cpu.tick
       end
+    end
+
+    def handle_event(event : SDL::Event) : Nil
+      keypad.handle_keypad_event event
+    end
+
+    def toggle_sync : Nil
+      apu.toggle_sync
+    end
+
+    def toggle_blending : Nil
+      display.toggle_blending
     end
 
     def handle_saves : Nil
       scheduler.schedule 280896, ->handle_saves
       storage.write_save
-    end
-
-    def run : Nil
-      loop do
-        {% if flag? :debugger %} debugger.check_debug {% end %}
-        cpu.tick
-      end
     end
   end
 end

@@ -47,14 +47,12 @@ module Crab
     end
 
     if rom.not_nil!.ends_with?(".gba")
-      gba = GBA::GBA.new bios.not_nil!, rom.not_nil!
-      gba.post_init
-      gba.run
+      emu = GBA::GBA.new bios.not_nil!, rom.not_nil!
     else
-      gb = GB::GB.new bios, rom.not_nil!, fifo, sync, headless
-      gb.post_init
-      gb.run
+      emu = GB::GB.new bios, rom.not_nil!, fifo, sync, headless
     end
+    emu.post_init
+    emu.run
   end
 end
 

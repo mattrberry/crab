@@ -16,7 +16,7 @@ require "./timer"
 DISPLAY_SCALE = {% unless flag? :graphics_test %} 4 {% else %} 1 {% end %}
 
 module GB
-  class GB
+  class GB < Emu
     getter bootrom : String?
     getter cgb_ptr : Pointer(Bool) { pointerof(@cgb_enabled) }
     getter cartridge : Cartridge
@@ -60,24 +60,23 @@ module GB
       timer.skip_boot
     end
 
-    def handle_events : Nil
-      while event = SDL::Event.poll
-        case event
-        when SDL::Event::Quit then exit 0
-        when SDL::Event::Keyboard,
-             SDL::Event::JoyHat,
-             SDL::Event::JoyButton then joypad.handle_joypad_event event
-        else nil
-        end
-      end
-      scheduler.schedule_gb 70224, ->handle_events, Scheduler::EventType::HandleInput
-    end
-
     def run : Nil
-      handle_events
+      handle_events(70224)
       loop do
         cpu.tick
       end
+    end
+
+    def handle_event(event : SDL::Event) : Nil
+      joypad.handle_joypad_event event
+    end
+
+    def toggle_sync : Nil
+      apu.toggle_sync
+    end
+
+    def toggle_blending : Nil
+      puts "Blending not implemented for gb/gbc"
     end
   end
 end

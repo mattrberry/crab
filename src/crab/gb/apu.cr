@@ -29,7 +29,7 @@ module GB
     @audiospec : LibSDL::AudioSpec
     @obtained_spec : LibSDL::AudioSpec
 
-    setter sync : Bool
+    @sync : Bool = true
 
     def initialize(@gb : GB, headless : Bool, @sync : Bool)
       @sync = false if headless
@@ -55,6 +55,10 @@ module GB
       raise "Failed to open audio" if LibSDL.open_audio(pointerof(@audiospec), pointerof(@obtained_spec)) > 0
 
       LibSDL.pause_audio 0 unless headless
+    end
+
+    def toggle_sync : Nil
+      @sync = !@sync
     end
 
     def tick_frame_sequencer : Nil

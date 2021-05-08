@@ -51,7 +51,7 @@ module GBA
       LibSDL.pause_audio 0
     end
 
-    def toggle_sync
+    def toggle_sync : Nil
       @sync = !@sync
     end
 
