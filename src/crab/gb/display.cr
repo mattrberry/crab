@@ -5,8 +5,8 @@ module GB
     WIDTH  = 160
     HEIGHT = 144
 
-    PIXELFORMAT_RGB24       = (1 << 28) | (7 << 24) | (1 << 20) | (0 << 16) | (24 << 8) | (3 << 0)
-    TEXTUREACCESS_STREAMING = 1
+    PIXELFORMAT_BGR5        = 357764866
+    TEXTUREACCESS_STREAMING =         1
 
     @window : SDL::Window
     @renderer : SDL::Renderer
@@ -23,15 +23,15 @@ module GB
       @window = SDL::Window.new(window_title, WIDTH * DISPLAY_SCALE, HEIGHT * DISPLAY_SCALE, flags: flags)
       @renderer = SDL::Renderer.new @window
       @renderer.logical_size = {WIDTH, HEIGHT}
-      @texture = LibSDL.create_texture @renderer, PIXELFORMAT_RGB24, TEXTUREACCESS_STREAMING, WIDTH, HEIGHT
+      @texture = LibSDL.create_texture @renderer, PIXELFORMAT_BGR5, TEXTUREACCESS_STREAMING, WIDTH, HEIGHT
     end
 
     def window_title : String
       "CryBoy - #{@title} - #{@fps} fps"
     end
 
-    def draw(framebuffer : Array(RGB)) : Nil
-      LibSDL.update_texture @texture, nil, framebuffer, WIDTH * sizeof(RGB)
+    def draw(framebuffer : Slice(UInt16)) : Nil
+      LibSDL.update_texture @texture, nil, framebuffer, WIDTH * sizeof(UInt16)
       @renderer.clear
       @renderer.copy @texture
       @renderer.present

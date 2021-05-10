@@ -196,14 +196,14 @@ module GB
           if !sprite_pixel.nil? && sprite_wins? bg_pixel, sprite_pixel
             pixel = sprite_pixel
             palette = sprite_pixel.palette == 0 ? @obp0 : @obp1
-            palettes = @obj_palettes
+            arr = @obj_pram
           else
             pixel = bg_pixel
             palette = @bgp
-            palettes = @palettes
+            arr = @pram
           end
           color = @cgb_ptr.value ? pixel.color : palette[pixel.color]
-          @framebuffer[Display::WIDTH * @ly + @lx] = palettes[pixel.palette][color]
+          @framebuffer[Display::WIDTH * @ly + @lx] = arr.to_unsafe.as(UInt16*)[4 * pixel.palette + color]
         end
         @lx += 1
         if @lx == Display::WIDTH

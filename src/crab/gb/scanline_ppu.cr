@@ -57,9 +57,9 @@ module GB
           color = (msb << 1) | lsb
           @scanline_color_vals[x] = {color, @vram[1][tile_num_addr] & 0x80 > 0}
           if @cgb_ptr.value
-            @framebuffer[Display::WIDTH * @ly + x] = @palettes[@vram[1][tile_num_addr] & 0b111][color]
+            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[4 * (@vram[1][tile_num_addr] & 0b111) + color]
           else
-            @framebuffer[Display::WIDTH * @ly + x] = @palettes[0][@bgp[color]]
+            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[@bgp[color]]
           end
         elsif bg_display? || @cgb_ptr.value
           tile_num_addr = background_map + (((x + @scx) >> 3) & 0x1F) + ((((@ly.to_u16 + @scy) >> 3) * 32) & 0x3FF)
@@ -84,9 +84,9 @@ module GB
           color = (msb << 1) | lsb
           @scanline_color_vals[x] = {color, @vram[1][tile_num_addr] & 0x80 > 0}
           if @cgb_ptr.value
-            @framebuffer[Display::WIDTH * @ly + x] = @palettes[@vram[1][tile_num_addr] & 0b111][color]
+            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[4 * (@vram[1][tile_num_addr] & 0b111) + color]
           else
-            @framebuffer[Display::WIDTH * @ly + x] = @palettes[0][@bgp[color]]
+            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[@bgp[color]]
           end
         end
       end
@@ -112,12 +112,12 @@ module GB
                 # objects are always on top of bg/window color 0
                 # objects are on top of bg/window colors 1-3 if bg_priority and object priority are both unset
                 if !bg_display? || @scanline_color_vals[x][0] == 0 || (!@scanline_color_vals[x][1] && sprite.priority == 0)
-                  @framebuffer[Display::WIDTH * @ly + x] = @obj_palettes[sprite.cgb_palette_number][color]
+                  @framebuffer[Display::WIDTH * @ly + x] = @obj_pram.to_unsafe.as(UInt16*)[4 * sprite.cgb_palette_number + color]
                 end
               else
                 if sprite.priority == 0 || @scanline_color_vals[x][0] == 0
                   palette = sprite.dmg_palette_number == 0 ? @obp0 : @obp1
-                  @framebuffer[Display::WIDTH * @ly + x] = @obj_palettes[0][palette[color]]
+                  @framebuffer[Display::WIDTH * @ly + x] = @obj_pram.to_unsafe.as(UInt16*)[palette[color]]
                 end
               end
             end
