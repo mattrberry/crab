@@ -2,7 +2,6 @@ require "sdl"
 require "./apu"
 require "./cartridge"
 require "./cpu"
-require "./display"
 require "./interrupts"
 require "./joypad"
 require "./mbc/*"
@@ -44,7 +43,7 @@ module GB
       @scheduler = Scheduler.new
       @interrupts = Interrupts.new
       @apu = APU.new self, @headless, @sync
-      @display = Display.new self, @headless
+      @display = Display.new Display::Console::GB
       @joypad = Joypad.new self
       @ppu = @fifo ? FifoPPU.new self : ScanlinePPU.new self
       @timer = Timer.new self

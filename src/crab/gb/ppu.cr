@@ -111,7 +111,10 @@ module GB
     @ran_bios : Bool # determine if colors should be adjusted for cgb
     @cgb_ptr : Pointer(Bool)
 
-    @framebuffer = Slice(UInt16).new Display::WIDTH * Display::HEIGHT
+    WIDTH  = 160
+    HEIGHT = 144
+
+    @framebuffer = Slice(UInt16).new WIDTH * HEIGHT
 
     @pram = Bytes.new 64
     @palette_index : UInt8 = 0
@@ -160,6 +163,30 @@ module GB
 
     def initialize(@gb : GB)
       @cgb_ptr = gb.cgb_ptr
+      unless @cgb_ptr.value # fill default color palettes
+        # {% if flag? :pink %}
+        #   @palettes[0] = @obj_palettes[0] = @obj_palettes[1] = [
+        #     RGB.new(0xFF, 0xF6, 0xD3), RGB.new(0xF9, 0xA8, 0x75),
+        #     RGB.new(0xEB, 0x6B, 0x6F), RGB.new(0x7C, 0x3F, 0x58),
+        #   ]
+        # {% elsif flag? :graphics_test %}
+        #   @palettes[0] = @obj_palettes[0] = @obj_palettes[1] = [
+        #     RGB.new(0xFF, 0xFF, 0xFF), RGB.new(0xAA, 0xAA, 0xAA),
+        #     RGB.new(0x55, 0x55, 0x55), RGB.new(0x00, 0x00, 0x00),
+        #   ]
+        #   @pram[0] = @pram[1] = @obj_pram[0] = @obj_pram[1] = 0xFF
+        #   @pram.to_unsafe.as(UInt16*)[0] = 0x7FFF;
+        # {% else %}
+        #   @palettes[0] = @obj_palettes[0] = @obj_palettes[1] = [
+        #     RGB.new(0xE0, 0xF8, 0xCF), RGB.new(0x86, 0xC0, 0x6C),
+        #     RGB.new(0x30, 0x68, 0x50), RGB.new(0x07, 0x17, 0x20),
+        #   ]
+        # {% end %}
+        @pram.to_unsafe.as(UInt16*)[0] = @obj_pram.to_unsafe.as(UInt16*)[0] = @obj_pram.to_unsafe.as(UInt16*)[4] = 0x6BDF
+        @pram.to_unsafe.as(UInt16*)[1] = @obj_pram.to_unsafe.as(UInt16*)[1] = @obj_pram.to_unsafe.as(UInt16*)[5] = 0x3ABF
+        @pram.to_unsafe.as(UInt16*)[2] = @obj_pram.to_unsafe.as(UInt16*)[2] = @obj_pram.to_unsafe.as(UInt16*)[6] = 0x35BD
+        @pram.to_unsafe.as(UInt16*)[3] = @obj_pram.to_unsafe.as(UInt16*)[3] = @obj_pram.to_unsafe.as(UInt16*)[7] = 0x2CEF
+      end
       @ran_bios = @cgb_ptr.value
     end
 

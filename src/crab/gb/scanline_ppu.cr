@@ -22,7 +22,7 @@ module GB
     end
 
     # color idx, BG-to-OAM priority bit
-    @scanline_color_vals = Array(Tuple(UInt8, Bool)).new Display::WIDTH, {0_u8, false}
+    @scanline_color_vals = Array(Tuple(UInt8, Bool)).new WIDTH, {0_u8, false}
 
     def scanline
       @current_window_line = 0 if @ly == 0
@@ -32,7 +32,7 @@ module GB
       tile_data_table = bg_window_tile_data == 0 ? 0x1000 : 0x0000 # 0x9000 : 0x8000
       tile_row_window = @current_window_line & 7
       tile_row = (@ly.to_u16 + @scy) & 7
-      Display::WIDTH.times do |x|
+      WIDTH.times do |x|
         if window_enabled? && @ly >= @wy && x + 7 >= @wx && @window_trigger
           should_increment_window_line = true
           tile_num_addr = window_map + ((x + 7 - @wx) >> 3) + ((@current_window_line >> 3) * 32)
@@ -57,9 +57,9 @@ module GB
           color = (msb << 1) | lsb
           @scanline_color_vals[x] = {color, @vram[1][tile_num_addr] & 0x80 > 0}
           if @cgb_ptr.value
-            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[4 * (@vram[1][tile_num_addr] & 0b111) + color]
+            @framebuffer[WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[4 * (@vram[1][tile_num_addr] & 0b111) + color]
           else
-            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[@bgp[color]]
+            @framebuffer[WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[@bgp[color]]
           end
         elsif bg_display? || @cgb_ptr.value
           tile_num_addr = background_map + (((x + @scx) >> 3) & 0x1F) + ((((@ly.to_u16 + @scy) >> 3) * 32) & 0x3FF)
@@ -84,9 +84,9 @@ module GB
           color = (msb << 1) | lsb
           @scanline_color_vals[x] = {color, @vram[1][tile_num_addr] & 0x80 > 0}
           if @cgb_ptr.value
-            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[4 * (@vram[1][tile_num_addr] & 0b111) + color]
+            @framebuffer[WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[4 * (@vram[1][tile_num_addr] & 0b111) + color]
           else
-            @framebuffer[Display::WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[@bgp[color]]
+            @framebuffer[WIDTH * @ly + x] = @pram.to_unsafe.as(UInt16*)[@bgp[color]]
           end
         end
       end
@@ -97,7 +97,7 @@ module GB
           bytes = sprite.bytes @ly, sprite_height
           8.times do |col|
             x = col + sprite.x - 8
-            next unless 0 <= x < Display::WIDTH # only render sprites on screen
+            next unless 0 <= x < WIDTH # only render sprites on screen
             if sprite.x_flip?
               lsb = (@vram[@cgb_ptr.value ? sprite.bank_num : 0][bytes[0]] >> col) & 0x1
               msb = (@vram[@cgb_ptr.value ? sprite.bank_num : 0][bytes[1]] >> col) & 0x1
@@ -112,12 +112,12 @@ module GB
                 # objects are always on top of bg/window color 0
                 # objects are on top of bg/window colors 1-3 if bg_priority and object priority are both unset
                 if !bg_display? || @scanline_color_vals[x][0] == 0 || (!@scanline_color_vals[x][1] && sprite.priority == 0)
-                  @framebuffer[Display::WIDTH * @ly + x] = @obj_pram.to_unsafe.as(UInt16*)[4 * sprite.cgb_palette_number + color]
+                  @framebuffer[WIDTH * @ly + x] = @obj_pram.to_unsafe.as(UInt16*)[4 * sprite.cgb_palette_number + color]
                 end
               else
                 if sprite.priority == 0 || @scanline_color_vals[x][0] == 0
                   palette = sprite.dmg_palette_number == 0 ? @obp0 : @obp1
-                  @framebuffer[Display::WIDTH * @ly + x] = @obj_pram.to_unsafe.as(UInt16*)[palette[color]]
+                  @framebuffer[WIDTH * @ly + x] = @obj_pram.to_unsafe.as(UInt16*)[palette[color]]
                 end
               end
             end
@@ -146,7 +146,7 @@ module GB
           if @cycle_counter >= 204 # end of hblank reached
             @cycle_counter -= 204  # reset cycle_counter, saving extra cycles
             @ly += 1
-            if @ly == Display::HEIGHT # final row of screen complete
+            if @ly == HEIGHT # final row of screen complete
               self.mode_flag = 1      # switch to vblank
               @gb.interrupts.vblank_interrupt = true
               @gb.display.draw @framebuffer # render at vblank

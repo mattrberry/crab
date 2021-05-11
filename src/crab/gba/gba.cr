@@ -9,7 +9,6 @@ require "./keypad"
 require "./bus"
 require "./interrupts"
 require "./cpu"
-require "./display"
 require "./ppu"
 require "./apu"
 require "./dma"
@@ -50,7 +49,7 @@ module GBA
       @bus = Bus.new self, @bios_path
       @interrupts = Interrupts.new self
       @cpu = CPU.new self
-      @display = Display.new
+      @display = Display.new Display::Console::GBA
       @ppu = PPU.new self
       @apu = APU.new self
       @dma = DMA.new self

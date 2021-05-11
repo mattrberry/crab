@@ -203,10 +203,10 @@ module GB
             arr = @pram
           end
           color = @cgb_ptr.value ? pixel.color : palette[pixel.color]
-          @framebuffer[Display::WIDTH * @ly + @lx] = arr.to_unsafe.as(UInt16*)[4 * pixel.palette + color]
+          @framebuffer[WIDTH * @ly + @lx] = arr.to_unsafe.as(UInt16*)[4 * pixel.palette + color]
         end
         @lx += 1
-        if @lx == Display::WIDTH
+        if @lx == WIDTH
           self.mode_flag = 0
         end
         if window_enabled? && @ly >= @wy && @lx + 7 >= @wx && !@fetching_window && @window_trigger
@@ -243,7 +243,7 @@ module GB
             if @cycle_counter == 456
               @cycle_counter = 0
               @ly += 1
-              if @ly == Display::HEIGHT # final row of screen complete
+              if @ly == HEIGHT # final row of screen complete
                 self.mode_flag = 1      # switch to vblank
                 @gb.interrupts.vblank_interrupt = true
                 @gb.display.draw @framebuffer # render at vblank
