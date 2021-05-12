@@ -1,3 +1,5 @@
+require "stumpy_png"
+
 # This file is simply designed to hold shared features of the scanline and FIFO
 # renderers while the FIFO renderer is in active development. The purpose of
 # this file is solely to reduce common changes to both renderers.
@@ -114,6 +116,8 @@ module GB
     WIDTH  = 160
     HEIGHT = 144
 
+    DMG_COLORS = [0x6BDF_u16, 0x3ABF_u16, 0x35BD_u16, 0x2CEF_u16]
+
     @framebuffer = Slice(UInt16).new WIDTH * HEIGHT
 
     @pram = Bytes.new 64
@@ -164,28 +168,10 @@ module GB
     def initialize(@gb : GB)
       @cgb_ptr = gb.cgb_ptr
       unless @cgb_ptr.value # fill default color palettes
-        # {% if flag? :pink %}
-        #   @palettes[0] = @obj_palettes[0] = @obj_palettes[1] = [
-        #     RGB.new(0xFF, 0xF6, 0xD3), RGB.new(0xF9, 0xA8, 0x75),
-        #     RGB.new(0xEB, 0x6B, 0x6F), RGB.new(0x7C, 0x3F, 0x58),
-        #   ]
-        # {% elsif flag? :graphics_test %}
-        #   @palettes[0] = @obj_palettes[0] = @obj_palettes[1] = [
-        #     RGB.new(0xFF, 0xFF, 0xFF), RGB.new(0xAA, 0xAA, 0xAA),
-        #     RGB.new(0x55, 0x55, 0x55), RGB.new(0x00, 0x00, 0x00),
-        #   ]
-        #   @pram[0] = @pram[1] = @obj_pram[0] = @obj_pram[1] = 0xFF
-        #   @pram.to_unsafe.as(UInt16*)[0] = 0x7FFF;
-        # {% else %}
-        #   @palettes[0] = @obj_palettes[0] = @obj_palettes[1] = [
-        #     RGB.new(0xE0, 0xF8, 0xCF), RGB.new(0x86, 0xC0, 0x6C),
-        #     RGB.new(0x30, 0x68, 0x50), RGB.new(0x07, 0x17, 0x20),
-        #   ]
-        # {% end %}
-        @pram.to_unsafe.as(UInt16*)[0] = @obj_pram.to_unsafe.as(UInt16*)[0] = @obj_pram.to_unsafe.as(UInt16*)[4] = 0x6BDF
-        @pram.to_unsafe.as(UInt16*)[1] = @obj_pram.to_unsafe.as(UInt16*)[1] = @obj_pram.to_unsafe.as(UInt16*)[5] = 0x3ABF
-        @pram.to_unsafe.as(UInt16*)[2] = @obj_pram.to_unsafe.as(UInt16*)[2] = @obj_pram.to_unsafe.as(UInt16*)[6] = 0x35BD
-        @pram.to_unsafe.as(UInt16*)[3] = @obj_pram.to_unsafe.as(UInt16*)[3] = @obj_pram.to_unsafe.as(UInt16*)[7] = 0x2CEF
+        @pram.to_unsafe.as(UInt16*)[0] = @obj_pram.to_unsafe.as(UInt16*)[0] = @obj_pram.to_unsafe.as(UInt16*)[4] = DMG_COLORS[0]
+        @pram.to_unsafe.as(UInt16*)[1] = @obj_pram.to_unsafe.as(UInt16*)[1] = @obj_pram.to_unsafe.as(UInt16*)[5] = DMG_COLORS[1]
+        @pram.to_unsafe.as(UInt16*)[2] = @obj_pram.to_unsafe.as(UInt16*)[2] = @obj_pram.to_unsafe.as(UInt16*)[6] = DMG_COLORS[2]
+        @pram.to_unsafe.as(UInt16*)[3] = @obj_pram.to_unsafe.as(UInt16*)[3] = @obj_pram.to_unsafe.as(UInt16*)[7] = DMG_COLORS[3]
       end
       @ran_bios = @cgb_ptr.value
     end
@@ -424,7 +410,29 @@ module GB
     end
 
     def write_png : Nil
-      @gb.display.write_png @framebuffer
+      canvas = StumpyPNG::Canvas.new WIDTH, HEIGHT
+      HEIGHT.times do |row|
+        WIDTH.times do |col|
+          bgr5 = @framebuffer[row * WIDTH + col]
+          if @cgb_ptr.value
+            blue = bits(bgr5, 10..14)
+            green = bits(bgr5, 5..9)
+            red = bits(bgr5, 0..4)
+            color = StumpyPNG::RGBA.from_rgb8(red << 3 | red >> 2, green << 3 | green >> 2, blue << 3 | blue >> 2)
+          else
+            grey = case bgr5
+                   when DMG_COLORS[0] then 0xFF
+                   when DMG_COLORS[1] then 0xAA
+                   when DMG_COLORS[2] then 0x55
+                   when DMG_COLORS[3] then 0x00
+                   else                    abort "Invalid BGR5 color while dumping image: #{hex_str bgr5}"
+                   end
+            color = StumpyPNG::RGBA.from_rgb8(grey, grey, grey)
+          end
+          canvas[col, row] = color
+        end
+      end
+      StumpyPNG.write(canvas, "out.png")
     end
   end
 end
