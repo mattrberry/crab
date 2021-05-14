@@ -1,6 +1,6 @@
 require "lib_gl"
 
-class Display
+abstract class Display
   enum Console
     GB
     GBA
@@ -27,6 +27,25 @@ class Display
     end
   end
 
+  def self.new(console : Console, headless = false)
+    if headless
+      NoOpDisplay.new
+    else
+      DisplayImpl.new(console)
+    end
+  end
+
+  def draw(framebuffer : Slice(UInt16)) : Nil
+  end
+
+  def toggle_blending : Nil
+  end
+end
+
+private class NoOpDisplay < Display
+end
+
+private class DisplayImpl < Display
   SCALE   = 4
   SHADERS = "src/crab/common/shaders"
 
@@ -37,7 +56,7 @@ class Display
 
   @blend : Bool = false
 
-  def initialize(@console : Console)
+  def initialize(@console : Display::Console)
     @window = SDL::Window.new(window_title(59.7), console.width * SCALE, console.height * SCALE, flags: SDL::Window::Flags::OPENGL)
     setup_gl
   end
@@ -105,7 +124,7 @@ class Display
       # todo: proper debug messages for mac
       LibGL.enable(LibGL::DEBUG_OUTPUT)
       LibGL.enable(LibGL::DEBUG_OUTPUT_SYNCHRONOUS)
-      LibGL.debug_message_callback(->Display.callback, nil)
+      LibGL.debug_message_callback(->DisplayImpl.callback, nil)
     {% end %}
 
     LibSDL.gl_create_context @window

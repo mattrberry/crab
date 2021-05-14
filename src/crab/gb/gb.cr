@@ -12,8 +12,6 @@ require "./scanline_ppu"
 require "./fifo_ppu"
 require "./timer"
 
-DISPLAY_SCALE = {% unless flag? :graphics_test %} 4 {% else %} 1 {% end %}
-
 module GB
   class GB < Emu
     getter bootrom : String?
@@ -30,7 +28,7 @@ module GB
     getter! scheduler : Scheduler
     getter! timer : Timer
 
-    def initialize(@bootrom : String?, rom_path : String, @fifo : Bool, @sync : Bool, @headless : Bool)
+    def initialize(@bootrom : String?, rom_path : String, @fifo : Bool, @headless : Bool)
       @cartridge = Cartridge.new rom_path
       @cgb_enabled = !(bootrom.nil? && @cartridge.cgb == Cartridge::CGB::NONE)
 
@@ -42,8 +40,8 @@ module GB
     def post_init : Nil
       @scheduler = Scheduler.new
       @interrupts = Interrupts.new
-      @apu = APU.new self, @headless, @sync
-      @display = Display.new Display::Console::GB
+      @apu = APU.new self, @headless
+      @display = Display.new Display::Console::GB, @headless
       @joypad = Joypad.new self
       @ppu = @fifo ? FifoPPU.new self : ScanlinePPU.new self
       @timer = Timer.new self

@@ -29,10 +29,10 @@ module GB
     @audiospec : LibSDL::AudioSpec
     @obtained_spec : LibSDL::AudioSpec
 
-    @sync : Bool = true
+    @sync : Bool
 
-    def initialize(@gb : GB, headless : Bool, @sync : Bool)
-      @sync = false if headless
+    def initialize(@gb : GB, headless : Bool)
+      @sync = !headless
 
       @audiospec = LibSDL::AudioSpec.new
       @audiospec.freq = SAMPLE_RATE

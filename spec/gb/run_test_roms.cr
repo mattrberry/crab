@@ -74,7 +74,7 @@ unless mealybug_dir == ""
   print "\n"
 end
 
-system "shards build --release -Dprint_serial > /dev/null"
+system "shards build -Dprint_serial > /dev/null"
 
 unless mooneye_dir == ""
   test_results << {suite: "Mooneye", results: [] of TestResult}

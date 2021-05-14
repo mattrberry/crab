@@ -19,8 +19,6 @@ module Crab
     rom = nil
     bios = nil
     fifo = false
-    pink = false
-    sync = true
     headless = false
 
     OptionParser.parse do |parser|
@@ -33,8 +31,6 @@ module Crab
         exit
       end
       parser.on("--fifo", "Enable FIFO rendering") { fifo = true }
-      parser.on("--pink", "Set the 2-bit DMG color theme to pink") { pink = true }
-      parser.on("--no-sync", "Disable audio syncing") { sync = false }
       parser.on("--headless", "Don't open window or play audio") { headless = true }
       parser.unknown_args do |args|
         case args.size
@@ -49,7 +45,7 @@ module Crab
     if rom.not_nil!.ends_with?(".gba")
       emu = GBA::GBA.new bios.not_nil!, rom.not_nil!
     else
-      emu = GB::GB.new bios, rom.not_nil!, fifo, sync, headless
+      emu = GB::GB.new bios, rom.not_nil!, fifo, headless
     end
     emu.post_init
     emu.run
