@@ -243,8 +243,8 @@ module GB
             if @cycle_counter == 456
               @cycle_counter = 0
               @ly += 1
-              if @ly == HEIGHT # final row of screen complete
-                self.mode_flag = 1      # switch to vblank
+              if @ly == HEIGHT     # final row of screen complete
+                self.mode_flag = 1 # switch to vblank
                 @gb.interrupts.vblank_interrupt = true
                 @gb.display.draw @framebuffer # render at vblank
                 @current_window_line = -1

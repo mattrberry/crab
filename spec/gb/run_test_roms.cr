@@ -1,8 +1,8 @@
 require "option_parser"
 
 TEST_RESULTS_DIR = "spec/gb/test_results"
-SCREENSHOT_DIR = "#{TEST_RESULTS_DIR}/screenshots"
-README_FILE = "#{TEST_RESULTS_DIR}/README.md"
+SCREENSHOT_DIR   = "#{TEST_RESULTS_DIR}/screenshots"
+README_FILE      = "#{TEST_RESULTS_DIR}/README.md"
 
 # kill process after given number of seconds
 def kill(process : Process, after : Number = 5) : Nil
