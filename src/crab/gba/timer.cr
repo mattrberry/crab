@@ -53,9 +53,8 @@ module GBA
 
     def read_io(io_addr : Int) : UInt8
       num = (io_addr & 0xF) // 4
-      tmcnt = @tmcnt[num]
       value = if bit?(io_addr, 1)
-                tmcnt.value
+                @tmcnt[num].value
               else
                 get_current_tm(num)
               end
