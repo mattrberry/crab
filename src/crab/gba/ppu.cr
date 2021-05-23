@@ -146,23 +146,23 @@ module GBA
       bgvofs = @bgvofs[bg]
       bghofs = @bghofs[bg]
 
-      tw, th = case bgcnt.screen_size
-               when 0b00 then {0x0FF, 0x0FF} # 32x32
-               when 0b01 then {0x1FF, 0x0FF} # 64x32
-               when 0b10 then {0x0FF, 0x1FF} # 32x64
-               when 0b11 then {0x1FF, 0x1FF} # 64x64
-               else           raise "Impossible bgcnt screen size: #{bgcnt.screen_size}"
-               end
+      bg_width, bg_height = case bgcnt.screen_size
+                            when 0b00 then {0x0FF, 0x0FF} # 32x32
+                            when 0b01 then {0x1FF, 0x0FF} # 64x32
+                            when 0b10 then {0x0FF, 0x1FF} # 32x64
+                            when 0b11 then {0x1FF, 0x1FF} # 64x64
+                            else           raise "Impossible bgcnt screen size: #{bgcnt.screen_size}"
+                            end
 
       screen_base = 0x800_u32 * bgcnt.screen_base_block
-      character_base = bgcnt.character_base_block.to_u32 * 0x4000
-      effective_row = (@vcount.to_u32 + bgvofs.offset) & th
-      ty = effective_row >> 3
+      character_base = 0x4000_u32 * bgcnt.character_base_block
+      effective_row = (@vcount.to_u32 + bgvofs.offset) & bg_height
+      tile_y = effective_row >> 3
       240.times do |col|
-        effective_col = (col + bghofs.offset) & tw
-        tx = effective_col >> 3
+        effective_col = (col + bghofs.offset) & bg_width
+        tile_x = effective_col >> 3
 
-        se_idx = se_index(tx, ty, bgcnt.screen_size)
+        se_idx = se_index(tile_x, tile_y, bgcnt.screen_size)
         screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
 
         tile_id = bits(screen_entry, 0..9)
