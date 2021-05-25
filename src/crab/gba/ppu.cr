@@ -47,11 +47,11 @@ module GBA
       end
       if @vcount < 160
         scanline
-        @gba.dma.trigger_hdma
         @bgref_int.each_with_index do |bgrefs, bg_num|
           bgrefs[0] &+= @bgaff[bg_num][1].num # bgx += dmx
           bgrefs[1] &+= @bgaff[bg_num][3].num # bgy += dmy
         end
+        @gba.dma.trigger_hdma
       end
     end
 
