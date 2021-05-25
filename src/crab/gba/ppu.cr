@@ -400,29 +400,17 @@ module GBA
         else
           @bgaff[bg_num][offs >> 1].read_byte(offs & 1)
         end
-      when 0x040 then 0xFF_u8 & @win0h.value
-      when 0x041 then 0xFF_u8 & @win0h.value >> 8
-      when 0x042 then 0xFF_u8 & @win1h.value
-      when 0x043 then 0xFF_u8 & @win1h.value >> 8
-      when 0x044 then 0xFF_u8 & @win0v.value
-      when 0x045 then 0xFF_u8 & @win0v.value >> 8
-      when 0x046 then 0xFF_u8 & @win1v.value
-      when 0x047 then 0xFF_u8 & @win1v.value >> 8
-      when 0x048 then 0xFF_u8 & @winin.value
-      when 0x049 then 0xFF_u8 & @winin.value >> 8
-      when 0x04A then 0xFF_u8 & @winout.value
-      when 0x04B then 0xFF_u8 & @winout.value >> 8
-      when 0x04C then 0xFF_u8 & @mosaic.value
-      when 0x04D then 0xFF_u8 & @mosaic.value >> 8
-      when 0x050 then 0xFF_u8 & @bldcnt.value
-      when 0x051 then 0xFF_u8 & @bldcnt.value >> 8
-      when 0x052 then 0xFF_u8 & @bldalpha.value
-      when 0x053 then 0xFF_u8 & @bldalpha.value >> 8
-      when 0x054 then 0xFF_u8 & @bldy.value
-      when 0x055 then 0xFF_u8 & @bldy.value >> 8
-      else            log "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"; 0_u8 # todo: open bus
-
-
+      when 0x040..0x041 then @win0h.read_byte(io_addr & 1)
+      when 0x042..0x043 then @win1h.read_byte(io_addr & 1)
+      when 0x044..0x045 then @win0v.read_byte(io_addr & 1)
+      when 0x046..0x047 then @win1v.read_byte(io_addr & 1)
+      when 0x048..0x049 then @winin.read_byte(io_addr & 1)
+      when 0x04A..0x04B then @winout.read_byte(io_addr & 1)
+      when 0x04C..0x04D then @mosaic.read_byte(io_addr & 1)
+      when 0x050..0x051 then @bldcnt.read_byte(io_addr & 1)
+      when 0x052..0x053 then @bldalpha.read_byte(io_addr & 1)
+      when 0x054..0x055 then @bldy.read_byte(io_addr & 1)
+      else                   log "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"; 0_u8 # todo: open bus
       end
     end
 
@@ -450,26 +438,16 @@ module GBA
         else
           @bgaff[bg_num][offs >> 1].write_byte(offs & 1, value)
         end
-      when 0x040 then @win0h.value = (@win0h.value & 0xFF00) | value
-      when 0x041 then @win0h.value = (@win0h.value & 0x00FF) | value.to_u16 << 8
-      when 0x042 then @win1h.value = (@win1h.value & 0xFF00) | value
-      when 0x043 then @win1h.value = (@win1h.value & 0x00FF) | value.to_u16 << 8
-      when 0x044 then @win0v.value = (@win0v.value & 0xFF00) | value
-      when 0x045 then @win0v.value = (@win0v.value & 0x00FF) | value.to_u16 << 8
-      when 0x046 then @win1v.value = (@win1v.value & 0xFF00) | value
-      when 0x047 then @win1v.value = (@win1v.value & 0x00FF) | value.to_u16 << 8
-      when 0x048 then @winin.value = (@winin.value & 0xFF00) | value
-      when 0x049 then @winin.value = (@winin.value & 0x00FF) | value.to_u16 << 8
-      when 0x04A then @winout.value = (@winout.value & 0xFF00) | value
-      when 0x04B then @winout.value = (@winout.value & 0x00FF) | value.to_u16 << 8
-      when 0x04C then @mosaic.value = (@mosaic.value & 0xFF00) | value
-      when 0x04D then @mosaic.value = (@mosaic.value & 0x00FF) | value.to_u16 << 8
-      when 0x050 then @bldcnt.value = (@bldcnt.value & 0xFF00) | value
-      when 0x051 then @bldcnt.value = (@bldcnt.value & 0x00FF) | value.to_u16 << 8
-      when 0x052 then @bldalpha.value = (@bldalpha.value & 0xFF00) | value
-      when 0x053 then @bldalpha.value = (@bldalpha.value & 0x00FF) | value.to_u16 << 8
-      when 0x054 then @bldy.value = (@bldy.value & 0xFF00) | value
-      when 0x055 then @bldy.value = (@bldy.value & 0x00FF) | value.to_u16 << 8
+      when 0x040..0x041 then @win0h.write_byte(io_addr & 1, value)
+      when 0x042..0x043 then @win1h.write_byte(io_addr & 1, value)
+      when 0x044..0x045 then @win0v.write_byte(io_addr & 1, value)
+      when 0x046..0x047 then @win1v.write_byte(io_addr & 1, value)
+      when 0x048..0x049 then @winin.write_byte(io_addr & 1, value)
+      when 0x04A..0x04B then @winout.write_byte(io_addr & 1, value)
+      when 0x04C..0x04D then @mosaic.write_byte(io_addr & 1, value)
+      when 0x050..0x051 then @bldcnt.write_byte(io_addr & 1, value)
+      when 0x052..0x053 then @bldalpha.write_byte(io_addr & 1, value)
+      when 0x054..0x055 then @bldy.write_byte(io_addr & 1, value)
       end
     end
   end
