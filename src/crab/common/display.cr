@@ -87,7 +87,7 @@ private class DisplayImpl < Display
     @last_time = current_time
     @frames += 1
     if current_time.second != @seconds
-      fps = @frames * 1_000_000 / @microseconds
+      fps = @frames * (1_000_000 / @microseconds)
       @window.title = window_title(fps)
       @microseconds = 0
       @frames = 0
