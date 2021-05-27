@@ -184,7 +184,6 @@ module GBA
     def render_aff_bg(bg : Int) : Nil
       return unless bit?(@dispcnt.value, 8 + bg)
       pal_buf = @layer_palettes[bg]
-      row = @vcount.to_u32
       bgcnt = @bgcnt[bg]
 
       dx, _, dy, _ = @bgaff[bg - 2].map &.num
@@ -194,7 +193,7 @@ module GBA
       size_pixels = size << 3
 
       screen_base = 0x800_u32 * bgcnt.screen_base_block
-      character_base = bgcnt.character_base_block.to_u32 * 0x4000
+      character_base = 0x4000_u32 * bgcnt.character_base_block
       240.times do |col|
         x = int_x >> 8
         y = int_y >> 8
