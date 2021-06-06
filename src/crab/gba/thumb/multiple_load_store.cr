@@ -4,8 +4,8 @@ module GBA
       load = bit?(instr, 11)
       rb = bits(instr, 8..10)
       list = bits(instr, 0..7)
-      set_reg(rb, address + list.popcount * 4)
       address = @r[rb]
+      set_reg(rb, address + list.popcount * 4)
       unless list == 0
         if load # ldmia
           8.times do |idx|
