@@ -5,9 +5,13 @@ module GBA
       rb = bits(instr, 8..10)
       list = bits(instr, 0..7)
       address = @r[rb]
+      
+      if load
+        set_reg(rb, address + list.popcount * 4)
+      end
+      
       unless list == 0
         if load # ldmia
-          set_reg(rb, address + list.popcount * 4)
           8.times do |idx|
             if bit?(list, idx)
               set_reg(idx, @gba.bus.read_word(address))
