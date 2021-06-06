@@ -4,6 +4,7 @@ module GBA
       load = bit?(instr, 11)
       rb = bits(instr, 8..10)
       list = bits(instr, 0..7)
+      set_reg(rb, address + list.popcount * 4)
       address = @r[rb]
       unless list == 0
         if load # ldmia
@@ -24,7 +25,6 @@ module GBA
           end
           @gba.bus[base_addr] = address if base_addr && first_set_bit(list) != rb # rb is written after first store
         end
-        set_reg(rb, address)
       else # https://github.com/jsmolka/gba-suite/blob/0e32e15c6241e6dc20851563ba88f4656ac50936/thumb/memory.asm#L459
         if load
           set_reg(15, @gba.bus.read_word(address))
