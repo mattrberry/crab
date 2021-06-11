@@ -4,3 +4,5 @@
 /.shards/
 *.dwarf
 /shard.lock
+cimgui.so
+imgui.ini

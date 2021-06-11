@@ -49,32 +49,87 @@ private class DisplayImpl < Display
   SCALE   = 4
   SHADERS = "src/crab/common/shaders"
 
+  @window : SDL::Window
+  @gl_context : LibSDL::GLContext
+  @io : ImGui::ImGuiIO
+
   @microseconds = 0
   @frames = 0
   @last_time = Time.utc
   @seconds : Int32 = Time.utc.second
 
-  @blend : Bool = false
+  @enable_blend = false
+  @blending = false
+  @enable_overlay = false
+
+  @opengl_info : OpenGLInfo
 
   def initialize(@console : Display::Console)
     @window = SDL::Window.new(window_title(59.7), console.width * SCALE, console.height * SCALE, flags: SDL::Window::Flags::OPENGL)
-    setup_gl
-  end
-
-  def draw(framebuffer : Slice(UInt16)) : Nil
-    LibGL.tex_image_2d(LibGL::TEXTURE_2D, 0, LibGL::RGB5, @console.width, @console.height, 0, LibGL::RGBA, LibGL::UNSIGNED_SHORT_1_5_5_5_REV, framebuffer)
-    LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
-    LibSDL.gl_swap_window(@window)
-    update_draw_count
+    @gl_context = setup_gl
+    @opengl_info = OpenGLInfo.new
+    @io = setup_imgui
   end
 
   def toggle_blending : Nil
-    if @blend
+    if @blending
       LibGL.disable(LibGL::BLEND)
     else
       LibGL.enable(LibGL::BLEND)
     end
-    @blend = !@blend
+    @blending = @enable_blend = !@blending
+  end
+
+  def draw(framebuffer : Slice(UInt16)) : Nil
+    render_game(framebuffer)
+    render_imgui
+    LibSDL.gl_swap_window(@window)
+    update_draw_count
+  end
+
+  private def render_game(framebuffer : Slice(UInt16)) : Nil
+    LibGL.tex_image_2d(LibGL::TEXTURE_2D, 0, LibGL::RGB5, @console.width, @console.height, 0, LibGL::RGBA, LibGL::UNSIGNED_SHORT_1_5_5_5_REV, framebuffer)
+    LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
+  end
+
+  private def render_imgui : Nil
+    ImGui::OpenGL3.new_frame
+    ImGui::SDL2.new_frame(@window)
+    ImGui.new_frame
+
+    overlay_height = 10.0
+
+    if LibSDL.get_mouse_focus
+      if ImGui.begin_main_menu_bar
+        if ImGui.begin_menu "File"
+          ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
+          ImGui.menu_item "Blend", "", pointerof(@enable_blend)
+          toggle_blending if @enable_blend ^ @blending
+          ImGui.end_menu
+        end
+        overlay_height += ImGui.get_window_size.y
+        ImGui.end_main_menu_bar
+      end
+    end
+
+    if @enable_overlay
+      ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)
+      ImGui.set_next_window_bg_alpha(0.5)
+      ImGui.begin("fps", pointerof(@enable_overlay),
+        ImGui::ImGuiWindowFlags::NoDecoration | ImGui::ImGuiWindowFlags::NoMove |
+        ImGui::ImGuiWindowFlags::NoSavedSettings)
+      io_framerate = @io.framerate
+      ImGui.text("FPS:        #{io_framerate.format(decimal_places: 1)}")
+      ImGui.text("Frame time: #{(1000 / io_framerate).format(decimal_places: 3)}ms")
+      ImGui.separator
+      ImGui.text("OpenGL")
+      ImGui.text("  Version: #{@opengl_info.version}")
+      ImGui.text("  Shading: #{@opengl_info.shading}")
+      ImGui.end
+    end
+
+    ImGui.render
+    ImGui::OpenGL3.render_draw_data(ImGui.get_draw_data)
   end
 
   private def window_title(fps : Float) : String
@@ -112,13 +167,18 @@ private class DisplayImpl < Display
     shader
   end
 
-  private def setup_gl : Nil
+  private def setup_gl : LibSDL::GLContext
     {% if flag?(:darwin) %}
       LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_FLAGS, LibSDL::GLcontextFlag::FORWARD_COMPATIBLE_FLAG)
     {% end %}
     LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_PROFILE_MASK, LibSDL::GLprofile::PROFILE_CORE)
     LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_MAJOR_VERSION, 3)
     LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_MINOR_VERSION, 3)
+
+    # Maybe for Dear ImGui
+    LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_DOUBLEBUFFER, 1)
+    LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_DEPTH_SIZE, 24)
+    LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_STENCIL_SIZE, 8)
 
     {% unless flag?(:darwin) %}
       # todo: proper debug messages for mac
@@ -127,12 +187,9 @@ private class DisplayImpl < Display
       LibGL.debug_message_callback(->DisplayImpl.callback, nil)
     {% end %}
 
-    LibSDL.gl_create_context @window
+    gl_context = LibSDL.gl_create_context @window
     LibSDL.gl_set_swap_interval(0) # disable vsync
     shader_program = LibGL.create_program
-
-    puts "OpenGL version: #{String.new(LibGL.get_string(LibGL::VERSION))}"
-    puts "Shader language version: #{String.new(LibGL.get_string(LibGL::SHADING_LANGUAGE_VERSION))}"
 
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
@@ -156,9 +213,38 @@ private class DisplayImpl < Display
     vao = 0_u32 # required even if not used in modern opengl
     LibGL.gen_vertex_arrays(1, pointerof(vao))
     LibGL.bind_vertex_array(vao)
+
+    gl_context
+  end
+
+  private def setup_imgui : ImGui::ImGuiIO
+    LibImGuiBackends.gl3wInit
+
+    ImGui.debug_check_version_and_data_layout(
+      ImGui.get_version, *{
+      sizeof(LibImGui::ImGuiIO), sizeof(LibImGui::ImGuiStyle), sizeof(ImGui::ImVec2),
+      sizeof(ImGui::ImVec4), sizeof(ImGui::ImDrawVert), sizeof(ImGui::ImDrawIdx),
+    }.map &->LibC::SizeT.new(Int32))
+
+    ImGui.create_context
+    io = ImGui.get_io
+    ImGui.style_colors_dark
+
+    glsl_version = "#version 330"
+    ImGui::SDL2.init_for_opengl(@window, @gl_context)
+    ImGui::OpenGL3.init(glsl_version)
+
+    io
   end
 
   protected def self.callback(source : UInt32, type : UInt32, id : UInt32, severity : UInt32, length : Int32, message : Pointer(UInt8), userParam : Pointer(Void)) : Nil
     puts "OpenGL debug message: #{String.new message}"
+  end
+
+  record OpenGLInfo, version : String, shading : String do
+    def initialize
+      @version = String.new(LibGL.get_string(LibGL::VERSION))
+      @shading = String.new(LibGL.get_string(LibGL::SHADING_LANGUAGE_VERSION))
+    end
   end
 end

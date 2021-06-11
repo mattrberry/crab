@@ -18,6 +18,10 @@ dependencies:
     github: ysbaddaden/sdl.cr
   lib_gl:
     github: nulldotpro/LibGL
+  imgui:
+    github: oprypin/crystal-imgui
+  imgui-backends:
+    github: mattrberry/crystal-imgui-backends
 
 development_dependencies:
   stumpy_png:

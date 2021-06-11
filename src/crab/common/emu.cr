@@ -11,6 +11,7 @@ abstract class Emu
   def handle_events(interval : Int) : Nil
     scheduler.schedule interval, Proc(Nil).new { handle_events interval }
     while event = SDL::Event.poll
+      ImGui::SDL2.process_event(event)
       case event
       when SDL::Event::Quit then exit 0
       when SDL::Event::JoyHat,
