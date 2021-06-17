@@ -246,7 +246,7 @@ module GB
               if @ly == HEIGHT     # final row of screen complete
                 self.mode_flag = 1 # switch to vblank
                 @gb.interrupts.vblank_interrupt = true
-                @gb.display.draw @framebuffer # render at vblank
+                @frame = true
                 @current_window_line = -1
               else
                 self.mode_flag = 2 # switch to oam search

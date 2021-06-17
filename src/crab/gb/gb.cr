@@ -57,11 +57,11 @@ module GB
       timer.skip_boot
     end
 
-    def run : Nil
-      handle_events(70224)
-      loop do
+    def run_until_frame : Nil
+      until ppu.frame
         cpu.tick
       end
+      ppu.frame = false
     end
 
     def handle_event(event : SDL::Event) : Nil
@@ -70,10 +70,6 @@ module GB
 
     def toggle_sync : Nil
       apu.toggle_sync
-    end
-
-    def toggle_blending : Nil
-      puts "Blending not implemented for gb/gbc"
     end
   end
 end

@@ -25,7 +25,6 @@ module GBA
     getter! bus : Bus
     getter! interrupts : Interrupts
     getter! cpu : CPU
-    getter! display : Display
     getter! ppu : PPU
     getter! apu : APU
     getter! dma : DMA
@@ -49,19 +48,17 @@ module GBA
       @bus = Bus.new self, @bios_path
       @interrupts = Interrupts.new self
       @cpu = CPU.new self
-      @display = Display.new Display::Console::GBA
       @ppu = PPU.new self
       @apu = APU.new self
       @dma = DMA.new self
       @debugger = Debugger.new self
     end
 
-    def run : Nil
-      handle_events(280896)
-      loop do
-        {% if flag? :debugger %} debugger.check_debug {% end %}
+    def run_until_frame : Nil
+      until ppu.frame
         cpu.tick
       end
+      ppu.frame = false
     end
 
     def handle_event(event : SDL::Event) : Nil
@@ -70,10 +67,6 @@ module GBA
 
     def toggle_sync : Nil
       apu.toggle_sync
-    end
-
-    def toggle_blending : Nil
-      display.toggle_blending
     end
 
     def handle_saves : Nil

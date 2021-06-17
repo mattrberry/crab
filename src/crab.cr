@@ -8,6 +8,8 @@ require "imgui-backends"
 require "imgui-backends/lib"
 
 require "./crab/common/*"
+
+require "./crab/common/frontend/*"
 require "./crab/gb"
 require "./crab/gba"
 
@@ -51,7 +53,9 @@ module Crab
       emu = GB::GB.new bios, rom.not_nil!, fifo, headless
     end
     emu.post_init
-    emu.run
+
+    frontend = Frontend.new(emu)
+    frontend.run
   end
 end
 

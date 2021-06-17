@@ -118,7 +118,8 @@ module GB
 
     DMG_COLORS = [0x6BDF_u16, 0x3ABF_u16, 0x35BD_u16, 0x2CEF_u16]
 
-    @framebuffer = Slice(UInt16).new WIDTH * HEIGHT
+    getter framebuffer = Slice(UInt16).new WIDTH * HEIGHT
+    property frame = false
 
     @pram = Bytes.new 64
     @palette_index : UInt8 = 0

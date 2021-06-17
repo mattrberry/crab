@@ -2,7 +2,8 @@ module GBA
   class PPU
     SPRITE_PIXEL = SpritePixel.new 4, 0, false, false # base sprite pixel to fill buffer with on each scanline
 
-    @framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
+    getter framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
+    property frame = false
     @layer_palettes : Array(Bytes) = Array.new 4 { Bytes.new 240 }
     @sprite_pixels : Slice(SpritePixel) = Slice(SpritePixel).new 240, SPRITE_PIXEL
 
@@ -74,7 +75,7 @@ module GBA
     end
 
     def draw : Nil
-      @gba.display.draw @framebuffer
+      @frame = true
     end
 
     # Get the screen entry offset from the tile x, tile y, and background screen-size param using tonc algo
