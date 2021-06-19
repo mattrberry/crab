@@ -10,6 +10,10 @@ class SDLOpenGLImGuiFrontend < Frontend
   @window : SDL::Window
   @gl_context : LibSDL::GLContext
   @io : ImGui::ImGuiIO
+  @shader_program : UInt32?
+  @frag_shader_id : UInt32?
+
+  @shader_programs : Hash(Controller.class, UInt32)
 
   @microseconds = 0
   @frames = 0
@@ -27,8 +31,11 @@ class SDLOpenGLImGuiFrontend < Frontend
   def initialize(bios : String?, rom : String?)
     @controller = init_controller(bios, rom.not_nil!)
 
+    controllers = [GBController, GBAController]
+
     @window = SDL::Window.new(window_title(59.7), @controller.width * SCALE, @controller.height * SCALE, flags: SDL::Window::Flags::OPENGL)
     @gl_context = setup_gl
+    @shader_programs = Hash.zip(controllers, controllers.map { |controller| create_shader_program(controller.shader)})
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
 
@@ -54,6 +61,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibSDL.set_window_size(@window, @controller.width * SCALE, @controller.height * SCALE)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
     LibGL.viewport(0, 0, @controller.width * SCALE, @controller.height * SCALE)
+    LibGL.use_program(@shader_programs[@controller.class])
   end
 
   private def handle_input : Nil
@@ -218,32 +226,37 @@ class SDLOpenGLImGuiFrontend < Frontend
 
     gl_context = LibSDL.gl_create_context @window
     LibSDL.gl_set_swap_interval(0) # disable vsync
-    shader_program = LibGL.create_program
 
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
-    vert_shader_id = compile_shader(File.read("#{SHADERS}/identity.vert"), LibGL::VERTEX_SHADER)
-    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{@controller.shader}"), LibGL::FRAGMENT_SHADER)
 
     frame_buffer = 0_u32
     LibGL.gen_textures(1, pointerof(frame_buffer))
     LibGL.active_texture(LibGL::TEXTURE0)
     LibGL.bind_texture(LibGL::TEXTURE_2D, frame_buffer)
-    LibGL.attach_shader(shader_program, vert_shader_id)
-    LibGL.attach_shader(shader_program, frag_shader_id)
-    LibGL.link_program(shader_program)
-    LibGL.validate_program(shader_program)
     a = [LibGL::BLUE, LibGL::GREEN, LibGL::RED, LibGL::ONE] # flip the rgba to bgra where a is always 1
     a_ptr = pointerof(a).as(Int32*)
     LibGL.tex_parameter_iv(LibGL::TEXTURE_2D, LibGL::TEXTURE_SWIZZLE_RGBA, a_ptr)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MIN_FILTER, LibGL::NEAREST)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MAG_FILTER, LibGL::NEAREST)
-    LibGL.use_program(shader_program)
     vao = 0_u32 # required even if not used in modern opengl
     LibGL.gen_vertex_arrays(1, pointerof(vao))
     LibGL.bind_vertex_array(vao)
 
     gl_context
+  end
+
+  private def create_shader_program(shader_name : String?) : UInt32
+    return 0_u32 unless shader_name
+    shader_program = LibGL.create_program
+    vert_shader_id = compile_shader(File.read("#{SHADERS}/identity.vert"), LibGL::VERTEX_SHADER)
+    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{shader_name}"), LibGL::FRAGMENT_SHADER)
+    LibGL.attach_shader(shader_program, vert_shader_id)
+    LibGL.attach_shader(shader_program, frag_shader_id)
+    LibGL.link_program(shader_program)
+    LibGL.validate_program(shader_program)
+    LibGL.use_program(shader_program)
+    shader_program
   end
 
   private def setup_imgui : ImGui::ImGuiIO

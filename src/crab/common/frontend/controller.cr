@@ -1,7 +1,8 @@
 abstract class Controller
   abstract def width : Int32
   abstract def height : Int32
-  abstract def shader : String
+
+  class_getter shader : String? = nil
 
   def get_framebuffer : Slice(UInt16)
     emu.ppu.framebuffer
