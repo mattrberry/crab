@@ -4,7 +4,6 @@ module ImGui
     @matched_entries = [] of Entry
     @selected_entry_idx = 0
     @match_hidden = false
-    @filter_by_extension = true
 
     @path : Path
     @name = "File Explorer"
@@ -78,13 +77,9 @@ module ImGui
 
     private def gather_entries : Nil
       @matched_entries.clear
-      if @filter_by_extension
-        extensions.each do |extension|
-          path = @path / "*.#{extension}"
-          @matched_entries.concat(Dir[path, match_hidden: @match_hidden].map { |file| Entry.new(name: Path[file].basename, file?: true) })
-        end
-      else
-        @matched_entries.concat(Dir[@path / "*", match_hidden: @match_hidden].map { |file| Entry.new(name: Path[file].basename, file?: true) })
+      extensions.each do |extension|
+        path = @path / "*.#{extension}"
+        @matched_entries.concat(Dir[path, match_hidden: @match_hidden].map { |file| Entry.new(name: Path[file].basename, file?: true) })
       end
       Dir.each_child(@path) do |child|
         next unless Dir.exists?(@path / child)
