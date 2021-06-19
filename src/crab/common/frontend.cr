@@ -1,13 +1,25 @@
 require "lib_gl"
 
 abstract class Frontend
-  def self.new(emu : Emu, headless = false)
+  def self.new(bios : String?, rom : String?, headless = false)
     if headless
-      HeadlessFrontend.new(emu)
+      HeadlessFrontend.new(bios, rom)
     else
-      SDLOpenGLImGuiFrontend.new(emu)
+      SDLOpenGLImGuiFrontend.new(bios, rom)
     end
   end
 
   abstract def run : NoReturn
+
+  private def init_controller(bios : String?, rom : String) : Controller
+    extension = rom.rpartition('.')[2]
+    if GBController.extensions.includes? extension
+      controller = GBController.new(bios, rom)
+    elsif GBAController.extensions.includes? extension
+      controller = GBAController.new(bios, rom)
+    else
+      abort "Unsupported file extension: #{extension}"
+    end
+    controller
+  end
 end

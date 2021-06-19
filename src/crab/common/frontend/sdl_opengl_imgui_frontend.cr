@@ -1,8 +1,11 @@
-require "./console_accessors/*"
+require "./controllers/*"
+require "./widgets/*"
 
 class SDLOpenGLImGuiFrontend < Frontend
   SCALE   = 4
   SHADERS = "src/crab/common/shaders"
+
+  @controller : Controller
 
   @window : SDL::Window
   @gl_context : LibSDL::GLContext
@@ -21,28 +24,36 @@ class SDLOpenGLImGuiFrontend < Frontend
 
   @opengl_info : OpenGLInfo
 
-  def initialize(@emu : Emu)
-    @accessor = case emu
-                in GB::GB   then GBAccessor.new(emu)
-                in GBA::GBA then GBAAccessor.new(emu)
-                in Emu      then abort "Cannot init for the abstract emu class (this isn't even possible)"
-                end
+  def initialize(bios : String?, rom : String?)
+    @controller = init_controller(bios, rom.not_nil!)
 
-    @window = SDL::Window.new(window_title(59.7), @accessor.width * SCALE, @accessor.height * SCALE, flags: SDL::Window::Flags::OPENGL)
+    @window = SDL::Window.new(window_title(59.7), @controller.width * SCALE, @controller.height * SCALE, flags: SDL::Window::Flags::OPENGL)
     @gl_context = setup_gl
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
+
+    @file_explorer = ImGui::FileExplorer.new GBController.extensions + GBAController.extensions
   end
 
   def run : NoReturn
     loop do
-      @emu.run_until_frame unless @pause
+      @controller.run_until_frame unless @pause
       handle_input
       render_game
       render_imgui
       LibSDL.gl_swap_window(@window)
       update_draw_count
+      load_new_rom(@file_explorer.chosen_rom.not_nil!) if @file_explorer.chosen_rom
     end
+  end
+
+  private def load_new_rom(path : Path) : Nil
+    LibSDL.close_audio(1)
+    @controller = init_controller(nil, path.to_s)
+    @file_explorer.clear_chosen_rom
+    LibSDL.set_window_size(@window, @controller.width * SCALE, @controller.height * SCALE)
+    LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
+    LibGL.viewport(0, 0, @controller.width * SCALE, @controller.height * SCALE)
   end
 
   private def handle_input : Nil
@@ -51,20 +62,20 @@ class SDLOpenGLImGuiFrontend < Frontend
       case event
       when SDL::Event::Quit then exit 0
       when SDL::Event::JoyHat,
-           SDL::Event::JoyButton then @emu.handle_event(event)
+           SDL::Event::JoyButton then @controller.handle_event(event)
       when SDL::Event::Keyboard
         case event.sym
-        when .tab? then @emu.toggle_sync if event.pressed?
+        when .tab? then @controller.toggle_sync if event.pressed?
         when .m?   then toggle_blending if event.pressed?
         when .q?   then exit 0
-        else            @emu.handle_event(event)
+        else            @controller.handle_event(event)
         end
       else nil
       end
     end
   end
 
-  def toggle_blending : Nil
+  private def toggle_blending : Nil
     if @blending
       LibGL.disable(LibGL::BLEND)
     else
@@ -78,12 +89,12 @@ class SDLOpenGLImGuiFrontend < Frontend
       LibGL::TEXTURE_2D,
       0,
       LibGL::RGB5,
-      @accessor.width,
-      @accessor.height,
+      @controller.width,
+      @controller.height,
       0,
       LibGL::RGBA,
       LibGL::UNSIGNED_SHORT_1_5_5_5_REV,
-      @accessor.get_framebuffer
+      @controller.get_framebuffer
     )
     LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
   end
@@ -94,6 +105,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     ImGui.new_frame
 
     overlay_height = 10.0
+    open_file_explorer = false
 
     if LibSDL.get_mouse_focus
       if ImGui.begin_main_menu_bar
@@ -101,6 +113,7 @@ class SDLOpenGLImGuiFrontend < Frontend
           previously_paused = @pause
           previously_synced = @sync
 
+          open_file_explorer = ImGui.menu_item "Open ROM"
           ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
           ImGui.menu_item "Blend", "", pointerof(@enable_blend)
           ImGui.menu_item "Pause", "", pointerof(@pause)
@@ -109,12 +122,14 @@ class SDLOpenGLImGuiFrontend < Frontend
 
           toggle_blending if @enable_blend ^ @blending
           LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
-          @emu.toggle_sync if previously_synced ^ @sync
+          @controller.toggle_sync if previously_synced ^ @sync
         end
         overlay_height += ImGui.get_window_size.y
         ImGui.end_main_menu_bar
       end
     end
+
+    @file_explorer.render(open_file_explorer)
 
     if @enable_overlay
       ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)
@@ -133,7 +148,8 @@ class SDLOpenGLImGuiFrontend < Frontend
     end
 
     if @pause
-      ImGui.set_next_window_pos(ImGui::ImVec2.new(@accessor.width * SCALE * 0.5, @accessor.height * SCALE * 0.5), pivot: ImGui::ImVec2.new(0.5, 0.5))
+      center = ImGui.get_main_viewport.get_center
+      ImGui.set_next_window_pos(center, pivot: ImGui::ImVec2.new(0.5, 0.5))
       ImGui.begin("Pause", pointerof(@enable_overlay),
         ImGui::ImGuiWindowFlags::NoDecoration | ImGui::ImGuiWindowFlags::NoMove |
         ImGui::ImGuiWindowFlags::NoSavedSettings)
@@ -207,7 +223,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
     vert_shader_id = compile_shader(File.read("#{SHADERS}/identity.vert"), LibGL::VERTEX_SHADER)
-    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{@accessor.shader}"), LibGL::FRAGMENT_SHADER)
+    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{@controller.shader}"), LibGL::FRAGMENT_SHADER)
 
     frame_buffer = 0_u32
     LibGL.gen_textures(1, pointerof(frame_buffer))

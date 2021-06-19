@@ -5,7 +5,7 @@ module GB
   class APU
     CHANNELS      =     2 # Left / Right
     BUFFER_SIZE   =  1024
-    SAMPLE_RATE   = 65536 # Hz
+    SAMPLE_RATE   = 32768 # Hz
     SAMPLE_PERIOD = CPU::CLOCK_SPEED // SAMPLE_RATE
 
     FRAME_SEQUENCER_RATE   = 512 # Hz

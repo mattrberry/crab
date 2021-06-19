@@ -20,7 +20,6 @@ module GB
 
     getter! apu : APU
     getter! cpu : CPU
-    getter! display : Display
     getter! interrupts : Interrupts
     getter! joypad : Joypad
     getter! memory : Memory
@@ -41,7 +40,6 @@ module GB
       @scheduler = Scheduler.new
       @interrupts = Interrupts.new
       @apu = APU.new self, @headless
-      @display = Display.new Display::Console::GB, @headless
       @joypad = Joypad.new self
       @ppu = @fifo ? FifoPPU.new self : ScanlinePPU.new self
       @timer = Timer.new self

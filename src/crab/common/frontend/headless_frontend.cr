@@ -1,10 +1,13 @@
 class HeadlessFrontend < Frontend
-  def initialize(@emu : Emu)
+  @controller : Controller
+
+  def initialize(bios : String?, rom : String?)
+    @controller = init_controller(bios, rom.not_nil!)
   end
 
   def run : NoReturn
     loop do
-      @emu.run_until_frame
+      @controller.run_until_frame
     end
   end
 end
