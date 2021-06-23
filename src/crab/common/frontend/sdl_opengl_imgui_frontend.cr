@@ -89,7 +89,7 @@ class SDLOpenGLImGuiFrontend < Frontend
       when SDL::Event::Keyboard
         case event.sym
         when .tab? then @controller.toggle_sync if event.pressed?
-        when .m?   then toggle_blending if event.pressed?
+        # when .m?   then toggle_blending if event.pressed?
         when .q?   then exit 0
         else            @controller.handle_event(event)
         end
@@ -139,7 +139,7 @@ class SDLOpenGLImGuiFrontend < Frontend
 
           open_file_explorer = ImGui.menu_item "Open ROM"
           ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
-          ImGui.menu_item "Blend", "", pointerof(@enable_blend)
+          # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
           ImGui.menu_item "Pause", "", pointerof(@pause)
           ImGui.menu_item "Sync", "", pointerof(@sync)
           ImGui.end_menu
