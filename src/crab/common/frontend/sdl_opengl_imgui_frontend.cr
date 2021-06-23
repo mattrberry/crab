@@ -2,8 +2,9 @@ require "./controllers/*"
 require "./widgets/*"
 
 class SDLOpenGLImGuiFrontend < Frontend
-  SCALE   = 4
-  SHADERS = "src/crab/common/shaders"
+  CONTROLLERS = [StubbedController, GBController, GBAController]
+  SCALE       = 4
+  SHADERS     = "src/crab/common/shaders"
 
   @controller : Controller
 
@@ -29,39 +30,53 @@ class SDLOpenGLImGuiFrontend < Frontend
   @opengl_info : OpenGLInfo
 
   def initialize(bios : String?, rom : String?)
-    @controller = init_controller(bios, rom.not_nil!)
+    SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
+    LibSDL.joystick_open 0
+    at_exit { SDL.quit }
 
-    controllers = [GBController, GBAController]
-
-    @window = SDL::Window.new(window_title(59.7), @controller.width * SCALE, @controller.height * SCALE, flags: SDL::Window::Flags::OPENGL)
+    @controller = init_controller(bios, rom)
+    @window = SDL::Window.new(window_title(59.7), @controller.window_width * SCALE, @controller.window_height * SCALE, flags: SDL::Window::Flags::OPENGL | SDL::Window::Flags::RESIZABLE)
     @gl_context = setup_gl
-    @shader_programs = Hash.zip(controllers, controllers.map { |controller| create_shader_program(controller.shader)})
+    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| create_shader_program(controller.shader) })
+    LibGL.use_program(@shader_programs[@controller.class])
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
 
-    @file_explorer = ImGui::FileExplorer.new GBController.extensions + GBAController.extensions
+    @file_explorer = ImGui::FileExplorer.new(CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions })
+
+    @open_first_frame = @controller.class == StubbedController
+    LibSDL.gl_set_swap_interval(1) if @open_first_frame
   end
 
   def run : NoReturn
     loop do
       @controller.run_until_frame unless @pause
       handle_input
+      LibGL.clear_color(0, 0, 0, 1)
+      LibGL.clear(LibGL::COLOR_BUFFER_BIT)
       render_game
       render_imgui
       LibSDL.gl_swap_window(@window)
       update_draw_count
-      load_new_rom(@file_explorer.chosen_rom.not_nil!) if @file_explorer.chosen_rom
+      load_new_rom(@file_explorer.chosen_rom.not_nil!.to_s) if @file_explorer.chosen_rom
     end
   end
 
-  private def load_new_rom(path : Path) : Nil
+  private def load_new_rom(rom : String?) : Nil
     LibSDL.close_audio(1)
-    @controller = init_controller(nil, path.to_s)
+    @controller = init_controller(nil, rom)
     @file_explorer.clear_chosen_rom
-    LibSDL.set_window_size(@window, @controller.width * SCALE, @controller.height * SCALE)
+    LibSDL.set_window_size(@window, @controller.window_width * SCALE, @controller.window_height * SCALE)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
-    LibGL.viewport(0, 0, @controller.width * SCALE, @controller.height * SCALE)
+    LibGL.viewport(0, 0, @controller.window_width * SCALE, @controller.window_height * SCALE)
     LibGL.use_program(@shader_programs[@controller.class])
+
+    LibSDL.gl_set_swap_interval(0)
+    @enable_blend = false
+    @blending = false
+    @enable_overlay = false
+    @pause = false
+    @sync = true
   end
 
   private def handle_input : Nil
@@ -115,9 +130,10 @@ class SDLOpenGLImGuiFrontend < Frontend
     overlay_height = 10.0
     open_file_explorer = false
 
-    if LibSDL.get_mouse_focus
+    if LibSDL.get_mouse_focus || @open_first_frame
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
+          @open_first_frame = false
           previously_paused = @pause
           previously_synced = @sync
 
@@ -228,7 +244,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibSDL.gl_set_swap_interval(0) # disable vsync
 
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
-
 
     frame_buffer = 0_u32
     LibGL.gen_textures(1, pointerof(frame_buffer))

@@ -30,10 +30,6 @@ module GB
     def initialize(@bootrom : String?, rom_path : String, @fifo : Bool, @headless : Bool)
       @cartridge = Cartridge.new rom_path
       @cgb_enabled = !(bootrom.nil? && @cartridge.cgb == Cartridge::CGB::NONE)
-
-      SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
-      LibSDL.joystick_open 0
-      at_exit { SDL.quit }
     end
 
     def post_init : Nil

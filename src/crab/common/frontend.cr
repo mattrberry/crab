@@ -11,7 +11,8 @@ abstract class Frontend
 
   abstract def run : NoReturn
 
-  private def init_controller(bios : String?, rom : String) : Controller
+  private def init_controller(bios : String?, rom : String?) : Controller
+    return StubbedController.new unless rom
     extension = rom.rpartition('.')[2]
     if GBController.extensions.includes? extension
       controller = GBController.new(bios, rom)

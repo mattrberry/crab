@@ -7,7 +7,6 @@ require "imgui"
 require "imgui-backends"
 require "imgui-backends/lib"
 
-#require "./crab/common/bindings"
 require "./crab/common/*"
 require "./crab/common/frontend/*"
 require "./crab/gb"
@@ -42,8 +41,6 @@ module Crab
         when 1 then rom = args[0]
         when 2 then bios, rom = args[0], args[1]
         end
-        abort parser if rom.nil?
-        abort "GBA ROMs need a bios provided" if rom.not_nil!.ends_with?(".gba") && bios.nil?
       end
     end
 

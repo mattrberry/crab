@@ -35,10 +35,6 @@ module GBA
       @cartridge = Cartridge.new rom_path
       @storage = Storage.new rom_path
       handle_saves
-
-      SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
-      LibSDL.joystick_open 0
-      at_exit { SDL.quit }
     end
 
     def post_init : Nil

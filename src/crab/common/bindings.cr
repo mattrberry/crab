@@ -4,3 +4,20 @@ lib LibSDL
   fun clear_queued_audio = SDL_ClearQueuedAudio(dev : AudioDeviceID)
   fun delay = SDL_Delay(ms : UInt32) : Nil
 end
+
+module SDL
+  class Window
+    def get_size : Tuple(Int32, Int32)
+      LibSDL.get_window_size(@window, out w, out h)
+      {w, h}
+    end
+
+    def width : Int32
+      get_size[0]
+    end
+
+    def height : Int32
+      get_size[1]
+    end
+  end
+end

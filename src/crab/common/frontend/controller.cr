@@ -1,6 +1,16 @@
 abstract class Controller
+  abstract def emu : Emu
+
   abstract def width : Int32
   abstract def height : Int32
+
+  def window_width : Int32
+    width
+  end
+
+  def window_height : Int32
+    height
+  end
 
   class_getter shader : String? = nil
 
