@@ -10,7 +10,7 @@ module ImGui
 
     getter chosen_rom : Path? = nil
 
-    def initialize(@extensions = [] of String, @path = Path[Dir.current].expand(home: true))
+    def initialize(@extensions = [] of String, @path = Path[explorer_dir].expand(home: true))
       gather_entries
     end
 
@@ -68,6 +68,7 @@ module ImGui
       selected_item = @matched_entries[@selected_entry_idx]
       @chosen_rom = (@path / selected_item[:name]).normalize
       ImGui.close_current_popup
+      set_explorer_dir @path.to_s
     end
 
     private def change_dir(name : String) : Nil

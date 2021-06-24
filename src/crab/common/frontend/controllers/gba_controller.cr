@@ -7,7 +7,7 @@ class GBAController < Controller
   getter height : Int32 = 160
 
   def initialize(bios : String?, rom : String)
-    @emu = GBA::GBA.new("/home/matt/Downloads/gba/gba_bios.bin", rom)
+    @emu = GBA::GBA.new(gba_bios, rom)
     @emu.post_init
   end
 end

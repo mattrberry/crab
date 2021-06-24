@@ -16,11 +16,11 @@ After cloning the repository, all you'll need to do is run `shards build --relea
 
 ## Usage
 
-Running the emulator simply consists of `bin/crab /path/to/bios /path/to/rom`.
+Running the emulator is as simple as running the `crab` executable generated under the `bin` directory. If you'd rather launch a specific rom directly, you can pass it as a command-line argument along with an optional bios, like `bin/crab /path/to/bios /path/to/rom`.
 
-At the moment, the BIOS is required for GBA games, while the GBC BIOS can be omitted for GB and GBC games. If you omit the GBC BIOS for a GB game, it will select a default 4-color palette that will not be the one typically set by the GBC BIOS.
+If you omit the GBC BIOS for a GB game, it will select a default 4-color palette that will not be the one typically set by the GBC BIOS.
 
-I may ship the emulator with an open-source replacement GBA BIOS at some point in the future. If you cannot dump the official BIOS from your own console, you can pick up [Normatt's replacement BIOS](https://github.com/Nebuleon/ReGBA/tree/master/bios) or the [one created by DenSinH and fleroviux](https://github.com/Cult-of-GBA/BIOS). Both of these BIOSes should be compatible in most cases, although the official BIOS will always be the most accurate.
+Currently, I ship the emulator with the [Cult of GBA BIOS](https://github.com/Cult-of-GBA/BIOS) created by Fleroviux and DenSinH for your convenience. Like [Normatt's replacement BIOS](https://github.com/Nebuleon/ReGBA/tree/master/bios), this BIOS aims to implement much of the functionality of the official GBA BIOS. Both of these BIOSes should be compatible in most cases, although the official BIOS will always be the most accurate. If you want greater accuracy, it'd be good to get your hands on an official copy of the BIOS or dump it from your GBA/DS/3DS yourself.
 
 ### Keybindings
 
