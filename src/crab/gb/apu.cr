@@ -29,7 +29,7 @@ module GB
     @audiospec : LibSDL::AudioSpec
     @obtained_spec : LibSDL::AudioSpec
 
-    @sync : Bool
+    getter sync : Bool
 
     def initialize(@gb : GB, headless : Bool)
       @sync = !headless

@@ -6,8 +6,14 @@ class GBAController < Controller
   getter width : Int32 = 240
   getter height : Int32 = 160
 
+  getter name : String = "Game Boy Advance"
+
   def initialize(bios : String?, rom : String)
     @emu = GBA::GBA.new(gba_bios, rom)
     @emu.post_init
+  end
+
+  def actions(& : Action ->)
+    yield Action.new("Sync", ->@emu.toggle_sync, emu.apu.sync)
   end
 end

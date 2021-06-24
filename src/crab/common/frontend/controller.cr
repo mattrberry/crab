@@ -1,8 +1,14 @@
 abstract class Controller
+  alias Action = Tuple(String, Proc(Nil), Bool)
+
   abstract def emu : Emu
 
   abstract def width : Int32
   abstract def height : Int32
+  abstract def name : String
+  abstract def actions(& : Action ->)
+
+  getter actions = [] of Action
 
   def window_width : Int32
     width

@@ -2,9 +2,10 @@ require "./controllers/*"
 require "./widgets/*"
 
 class SDLOpenGLImGuiFrontend < Frontend
-  CONTROLLERS = [StubbedController, GBController, GBAController]
-  SCALE       = 4
-  SHADERS     = "src/crab/common/shaders"
+  CONTROLLERS    = [StubbedController, GBController, GBAController]
+  ROM_EXTENSIONS = CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions }
+  SCALE          = 4
+  SHADERS        = "src/crab/common/shaders"
 
   @controller : Controller
 
@@ -42,7 +43,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
 
-    @file_explorer = ImGui::FileExplorer.new(CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions })
+    @file_explorer = ImGui::FileExplorer.new(ROM_EXTENSIONS)
 
     @open_first_frame = @controller.class == StubbedController
     LibSDL.gl_set_swap_interval(1) if @open_first_frame
@@ -89,9 +90,9 @@ class SDLOpenGLImGuiFrontend < Frontend
       when SDL::Event::Keyboard
         case event.sym
         when .tab? then @controller.toggle_sync if event.pressed?
-        # when .m?   then toggle_blending if event.pressed?
-        when .q?   then exit 0
-        else            @controller.handle_event(event)
+          # when .m?   then toggle_blending if event.pressed?
+        when .q? then exit 0
+        else          @controller.handle_event(event)
         end
       else nil
       end
@@ -141,13 +142,20 @@ class SDLOpenGLImGuiFrontend < Frontend
           ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
           # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
           ImGui.menu_item "Pause", "", pointerof(@pause)
-          ImGui.menu_item "Sync", "", pointerof(@sync)
           ImGui.end_menu
 
           toggle_blending if @enable_blend ^ @blending
           LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
-          @controller.toggle_sync if previously_synced ^ @sync
         end
+
+        name = @controller.name
+        if name.size > 0 && ImGui.begin_menu name
+          @controller.actions do |name, callback, enabled|
+            callback.call if ImGui.menu_item(name, "", enabled)
+          end
+          ImGui.end_menu
+        end
+
         overlay_height += ImGui.get_window_size.y
         ImGui.end_main_menu_bar
       end

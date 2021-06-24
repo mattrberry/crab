@@ -5,6 +5,8 @@ class StubbedController < Controller
   getter window_height : Int32 = 160
   class_getter extensions = [] of String
 
+  getter name : String = ""
+
   def emu : Emu
     abort "Called emu method in StubbedController"
   end
@@ -23,5 +25,8 @@ class StubbedController < Controller
   end
 
   def toggle_sync : Nil
+  end
+
+  def actions(& : Action ->)
   end
 end

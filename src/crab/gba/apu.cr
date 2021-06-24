@@ -24,7 +24,7 @@ module GBA
     @audiospec : LibSDL::AudioSpec
     @obtained_spec : LibSDL::AudioSpec
 
-    @sync : Bool = true
+    getter sync : Bool = true
 
     def initialize(@gba : GBA)
       @audiospec = LibSDL::AudioSpec.new
