@@ -9,7 +9,7 @@ class GBAController < Controller
   getter name : String = "Game Boy Advance"
 
   def initialize(bios : String?, rom : String)
-    @emu = GBA::GBA.new(gba_bios, rom)
+    @emu = GBA::GBA.new(bios || gba_bios, rom)
     @emu.post_init
   end
 

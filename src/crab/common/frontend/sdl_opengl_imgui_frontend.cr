@@ -59,7 +59,20 @@ class SDLOpenGLImGuiFrontend < Frontend
       render_imgui
       LibSDL.gl_swap_window(@window)
       update_draw_count
-      load_new_rom(@file_explorer.selection.not_nil!.to_s) if @file_explorer.selection
+      handle_file_selection
+    end
+  end
+
+  private def handle_file_selection : Nil
+    if selection = @file_explorer.selection
+      file, symbol = selection
+      if symbol == :ROM
+        load_new_rom(file.to_s)
+      elsif symbol == :BIOS
+        load_new_bios(file.to_s)
+      else
+        abort "Internal error: Unexpected file explorer symbol #{symbol}"
+      end
     end
   end
 
@@ -78,6 +91,17 @@ class SDLOpenGLImGuiFrontend < Frontend
     @enable_overlay = false
     @pause = false
     @sync = true
+  end
+
+  private def load_new_bios(bios : String) : Nil
+    if @controller.class == GBController
+      set_gbc_bios(bios)
+    elsif @controller.class == GBAController
+      set_gba_bios(bios)
+    else
+      abort "Internal error: Cannot set bios #{bios} for controller #{@controller}"
+    end
+    @file_explorer.clear_selection
   end
 
   private def handle_input : Nil
@@ -129,7 +153,8 @@ class SDLOpenGLImGuiFrontend < Frontend
     ImGui.new_frame
 
     overlay_height = 10.0
-    open_file_explorer = false
+    open_rom_selection = false
+    open_bios_selection = false
 
     if LibSDL.get_mouse_focus || @open_first_frame
       if ImGui.begin_main_menu_bar
@@ -138,7 +163,8 @@ class SDLOpenGLImGuiFrontend < Frontend
           previously_paused = @pause
           previously_synced = @sync
 
-          open_file_explorer = ImGui.menu_item "Open ROM"
+          open_rom_selection = ImGui.menu_item "Open ROM"
+          open_bios_selection = ImGui.menu_item "Select BIOS"
           ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
           # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
           ImGui.menu_item "Pause", "", pointerof(@pause)
@@ -161,7 +187,8 @@ class SDLOpenGLImGuiFrontend < Frontend
       end
     end
 
-    @file_explorer.render(open_file_explorer, ROM_EXTENSIONS)
+    @file_explorer.render(:ROM, open_rom_selection, ROM_EXTENSIONS)
+    @file_explorer.render(:BIOS, open_bios_selection)
 
     if @enable_overlay
       ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)

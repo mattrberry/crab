@@ -1,23 +1,21 @@
 module ImGui
   class FileExplorer
+    @path : Path
     @matched_entries = [] of Entry
     @selected_entry_idx = 0
     @match_hidden = false
 
-    @path : Path
-    @name = "File Explorer"
-
-    getter selection : Path? = nil
+    getter selection : Tuple(Path, Symbol)? = nil
 
     def initialize(@path = Path[explorer_dir].expand(home: true))
       gather_entries
     end
 
-    def render(open_popup : Bool, extensions : Array(String)?) : Nil
-      ImGui.open_popup(@name) if open_popup
+    def render(name : Symbol, open_popup : Bool, extensions : Array(String)? = nil) : Nil
+      ImGui.open_popup(name.to_s) if open_popup
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
-      if ImGui.begin_popup_modal(@name, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize)
+      if ImGui.begin_popup_modal(name.to_s, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize)
         parts = @path.parts
         parts.each_with_index do |part, idx|
           ImGui.same_line unless idx == 0
@@ -41,7 +39,7 @@ module ImGui
             if ImGui.selectable("[#{letter}] #{entry[:name]}#{'/' unless entry[:file?]}", is_selected, flags)
               if entry[:file?]
                 @selected_entry_idx = idx
-                open_file if ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
+                open_file(name) if ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
               elsif ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
                 change_dir entry[:name]
               end
@@ -51,7 +49,7 @@ module ImGui
           ImGui.end_list_box
         end
         ImGui.begin_group
-        open_file if ImGui.button "Open"
+        open_file(name) if ImGui.button "Open"
         ImGui.same_line
         ImGui.close_current_popup if ImGui.button "Cancel"
         ImGui.same_line(spacing: 10)
@@ -65,8 +63,8 @@ module ImGui
       @selection = nil
     end
 
-    private def open_file : Nil
-      @selection = (@path / @matched_entries[@selected_entry_idx][:name]).normalize
+    private def open_file(name : Symbol) : Nil
+      @selection = {(@path / @matched_entries[@selected_entry_idx][:name]).normalize, name}
       ImGui.close_current_popup
       set_explorer_dir @path.to_s
     end

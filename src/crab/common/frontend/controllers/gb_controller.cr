@@ -9,7 +9,7 @@ class GBController < Controller
   getter name : String = "Game Boy (Color)"
 
   def initialize(bios : String?, rom : String)
-    @emu = GB::GB.new(bios, rom, true, false)
+    @emu = GB::GB.new(bios || gbc_bios, rom, true, false)
     @emu.post_init
   end
 
