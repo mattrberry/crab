@@ -43,7 +43,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
 
-    @file_explorer = ImGui::FileExplorer.new(ROM_EXTENSIONS)
+    @file_explorer = ImGui::FileExplorer.new
 
     @open_first_frame = @controller.class == StubbedController
     LibSDL.gl_set_swap_interval(1) if @open_first_frame
@@ -59,14 +59,14 @@ class SDLOpenGLImGuiFrontend < Frontend
       render_imgui
       LibSDL.gl_swap_window(@window)
       update_draw_count
-      load_new_rom(@file_explorer.chosen_rom.not_nil!.to_s) if @file_explorer.chosen_rom
+      load_new_rom(@file_explorer.selection.not_nil!.to_s) if @file_explorer.selection
     end
   end
 
   private def load_new_rom(rom : String?) : Nil
     LibSDL.close_audio(1)
     @controller = init_controller(nil, rom)
-    @file_explorer.clear_chosen_rom
+    @file_explorer.clear_selection
     LibSDL.set_window_size(@window, @controller.window_width * SCALE, @controller.window_height * SCALE)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
     LibGL.viewport(0, 0, @controller.window_width * SCALE, @controller.window_height * SCALE)
@@ -161,7 +161,7 @@ class SDLOpenGLImGuiFrontend < Frontend
       end
     end
 
-    @file_explorer.render(open_file_explorer)
+    @file_explorer.render(open_file_explorer, ROM_EXTENSIONS)
 
     if @enable_overlay
       ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)

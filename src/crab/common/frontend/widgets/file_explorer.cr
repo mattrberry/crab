@@ -1,6 +1,5 @@
 module ImGui
   class FileExplorer
-    property extensions = [] of String
     @matched_entries = [] of Entry
     @selected_entry_idx = 0
     @match_hidden = false
@@ -8,13 +7,13 @@ module ImGui
     @path : Path
     @name = "File Explorer"
 
-    getter chosen_rom : Path? = nil
+    getter selection : Path? = nil
 
-    def initialize(@extensions = [] of String, @path = Path[explorer_dir].expand(home: true))
+    def initialize(@path = Path[explorer_dir].expand(home: true))
       gather_entries
     end
 
-    def render(open_popup : Bool) : Nil
+    def render(open_popup : Bool, extensions : Array(String)?) : Nil
       ImGui.open_popup(@name) if open_popup
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
@@ -29,6 +28,8 @@ module ImGui
         height = Math.min(display_size.y - 40, 16 * ImGui.get_text_line_height_with_spacing)
         if ImGui.begin_list_box("", ImGui::ImVec2.new(width, height))
           @matched_entries.each_with_index do |entry, idx|
+            next if entry[:hidden] && !@match_hidden
+            next if entry[:file?] && !extensions.nil? && !extensions.includes?(entry[:extension])
             is_selected = idx == @selected_entry_idx
             if entry[:file?]
               letter = 'F'
@@ -37,7 +38,7 @@ module ImGui
               letter = 'D'
               flags = ImGui::ImGuiSelectableFlags::None | ImGui::ImGuiSelectableFlags::AllowDoubleClick
             end
-            if ImGui.selectable("[#{letter}] #{entry[:name]}", is_selected, flags)
+            if ImGui.selectable("[#{letter}] #{entry[:name]}#{'/' unless entry[:file?]}", is_selected, flags)
               if entry[:file?]
                 @selected_entry_idx = idx
                 open_file if ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
@@ -54,19 +55,18 @@ module ImGui
         ImGui.same_line
         ImGui.close_current_popup if ImGui.button "Cancel"
         ImGui.same_line(spacing: 10)
-        gather_entries if ImGui.checkbox("Show hidden files?", pointerof(@match_hidden))
+        ImGui.checkbox("Show hidden files?", pointerof(@match_hidden))
         ImGui.end_group
         ImGui.end_popup
       end
     end
 
-    def clear_chosen_rom : Nil
-      @chosen_rom = nil
+    def clear_selection : Nil
+      @selection = nil
     end
 
     private def open_file : Nil
-      selected_item = @matched_entries[@selected_entry_idx]
-      @chosen_rom = (@path / selected_item[:name]).normalize
+      @selection = (@path / @matched_entries[@selected_entry_idx][:name]).normalize
       ImGui.close_current_popup
       set_explorer_dir @path.to_s
     end
@@ -78,16 +78,14 @@ module ImGui
 
     private def gather_entries : Nil
       @matched_entries.clear
-      extensions.each do |extension|
-        path = @path / "*.#{extension}"
-        @matched_entries.concat(Dir[path, match_hidden: @match_hidden].map { |file| Entry.new(name: Path[file].basename, file?: true) })
+      Dir.each_child(@path) do |name|
+        is_file = !Dir.exists?(@path / name)
+        rpart = name.rpartition('.')
+        extension = rpart[2] unless rpart[1].size == 0
+        hidden = name.starts_with?('.')
+        @matched_entries << Entry.new(name: name, file?: is_file, extension: extension, hidden: hidden)
       end
-      Dir.each_child(@path) do |child|
-        next unless Dir.exists?(@path / child)
-        next if !@match_hidden && child.starts_with? '.'
-        @matched_entries << Entry.new(name: "#{child}/", file?: false)
-      end
-      @matched_entries << Entry.new(name: "..", file?: false)
+      @matched_entries << Entry.new(name: "..", file?: false, extension: nil, hidden: false)
       @matched_entries.sort! do |a, b|
         if a[:file?] && !b[:file?]
           1
@@ -99,6 +97,6 @@ module ImGui
       end
     end
 
-    private alias Entry = NamedTuple(name: String, file?: Bool)
+    private alias Entry = NamedTuple(name: String, file?: Bool, extension: String?, hidden: Bool)
   end
 end
