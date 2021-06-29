@@ -5,8 +5,12 @@ abstract class Controller
 
   abstract def width : Int32
   abstract def height : Int32
-  abstract def name : String
-  abstract def actions(& : Action ->)
+
+  def render_menu : Nil
+  end
+
+  def render_windows : Nil
+  end
 
   getter actions = [] of Action
 

@@ -174,13 +174,7 @@ class SDLOpenGLImGuiFrontend < Frontend
           LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
         end
 
-        name = @controller.name
-        if name.size > 0 && ImGui.begin_menu name
-          @controller.actions do |name, callback, enabled|
-            callback.call if ImGui.menu_item(name, "", enabled)
-          end
-          ImGui.end_menu
-        end
+        @controller.render_menu
 
         overlay_height += ImGui.get_window_size.y
         ImGui.end_main_menu_bar
@@ -215,6 +209,8 @@ class SDLOpenGLImGuiFrontend < Frontend
       ImGui.text("PAUSED")
       ImGui.end
     end
+
+    @controller.render_windows
 
     ImGui.render
     ImGui::OpenGL3.render_draw_data(ImGui.get_draw_data)

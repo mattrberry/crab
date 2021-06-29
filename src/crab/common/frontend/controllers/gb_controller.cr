@@ -6,14 +6,15 @@ class GBController < Controller
   getter width : Int32 = 160
   getter height : Int32 = 144
 
-  getter name : String = "Game Boy (Color)"
-
   def initialize(bios : String?, rom : String)
     @emu = GB::GB.new(bios || gbc_bios, rom, true, false)
     @emu.post_init
   end
 
-  def actions(& : Action ->)
-    yield Action.new("Sync", ->@emu.toggle_sync, emu.apu.sync)
+  def render_menu : Nil
+    if ImGui.begin_menu "Game Boy (Color)"
+      @emu.toggle_sync if ImGui.menu_item("Audio Sync", "", emu.apu.sync)
+      ImGui.end_menu
+    end
   end
 end
