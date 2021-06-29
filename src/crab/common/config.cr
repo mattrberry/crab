@@ -66,8 +66,8 @@ def set_explorer_dir(dir : String) : Nil
   write { |config| config.explorer_dir = dir }
 end
 
-def gbc_bios : String
-  config.gbc.try(&.bios) || "bios.bin"
+def gbc_bios : String?
+  config.gbc.try(&.bios)
 end
 
 def set_gbc_bios(bios : String) : Nil
