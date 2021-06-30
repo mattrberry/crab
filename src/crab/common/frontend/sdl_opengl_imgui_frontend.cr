@@ -36,7 +36,14 @@ class SDLOpenGLImGuiFrontend < Frontend
     at_exit { SDL.quit }
 
     @controller = init_controller(bios, rom)
-    @window = SDL::Window.new(window_title(59.7), @controller.window_width * SCALE, @controller.window_height * SCALE, flags: SDL::Window::Flags::OPENGL | SDL::Window::Flags::RESIZABLE)
+    @window = SDL::Window.new(
+      window_title(59.7),
+      @controller.window_width * SCALE,
+      @controller.window_height * SCALE,
+      x: LibSDL::WindowPosition::CENTERED,
+      y: LibSDL::WindowPosition::CENTERED,
+      flags: SDL::Window::Flags::OPENGL | SDL::Window::Flags::RESIZABLE
+    )
     @gl_context = setup_gl
     @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| create_shader_program(controller.shader) })
     LibGL.use_program(@shader_programs[@controller.class])
@@ -82,7 +89,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     @file_explorer.clear_selection
     LibSDL.set_window_size(@window, @controller.window_width * SCALE, @controller.window_height * SCALE)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
-    LibGL.viewport(0, 0, @controller.window_width * SCALE, @controller.window_height * SCALE)
+    LibGL.viewport(0, 0, @window.width, @window.height)
     LibGL.use_program(@shader_programs[@controller.class])
 
     LibSDL.gl_set_swap_interval(0)
@@ -164,7 +171,7 @@ class SDLOpenGLImGuiFrontend < Frontend
           previously_synced = @sync
 
           open_rom_selection = ImGui.menu_item "Open ROM"
-          open_bios_selection = ImGui.menu_item "Select BIOS"
+          open_bios_selection = ImGui.menu_item "Select BIOS" unless @controller.class == StubbedController
           ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
           # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
           ImGui.menu_item "Pause", "", pointerof(@pause)
