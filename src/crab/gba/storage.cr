@@ -32,7 +32,7 @@ module GBA
       puts "Backup type could not be identified.".colorize.fore(:red) unless type
       puts "Backup type: #{type}, save path: #{save_path}"
       storage = case type
-                in Type::EEPROM                               then abort "todo: Support EEPROM"
+                in Type::EEPROM                               then EEPROM.new
                 in Type::SRAM, nil                            then SRAM.new
                 in Type::FLASH, Type::FLASH512, Type::FLASH1M then Flash.new type
                 end
@@ -59,6 +59,10 @@ module GBA
     end
 
     abstract def []=(index : Int, value : Byte) : Nil
+
+    def eeprom?(index : Int) : Bool
+      self.class == EEPROM && (0x0D000000..0x0DFFFFFF).includes? index
+    end
 
     private def self.find_type(file : File) : Type?
       str = file.gets_to_end

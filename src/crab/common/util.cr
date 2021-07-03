@@ -14,6 +14,10 @@ macro set_bit(value, bit)
   ({{value}} | 1 << {{bit}})
 end
 
+macro set_bit(value, bit, set)
+  (clear_bit({{value}}, {{bit}}) | {{set}} << {{bit}})
+end
+
 macro clear_bit(value, bit)
   ({{value}} & ~(1 << {{bit}}))
 end
