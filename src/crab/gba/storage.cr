@@ -26,13 +26,14 @@ module GBA
     setter save_path : String = ""
     getter memory : Bytes = Bytes.new 0 # implementing class needs to override
 
-    def self.new(rom_path : String) : Storage
+    def self.new(gba : GBA, rom_path : String) : Storage
       save_path = rom_path.rpartition('.')[0] + ".sav"
       type = File.open(rom_path, "rb") { |file| find_type(file) }
       puts "Backup type could not be identified.".colorize.fore(:red) unless type
       puts "Backup type: #{type}, save path: #{save_path}"
+      existing_save_size = File.size(save_path) if File.exists?(save_path)
       storage = case type
-                in Type::EEPROM                               then EEPROM.new
+                in Type::EEPROM                               then EEPROM.new gba, existing_save_size
                 in Type::SRAM, nil                            then SRAM.new
                 in Type::FLASH, Type::FLASH512, Type::FLASH1M then Flash.new type
                 end

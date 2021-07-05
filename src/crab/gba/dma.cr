@@ -22,6 +22,8 @@ module GBA
       end
     end
 
+    getter dmacnt_l : Array(UInt16)
+
     @interrupt_flags : Array(Proc(Nil))
 
     def initialize(@gba : GBA)

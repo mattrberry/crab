@@ -30,14 +30,14 @@ module GBA
     getter! dma : DMA
     getter! debugger : Debugger
 
-    def initialize(@bios_path : String, rom_path : String)
+    def initialize(@bios_path : String, @rom_path : String)
       @scheduler = Scheduler.new
-      @cartridge = Cartridge.new rom_path
-      @storage = Storage.new rom_path
-      handle_saves
+      @cartridge = Cartridge.new @rom_path
+      scheduler.schedule 280896, ->handle_saves
     end
 
     def post_init : Nil
+      @storage = Storage.new self, @rom_path
       @mmio = MMIO.new self
       @timer = Timer.new self
       @keypad = Keypad.new self

@@ -19,11 +19,52 @@ module GBA
       SET_BANK
     end
 
+    enum Size
+      EEPROM_4K
+      EEPROM_64K
+
+      def addr_bits : Int32
+        case self
+        in EEPROM_4K  then 6
+        in EEPROM_64K then 14
+        end
+      end
+
+      def file_size : Int32
+        case self
+        in EEPROM_4K  then 0x200
+        in EEPROM_64K then 0x2000
+        end
+      end
+
+      def self.from_file_size(size : Int?) : Size?
+        if size && size > 0
+          size > 0x200 ? EEPROM_64K : EEPROM_4K
+        end
+      end
+
+      def self.from_dma_length(length : Int) : Size
+        length <= 6 ? EEPROM_4K : EEPROM_64K
+      end
+    end
+
+    @size : Size?
     @memory = Bytes.new(0x2000, 0xFF)
     @state = State::READY
     @buffer = Buffer.new
     @address : UInt32 = 0
     @ignored_reads = 0
+
+    def initialize(@gba : GBA, file_size : Int64?)
+      set_size(Size.from_file_size(file_size))
+    end
+
+    private def set_size(size : Size?) : Nil
+      if size
+        @size = size
+        @memory = Bytes.new(size.file_size, 0xFF)
+      end
+    end
 
     def [](index : Int) : Byte
       case @state
@@ -59,8 +100,9 @@ module GBA
           @buffer.clear
         end
       when .includes? State::ADDRESS
-        if @buffer.size == 14 # todo: support 4Kbit eeprom
-          @address = @buffer.value.to_u32
+        set_size(Size.from_dma_length(@gba.dma.dmacnt_l[3])) unless @size
+        if @buffer.size == @size.not_nil!.addr_bits
+          @address = @buffer.value.to_u32! & 0x3FF
           @memory.to_unsafe.as(UInt64*)[@address] = 0 if @state.includes? State::WRITE
           @state ^= State::ADDRESS
           @buffer.clear
