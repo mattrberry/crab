@@ -48,12 +48,15 @@ module GBA
       end
     end
 
+    # todo: many of these variables are repetitive. clean them up
     @size : Size?
     @memory = Bytes.new(0x2000, 0xFF)
     @state = State::READY
     @buffer = Buffer.new
     @address : UInt32 = 0
     @ignored_reads = 0
+    @read_bits = 0
+    @wrote_bits = 0
 
     def initialize(@gba : GBA, file_size : Int64?)
       set_size(Size.from_file_size(file_size))
@@ -71,14 +74,15 @@ module GBA
       when .includes? State::READ_IGNORE
         if (@ignored_reads += 1) == 4
           @state ^= State::READ_IGNORE
-          @buffer.value = @memory.to_unsafe.as(UInt64*)[@address]
-          @buffer.size = 64
+          @read_bits = 0
         end
       when State::READ
-        value = @buffer.pop.to_u8
-        if @buffer.size == 0
+        value = @memory[@address * 8 + (@read_bits // 8)] >> (7 - @read_bits & 7) & 1
+        @read_bits += 1
+        if @read_bits == 64
           @state = State::READY
           @buffer.clear
+          @read_bits = 0
         end
         return value
       end
@@ -108,10 +112,16 @@ module GBA
           @buffer.clear
         end
       when .includes? State::WRITE
-        index = (@buffer.size - 1) // 8
-        if @buffer.size == 64
-          @memory.to_unsafe.as(UInt64*)[@address] = @buffer.value
+        idx = @wrote_bits // 8
+        bit = 7 - (@wrote_bits & 7)
+        cur = @memory[@address * 8 + idx]
+        mask = 1 << bit
+        @memory[@address * 8 + idx] = (cur & ~mask) | (value << bit)
+        @dirty = true
+        @wrote_bits += 1
+        if @wrote_bits == 64
           @buffer.clear
+          @wrote_bits = 0
           @state = State::READY | State::WRITE_FINAL_BIT
         end
       when .includes? State::WRITE_FINAL_BIT
@@ -130,7 +140,7 @@ module GBA
       @value = (@value << 1) | (value & 1)
     end
 
-    def pop : UInt64
+    def shift : UInt64
       abort "Invalid buffer size #{@size}" if @size <= 0
       @size -= 1
       @value >> @size & 1
