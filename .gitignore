@@ -5,4 +5,5 @@
 *.dwarf
 /shard.lock
 cimgui.so
+cimgui.dylib
 imgui.ini
