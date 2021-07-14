@@ -51,9 +51,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     @io = setup_imgui
 
     @file_explorer = ImGui::FileExplorer.new
-
-    @open_first_frame = @controller.class == StubbedController
-    LibSDL.gl_set_swap_interval(1) if @open_first_frame
+    LibSDL.gl_set_swap_interval(1) if @controller.class == StubbedController
   end
 
   def run : NoReturn
@@ -163,10 +161,9 @@ class SDLOpenGLImGuiFrontend < Frontend
     open_rom_selection = false
     open_bios_selection = false
 
-    if LibSDL.get_mouse_focus || @open_first_frame
+    if LibSDL.get_mouse_focus || @controller.class == StubbedController
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
-          @open_first_frame = false
           previously_paused = @pause
           previously_synced = @sync
 
