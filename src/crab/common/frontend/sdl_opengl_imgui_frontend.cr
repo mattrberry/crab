@@ -26,7 +26,6 @@ class SDLOpenGLImGuiFrontend < Frontend
   @blending = false
   @enable_overlay = false
   @pause = false
-  @sync = true
 
   @opengl_info : OpenGLInfo
 
@@ -95,7 +94,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     @blending = false
     @enable_overlay = false
     @pause = false
-    @sync = true
   end
 
   private def load_new_bios(bios : String) : Nil
@@ -165,7 +163,6 @@ class SDLOpenGLImGuiFrontend < Frontend
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
           previously_paused = @pause
-          previously_synced = @sync
 
           open_rom_selection = ImGui.menu_item "Open ROM"
           open_bios_selection = ImGui.menu_item "Select BIOS" unless @controller.class == StubbedController
