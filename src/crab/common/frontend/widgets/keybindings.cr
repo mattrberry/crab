@@ -30,14 +30,14 @@ module ImGui
     end
 
     def wants_input? : Bool
-      !@selection.nil?
+      @open && !@selection.nil?
     end
 
     def key_released(keycode : LibSDL::Keycode) : Nil
       if selection = @selection
         @editing_keycodes.reject!(@editing_keycodes.key_for?(selection))
         @editing_keycodes[keycode] = selection
-        @selection = nil
+        @selection = Input.from_value?(selection.value + 1)
       else
         puts "Something went wrong when setting keybinding.."
       end
@@ -53,7 +53,7 @@ module ImGui
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
       hovered_button_color = ImGui.get_style_color_vec4(ImGui::ImGuiCol::ButtonHovered)
       if ImGui.begin_popup_modal(POPUP_NAME, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize)
-        Input.values.each do |input|
+        Input.each do |input|
           selected = @selection == input
           keycode = @editing_keycodes.key_for?(input)
           button_text = keycode ? String.new(LibSDL.get_key_name(keycode)) : ""
@@ -86,6 +86,7 @@ module ImGui
 
     private def close : Nil
       @open = false
+      @selection = nil
       ImGui.close_current_popup
     end
   end
