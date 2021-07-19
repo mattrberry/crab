@@ -62,6 +62,10 @@ module GB
       joypad.handle_joypad_event event
     end
 
+    def handle_input(input : Input, pressed : Bool) : Nil
+      joypad.handle_input(input, pressed)
+    end
+
     def toggle_sync : Nil
       apu.toggle_sync
     end

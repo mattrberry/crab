@@ -35,6 +35,20 @@ module GB
       @direction_keys = (value >> 4) & 0x1 == 0
     end
 
+    def handle_input(input : Input, pressed : Bool) : Nil
+      case input
+      in Input::UP          then @up = pressed
+      in Input::DOWN        then @down = pressed
+      in Input::LEFT        then @left = pressed
+      in Input::RIGHT       then @right = pressed
+      in Input::A           then @a = pressed
+      in Input::B           then @b = pressed
+      in Input::SELECT      then @select = pressed
+      in Input::START       then @start = pressed
+      in Input::L, Input::R then nil
+      end
+    end
+
     def handle_joypad_event(event : SDL::Event) : Nil
       case event
       when SDL::Event::Keyboard

@@ -61,6 +61,10 @@ module GBA
       keypad.handle_keypad_event event
     end
 
+    def handle_input(input : Input, pressed : Bool) : Nil
+      keypad.handle_input(input, pressed)
+    end
+
     def toggle_sync : Nil
       apu.toggle_sync
     end

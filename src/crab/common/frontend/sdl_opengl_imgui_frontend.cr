@@ -48,9 +48,10 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.use_program(@shader_programs[@controller.class])
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
+    LibSDL.gl_set_swap_interval(1) if @controller.class == StubbedController
 
     @file_explorer = ImGui::FileExplorer.new
-    LibSDL.gl_set_swap_interval(1) if @controller.class == StubbedController
+    @keybindings = ImGui::Keybindings.new
   end
 
   def run : NoReturn
@@ -115,11 +116,18 @@ class SDLOpenGLImGuiFrontend < Frontend
       when SDL::Event::JoyHat,
            SDL::Event::JoyButton then @controller.handle_event(event)
       when SDL::Event::Keyboard
-        case event.sym
-        when .tab? then @controller.toggle_sync if event.pressed?
-          # when .m?   then toggle_blending if event.pressed?
-        when .q? then exit 0
-        else          @controller.handle_event(event)
+        if @keybindings.wants_input?
+          @keybindings.key_released(event.sym) unless event.pressed? # pass on key release
+        else
+          case event.sym
+          when .tab? then @controller.toggle_sync if event.pressed?
+            # when .m?   then toggle_blending if event.pressed?
+          when .q? then exit 0
+          else
+            if input = @keybindings[event.sym]?
+              @controller.handle_input(input, event.pressed?)
+            end
+          end
         end
       else nil
       end
@@ -158,8 +166,9 @@ class SDLOpenGLImGuiFrontend < Frontend
     overlay_height = 10.0
     open_rom_selection = false
     open_bios_selection = false
+    open_keybindings = false
 
-    if LibSDL.get_mouse_focus || @controller.class == StubbedController
+    if (LibSDL.get_mouse_focus || @controller.class == StubbedController) && !@file_explorer.open? && !@keybindings.open?
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
           previously_paused = @pause
@@ -169,6 +178,7 @@ class SDLOpenGLImGuiFrontend < Frontend
           ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
           # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
           ImGui.menu_item "Pause", "", pointerof(@pause)
+          open_keybindings = ImGui.menu_item "Keybindings"
           ImGui.end_menu
 
           toggle_blending if @enable_blend ^ @blending
@@ -184,6 +194,8 @@ class SDLOpenGLImGuiFrontend < Frontend
 
     @file_explorer.render(:ROM, open_rom_selection, ROM_EXTENSIONS)
     @file_explorer.render(:BIOS, open_bios_selection)
+
+    @keybindings.render(open_keybindings)
 
     if @enable_overlay
       ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)

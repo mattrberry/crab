@@ -36,6 +36,10 @@ abstract class Controller
     emu.handle_event(event)
   end
 
+  def handle_input(input : Input, pressed : Bool) : Nil
+    emu.handle_input(input, pressed)
+  end
+
   def toggle_sync : Nil
     emu.toggle_sync
   end

@@ -54,6 +54,21 @@ module GBA
       end
     end
 
+    def handle_input(input : Input, pressed : Bool) : Nil
+      case input
+      in Input::UP     then @keyinput.up = !pressed
+      in Input::DOWN   then @keyinput.down = !pressed
+      in Input::LEFT   then @keyinput.left = !pressed
+      in Input::RIGHT  then @keyinput.right = !pressed
+      in Input::A      then @keyinput.a = !pressed
+      in Input::B      then @keyinput.b = !pressed
+      in Input::SELECT then @keyinput.select = !pressed
+      in Input::START  then @keyinput.start = !pressed
+      in Input::L      then @keyinput.l = !pressed
+      in Input::R      then @keyinput.r = !pressed
+      end
+    end
+
     def handle_keypad_event(event : SDL::Event) : Nil
       case event
       when SDL::Event::Keyboard

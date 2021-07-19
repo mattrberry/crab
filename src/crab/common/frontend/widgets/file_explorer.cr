@@ -5,6 +5,12 @@ module ImGui
     @selected_entry_idx = 0
     @match_hidden = false
 
+    @open = false
+
+    def open? : Bool
+      @open
+    end
+
     getter selection : Tuple(Path, Symbol)? = nil
 
     def initialize(@path = Path[explorer_dir].expand(home: true))
@@ -12,6 +18,7 @@ module ImGui
     end
 
     def render(name : Symbol, open_popup : Bool, extensions : Array(String)? = nil) : Nil
+      @open ||= open_popup
       ImGui.open_popup(name.to_s) if open_popup
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
@@ -51,12 +58,17 @@ module ImGui
         ImGui.begin_group
         open_file(name) if ImGui.button "Open"
         ImGui.same_line
-        ImGui.close_current_popup if ImGui.button "Cancel"
+        close if ImGui.button "Cancel"
         ImGui.same_line(spacing: 10)
         ImGui.checkbox("Show hidden files?", pointerof(@match_hidden))
         ImGui.end_group
         ImGui.end_popup
       end
+    end
+
+    def close : Nil
+      @open = false
+      ImGui.close_current_popup
     end
 
     def clear_selection : Nil
@@ -65,7 +77,7 @@ module ImGui
 
     private def open_file(name : Symbol) : Nil
       @selection = {(@path / @matched_entries[@selected_entry_idx][:name]).normalize, name}
-      ImGui.close_current_popup
+      close
       set_explorer_dir @path.to_s
     end
 

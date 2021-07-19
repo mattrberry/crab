@@ -22,6 +22,9 @@ class StubbedController < Controller
   def handle_event(event : SDL::Event) : Nil
   end
 
+  def handle_input(input : Input, pressed : Bool) : Nil
+  end
+
   def toggle_sync : Nil
   end
 
