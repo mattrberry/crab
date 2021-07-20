@@ -10,6 +10,7 @@ File.touch(CONFIG_FILE)
 class Config
   include YAML::Serializable
   property explorer_dir : String?
+  property keybindings : Hash(LibSDL::Keycode, Input)?
   property gba : GBA?
   property gbc : GBC?
 
@@ -52,18 +53,31 @@ private def write_gbc(& : Config::GBC ->)
   write { |config| config.gbc = new_gbc }
 end
 
-private def write(& : Config ->)
-  new_config = config
-  yield new_config
-  File.write(CONFIG_FILE, new_config.to_yaml)
-end
-
 def explorer_dir : String
   config.explorer_dir || Dir.current
 end
 
 def set_explorer_dir(dir : String) : Nil
   write { |config| config.explorer_dir = dir }
+end
+
+def keybindings : Hash(LibSDL::Keycode, Input)
+  config.keybindings || {
+    LibSDL::Keycode::E         => Input::UP,
+    LibSDL::Keycode::D         => Input::DOWN,
+    LibSDL::Keycode::S         => Input::LEFT,
+    LibSDL::Keycode::F         => Input::RIGHT,
+    LibSDL::Keycode::K         => Input::A,
+    LibSDL::Keycode::J         => Input::B,
+    LibSDL::Keycode::L         => Input::SELECT,
+    LibSDL::Keycode::SEMICOLON => Input::START,
+    LibSDL::Keycode::W         => Input::L,
+    LibSDL::Keycode::R         => Input::R,
+  }
+end
+
+def set_keybindings(keybindings : Hash(LibSDL::Keycode, Input)) : Nil
+  write { |config| config.keybindings = keybindings }
 end
 
 def gbc_bios : String?

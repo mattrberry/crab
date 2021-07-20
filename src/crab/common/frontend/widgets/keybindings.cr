@@ -5,23 +5,13 @@ module ImGui
 
     @open = false
     @selection : Input? = nil
-    @keycodes : Hash(LibSDL::Keycode, Input) = {
-      LibSDL::Keycode::E         => Input::UP,
-      LibSDL::Keycode::D         => Input::DOWN,
-      LibSDL::Keycode::S         => Input::LEFT,
-      LibSDL::Keycode::F         => Input::RIGHT,
-      LibSDL::Keycode::K         => Input::A,
-      LibSDL::Keycode::J         => Input::B,
-      LibSDL::Keycode::L         => Input::SELECT,
-      LibSDL::Keycode::SEMICOLON => Input::START,
-      LibSDL::Keycode::W         => Input::L,
-      LibSDL::Keycode::R         => Input::R,
-    }
+    @keycodes : Hash(LibSDL::Keycode, Input)
     @editing_keycodes : Hash(LibSDL::Keycode, Input) = {} of LibSDL::Keycode => Input
 
     delegate :[]?, to: @keycodes
 
     def initialize
+      @keycodes = keybindings
       overwrite_hash(@editing_keycodes, @keycodes)
     end
 
@@ -73,15 +63,16 @@ module ImGui
       end
     end
 
-    private def apply : Nil
-      overwrite_hash(@keycodes, @editing_keycodes)
-      close
-    end
-
     private def overwrite_hash(to_hash : Hash(K, V), from_hash : Hash(K, V)) : Hash(K, V) forall K, V
       to_hash.clear
       from_hash.each { |key, val| to_hash[key] = val }
       to_hash
+    end
+
+    private def apply : Nil
+      overwrite_hash(@keycodes, @editing_keycodes)
+      set_keybindings @keycodes
+      close
     end
 
     private def close : Nil
