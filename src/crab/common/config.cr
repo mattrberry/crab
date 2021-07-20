@@ -1,7 +1,7 @@
 require "yaml"
 
 CONFIG_FILE_PATH = Path["~/.config/crab/"].expand(home: true)
-CONFIG_FILE_NAME = Path["crab.yml"]
+CONFIG_FILE_NAME = "crab.yml"
 CONFIG_FILE      = CONFIG_FILE_PATH / CONFIG_FILE_NAME
 
 Dir.mkdir_p(CONFIG_FILE_PATH)
@@ -11,6 +11,7 @@ class Config
   include YAML::Serializable
   property explorer_dir : String?
   property keybindings : Hash(LibSDL::Keycode, Input)?
+  property recents : Array(String)?
   property gba : GBA?
   property gbc : GBC?
 
@@ -78,6 +79,14 @@ end
 
 def set_keybindings(keybindings : Hash(LibSDL::Keycode, Input)) : Nil
   write { |config| config.keybindings = keybindings }
+end
+
+def recents : Array(String)
+  config.recents || [] of String
+end
+
+def set_recents(recents : Array(String)) : Nil
+  write { |config| config.recents = recents }
 end
 
 def gbc_bios : String?
