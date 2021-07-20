@@ -179,6 +179,7 @@ class SDLOpenGLImGuiFrontend < Frontend
           # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
           ImGui.menu_item "Pause", "", pointerof(@pause)
           open_keybindings = ImGui.menu_item "Keybindings"
+          exit if ImGui.menu_item "Exit"
           ImGui.end_menu
 
           toggle_blending if @enable_blend ^ @blending
