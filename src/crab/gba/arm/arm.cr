@@ -62,8 +62,7 @@ module GBA
     end
 
     def arm_unimplemented(instr : Word) : Nil
-      puts "Unimplemented instruction: #{hex_str instr}"
-      exit 1
+      abort "Unimplemented instruction: #{hex_str instr}"
     end
 
     def arm_unused(instr : Word) : Nil

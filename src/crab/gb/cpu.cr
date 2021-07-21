@@ -160,7 +160,7 @@ module GB
         {% if flag? :graphics_test %}
           if opcode == 0x40
             @gb.ppu.write_png
-            exit 0
+            exit
           end
         {% end %}
         cycles_taken = Opcodes::UNPREFIXED[opcode].call self

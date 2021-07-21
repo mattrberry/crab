@@ -51,8 +51,7 @@ module GBA
     end
 
     def thumb_unimplemented(instr : Word) : Nil
-      puts "Unimplemented instruction: #{hex_str instr.to_u16}"
-      exit 1
+      abort "Unimplemented instruction: #{hex_str instr.to_u16}"
     end
   end
 end
