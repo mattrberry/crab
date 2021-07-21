@@ -119,21 +119,19 @@ class SDLOpenGLImGuiFrontend < Frontend
     while event = SDL::Event.poll
       ImGui::SDL2.process_event(event)
       case event
-      when SDL::Event::Quit then exit 0
+      when SDL::Event::Quit then exit
       when SDL::Event::JoyHat,
            SDL::Event::JoyButton then @controller.handle_event(event)
       when SDL::Event::Keyboard
         if @keybindings.wants_input?
           @keybindings.key_released(event.sym) unless event.pressed? # pass on key release
         else
-          case event.sym
-          when .tab? then @controller.toggle_sync if event.pressed?
-            # when .m?   then toggle_blending if event.pressed?
-          when .q? then exit 0
-          else
-            if input = @keybindings[event.sym]?
-              @controller.handle_input(input, event.pressed?)
-            end
+          if event.sym == LibSDL::Keycode::TAB
+            @controller.toggle_sync if event.pressed?
+          elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
+            exit
+          elsif input = @keybindings[event.sym]?
+            @controller.handle_input(input, event.pressed?)
           end
         end
       else nil
@@ -199,7 +197,7 @@ class SDLOpenGLImGuiFrontend < Frontend
           ImGui.menu_item "Pause", "", pointerof(@pause)
           open_keybindings = ImGui.menu_item "Keybindings"
           ImGui.separator
-          exit if ImGui.menu_item "Exit"
+          exit if ImGui.menu_item "Exit", "Ctrl+Q"
           ImGui.end_menu
 
           toggle_blending if @enable_blend ^ @blending
