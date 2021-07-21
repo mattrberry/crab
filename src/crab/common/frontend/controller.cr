@@ -32,8 +32,8 @@ abstract class Controller
     emu.run_until_frame
   end
 
-  def handle_event(event : SDL::Event) : Nil
-    emu.handle_event(event)
+  def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
+    emu.handle_controller_event(event)
   end
 
   def handle_input(input : Input, pressed : Bool) : Nil

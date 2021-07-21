@@ -19,7 +19,7 @@ class StubbedController < Controller
   def run_until_frame : Nil
   end
 
-  def handle_event(event : SDL::Event) : Nil
+  def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
   end
 
   def handle_input(input : Input, pressed : Bool) : Nil

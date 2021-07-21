@@ -57,7 +57,7 @@ module GBA
       ppu.frame = false
     end
 
-    def handle_event(event : SDL::Event) : Nil
+    def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
       keypad.handle_keypad_event event
     end
 

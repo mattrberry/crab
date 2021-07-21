@@ -58,7 +58,7 @@ module GB
       ppu.frame = false
     end
 
-    def handle_event(event : SDL::Event) : Nil
+    def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
       joypad.handle_joypad_event event
     end
 

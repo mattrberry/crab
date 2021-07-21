@@ -121,18 +121,16 @@ class SDLOpenGLImGuiFrontend < Frontend
       case event
       when SDL::Event::Quit then exit
       when SDL::Event::JoyHat,
-           SDL::Event::JoyButton then @controller.handle_event(event)
+           SDL::Event::JoyButton then @controller.handle_controller_event(event)
       when SDL::Event::Keyboard
         if @keybindings.wants_input?
           @keybindings.key_released(event.sym) unless event.pressed? # pass on key release
-        else
-          if event.sym == LibSDL::Keycode::TAB
-            @controller.toggle_sync if event.pressed?
-          elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
-            exit
-          elsif input = @keybindings[event.sym]?
-            @controller.handle_input(input, event.pressed?)
-          end
+        elsif input = @keybindings[event.sym]?
+          @controller.handle_input(input, event.pressed?)
+        elsif event.sym == LibSDL::Keycode::TAB
+          @controller.toggle_sync if event.pressed?
+        elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
+          exit
         end
       else nil
       end
