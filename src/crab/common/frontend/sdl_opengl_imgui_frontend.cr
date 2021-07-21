@@ -124,6 +124,11 @@ class SDLOpenGLImGuiFrontend < Frontend
           @controller.toggle_sync if event.pressed?
         elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
           exit
+        elsif event.sym == LibSDL::Keycode::P && event.mod.includes?(LibSDL::Keymod::LCTRL)
+          unless event.pressed? # pause on key release
+            @pause = !@pause
+            LibSDL.gl_set_swap_interval(@pause.to_unsafe)
+          end
         end
       when SDL::Event::JoyHat,
            SDL::Event::JoyButton then @controller.handle_controller_event(event)
@@ -188,7 +193,7 @@ class SDLOpenGLImGuiFrontend < Frontend
         if ImGui.begin_menu "Emulation"
           previously_paused = @pause
 
-          ImGui.menu_item "Pause", "", pointerof(@pause)
+          ImGui.menu_item "Pause", "Ctrl+P", pointerof(@pause)
           @controller.toggle_sync if ImGui.menu_item "Audio Sync", selected: @controller.sync?, enabled: !stubbed?
 
           LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
@@ -228,16 +233,6 @@ class SDLOpenGLImGuiFrontend < Frontend
       ImGui.end
     end
 
-    if @pause
-      center = ImGui.get_main_viewport.get_center
-      ImGui.set_next_window_pos(center, pivot: ImGui::ImVec2.new(0.5, 0.5))
-      ImGui.begin("Pause", pointerof(@enable_overlay),
-        ImGui::ImGuiWindowFlags::NoDecoration | ImGui::ImGuiWindowFlags::NoMove |
-        ImGui::ImGuiWindowFlags::NoSavedSettings)
-      ImGui.text("PAUSED")
-      ImGui.end
-    end
-
     @controller.render_windows
 
     ImGui.render
@@ -245,7 +240,13 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   private def window_title(fps : Float) : String
-    "crab - #{fps.round(1)} fps"
+    if stubbed?
+      "crab"
+    elsif @pause
+      "crab - PAUSED"
+    else
+      "crab - #{fps.round(1)} fps"
+    end
   end
 
   private def update_draw_count : Nil
