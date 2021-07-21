@@ -10,7 +10,7 @@ The Game Boy and Game Boy Color work would not be possible without the [Pan Docs
 
 ## Building
 
-[SDL2](https://www.libsdl.org/) is the only library you should need to install. It is available on every major package manager. Of course, the assumption is also that you have the [Crystal](https://crystal-lang.org/install/) compiler installed.
+[SDL2](https://www.libsdl.org/) is the only library you should need to install. It is available on every major package manager. If you're on Mac, I believe you'll also need to install cmake, although I can't confirm. Of course, the assumption is also that you have the [Crystal](https://crystal-lang.org/install/) compiler installed.
 
 After cloning the repository, all you'll need to do is run `shards build --release` to build the emulator in release mode. This will place the binary at `bin/crab`.
 
@@ -35,6 +35,11 @@ To enable the experimental FIFO renderer (as opposed to the scanline renderer), 
 ## Features and Remaining Work
 
 ### Features
+- Frontend
+  - Open ROMs
+  - Select BIOS
+  - Rebind keys
+  - Toggle syncing
 - GB / GBC
   - Accurate sound emulation
   - GLSL shaders for color reproduction
@@ -66,7 +71,9 @@ To enable the experimental FIFO renderer (as opposed to the scanline renderer), 
     - Passing [FuzzARM](https://github.com/DenSinH/FuzzARM)
     - Passing [gba-suite](https://github.com/jsmolka/gba-suite)
   - Storage
-    - Flash and SRAM implemented
+    - Flash
+    - SRAM
+    - EEPROM
   - Timers run effeciently on the scheduler
 
 ### Remaining Work
@@ -85,13 +92,13 @@ To enable the experimental FIFO renderer (as opposed to the scanline renderer), 
     - Mosaic
     - Blending code needs cleanup
   - Storage
-    - EEPROM
     - Game database to support odd cases like Classic NES and ROMs that misreport things like RTC
   - Timing
     - Cycle counting
     - DMA timing
     - Prefetch
     - Etc, etc, etc.
+- Debugger for both GB and GBA
 
 ## Special Thanks
 
