@@ -119,9 +119,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     while event = SDL::Event.poll
       ImGui::SDL2.process_event(event)
       case event
-      when SDL::Event::Quit then exit
-      when SDL::Event::JoyHat,
-           SDL::Event::JoyButton then @controller.handle_controller_event(event)
       when SDL::Event::Keyboard
         if @keybindings.wants_input?
           @keybindings.key_released(event.sym) unless event.pressed? # pass on key release
@@ -132,7 +129,10 @@ class SDLOpenGLImGuiFrontend < Frontend
         elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
           exit
         end
-      else nil
+      when SDL::Event::JoyHat,
+           SDL::Event::JoyButton then @controller.handle_controller_event(event)
+      when SDL::Event::Quit then exit
+      else                       nil
       end
     end
   end
