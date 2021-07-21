@@ -22,9 +22,9 @@ If you omit the GBC BIOS for a GB game, it will select a default 4-color palette
 
 Currently, I ship the emulator with the [Cult of GBA BIOS](https://github.com/Cult-of-GBA/BIOS) created by Fleroviux and DenSinH for your convenience. Like [Normatt's replacement BIOS](https://github.com/Nebuleon/ReGBA/tree/master/bios), this BIOS aims to implement much of the functionality of the official GBA BIOS. Both of these BIOSes should be compatible in most cases, although the official BIOS will always be the most accurate. If you want greater accuracy, it'd be good to get your hands on an official copy of the BIOS or dump it from your GBA/DS/3DS yourself.
 
-### Keybindings
+### Controls
 
-The current keybindings are tuned for my personal preferences. If the following layout diagram doesn't work for you, the "a" and "b" keys are also bound to their appropriate keys, as are the arrow keys. Controllers are also supported.
+Keybindings are completely configurable through the UI, so you can set them to however you're most comfortable.  Controllers are also supported. The default keybindings are tuned for my personal preferences.
 
 ![](README/keyboard.png)
 
