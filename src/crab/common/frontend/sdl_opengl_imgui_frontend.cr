@@ -47,7 +47,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.use_program(@shader_programs[@controller.class])
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
-    LibSDL.gl_set_swap_interval(1) if stubbed?
+    pause(true) if stubbed?
 
     @file_explorer = ImGui::FileExplorer.new
     @keybindings = ImGui::Keybindings.new
@@ -64,6 +64,13 @@ class SDLOpenGLImGuiFrontend < Frontend
       LibSDL.gl_swap_window(@window)
       update_draw_count
       handle_file_selection
+    end
+  end
+
+  def pause(b : Bool) : Nil
+    if @pause != b
+      @pause = b
+      LibSDL.gl_set_swap_interval(@pause.to_unsafe)
     end
   end
 
@@ -95,9 +102,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.viewport(0, 0, @window.width, @window.height)
     LibGL.use_program(@shader_programs[@controller.class])
 
-    LibSDL.gl_set_swap_interval(0)
-    @enable_overlay = false
-    @pause = false
+    pause(false)
   end
 
   private def load_new_bios(bios : String) : Nil
@@ -125,10 +130,7 @@ class SDLOpenGLImGuiFrontend < Frontend
         elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
           exit
         elsif event.sym == LibSDL::Keycode::P && event.mod.includes?(LibSDL::Keymod::LCTRL)
-          unless event.pressed? # pause on key release
-            @pause = !@pause
-            LibSDL.gl_set_swap_interval(@pause.to_unsafe)
-          end
+          pause(!@pause) unless event.pressed? # toggle pause on key release
         end
       when SDL::Event::JoyHat,
            SDL::Event::JoyButton then @controller.handle_controller_event(event)
@@ -191,12 +193,12 @@ class SDLOpenGLImGuiFrontend < Frontend
         end
 
         if ImGui.begin_menu "Emulation"
-          previously_paused = @pause
+          pause = @pause
 
-          ImGui.menu_item "Pause", "Ctrl+P", pointerof(@pause)
-          @controller.toggle_sync if ImGui.menu_item "Audio Sync", selected: @controller.sync?, enabled: !stubbed?
+          ImGui.menu_item "Pause", "Ctrl+P", pointerof(pause)
+          @controller.toggle_sync if ImGui.menu_item "Audio Sync", "Tab", @controller.sync?, !stubbed?
 
-          LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
+          pause(pause)
           ImGui.end_menu
         end
 
