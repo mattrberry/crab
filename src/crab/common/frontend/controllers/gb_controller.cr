@@ -11,10 +11,9 @@ class GBController < Controller
     @emu.post_init
   end
 
-  def render_menu : Nil
-    if ImGui.begin_menu "Game Boy (Color)"
-      @emu.toggle_sync if ImGui.menu_item("Audio Sync", "", emu.apu.sync)
-      ImGui.end_menu
-    end
+  # Audio
+
+  def sync? : Bool
+    @emu.apu.sync
   end
 end

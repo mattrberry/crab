@@ -12,22 +12,31 @@ class StubbedController < Controller
   def initialize(*args, **kwargs)
   end
 
-  def get_framebuffer : Slice(UInt16)
-    Slice(UInt16).new 0
-  end
+  # Control
 
   def run_until_frame : Nil
   end
 
-  def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
-  end
+  # Audio
 
-  def handle_input(input : Input, pressed : Bool) : Nil
+  def sync? : Bool
+    true
   end
 
   def toggle_sync : Nil
   end
 
-  def actions(& : Action ->)
+  # Video
+
+  def get_framebuffer : Slice(UInt16)
+    Slice(UInt16).new 0
+  end
+
+  # Input
+
+  def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
+  end
+
+  def handle_input(input : Input, pressed : Bool) : Nil
   end
 end

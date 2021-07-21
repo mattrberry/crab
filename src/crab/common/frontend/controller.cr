@@ -1,7 +1,9 @@
 abstract class Controller
-  alias Action = Tuple(String, Proc(Nil), Bool)
+  class_getter shader : String? = nil
 
   abstract def emu : Emu
+
+  # Window Config
 
   abstract def width : Int32
   abstract def height : Int32
@@ -12,8 +14,6 @@ abstract class Controller
   def render_windows : Nil
   end
 
-  getter actions = [] of Action
-
   def window_width : Int32
     width
   end
@@ -22,15 +22,27 @@ abstract class Controller
     height
   end
 
-  class_getter shader : String? = nil
+  # Control
+
+  def run_until_frame : Nil
+    emu.run_until_frame
+  end
+
+  # Audio
+
+  abstract def sync? : Bool
+
+  def toggle_sync : Nil
+    emu.toggle_sync
+  end
+
+  # Video
 
   def get_framebuffer : Slice(UInt16)
     emu.ppu.framebuffer
   end
 
-  def run_until_frame : Nil
-    emu.run_until_frame
-  end
+  # Input
 
   def handle_controller_event(event : SDL::Event::JoyHat | SDL::Event::JoyButton) : Nil
     emu.handle_controller_event(event)
@@ -40,7 +52,11 @@ abstract class Controller
     emu.handle_input(input, pressed)
   end
 
-  def toggle_sync : Nil
-    emu.toggle_sync
+  # Debug
+
+  def render_debug_items : Nil
+  end
+
+  def render_windows : Nil
   end
 end

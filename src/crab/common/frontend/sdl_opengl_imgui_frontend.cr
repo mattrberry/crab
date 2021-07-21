@@ -22,8 +22,6 @@ class SDLOpenGLImGuiFrontend < Frontend
   @last_time = Time.utc
   @seconds : Int32 = Time.utc.second
 
-  @enable_blend = false
-  @blending = false
   @enable_overlay = false
   @pause = false
   @recents : Array(String) = recents
@@ -49,7 +47,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.use_program(@shader_programs[@controller.class])
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
-    LibSDL.gl_set_swap_interval(1) if @controller.class == StubbedController
+    LibSDL.gl_set_swap_interval(1) if stubbed?
 
     @file_explorer = ImGui::FileExplorer.new
     @keybindings = ImGui::Keybindings.new
@@ -98,8 +96,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.use_program(@shader_programs[@controller.class])
 
     LibSDL.gl_set_swap_interval(0)
-    @enable_blend = false
-    @blending = false
     @enable_overlay = false
     @pause = false
   end
@@ -137,15 +133,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     end
   end
 
-  private def toggle_blending : Nil
-    if @blending
-      LibGL.disable(LibGL::BLEND)
-    else
-      LibGL.enable(LibGL::BLEND)
-    end
-    @blending = @enable_blend = !@blending
-  end
-
   private def render_game : Nil
     LibGL.tex_image_2d(
       LibGL::TEXTURE_2D,
@@ -161,6 +148,10 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
   end
 
+  private def stubbed? : Bool
+    @controller.class == StubbedController
+  end
+
   private def render_imgui : Nil
     ImGui::OpenGL3.new_frame
     ImGui::SDL2.new_frame(@window)
@@ -171,13 +162,11 @@ class SDLOpenGLImGuiFrontend < Frontend
     open_bios_selection = false
     open_keybindings = false
 
-    if (LibSDL.get_mouse_focus || @controller.class == StubbedController) && !@file_explorer.open? && !@keybindings.open?
+    if (LibSDL.get_mouse_focus || stubbed?) && !@file_explorer.open? && !@keybindings.open?
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
-          previously_paused = @pause
-
           open_rom_selection = ImGui.menu_item "Open ROM"
-          open_bios_selection = ImGui.menu_item "Select BIOS" unless @controller.class == StubbedController
+          open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
           if ImGui.begin_menu "Recent", @recents.size > 0
             @recents.each do |recent|
               load_new_rom(recent) if ImGui.menu_item recent
@@ -190,19 +179,28 @@ class SDLOpenGLImGuiFrontend < Frontend
             ImGui.end_menu
           end
           ImGui.separator
-          ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
-          # ImGui.menu_item "Blend", "", pointerof(@enable_blend) todo: re-implement blending now that frames are cleared
-          ImGui.menu_item "Pause", "", pointerof(@pause)
           open_keybindings = ImGui.menu_item "Keybindings"
           ImGui.separator
           exit if ImGui.menu_item "Exit", "Ctrl+Q"
           ImGui.end_menu
-
-          toggle_blending if @enable_blend ^ @blending
-          LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
         end
 
-        @controller.render_menu
+        if ImGui.begin_menu "Emulation"
+          previously_paused = @pause
+
+          ImGui.menu_item "Pause", "", pointerof(@pause)
+          @controller.toggle_sync if ImGui.menu_item "Audio Sync", selected: @controller.sync?, enabled: !stubbed?
+
+          LibSDL.gl_set_swap_interval(@pause.to_unsafe) if previously_paused ^ @pause
+          ImGui.end_menu
+        end
+
+        if ImGui.begin_menu "Debug"
+          ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
+          ImGui.separator
+          @controller.render_debug_items
+          ImGui.end_menu
+        end
 
         overlay_height += ImGui.get_window_size.y
         ImGui.end_main_menu_bar

@@ -13,12 +13,16 @@ class GBAController < Controller
     @emu.post_init
   end
 
-  def render_menu : Nil
-    if ImGui.begin_menu "Game Boy Advance"
-      @emu.toggle_sync if ImGui.menu_item("Audio Sync", "", emu.apu.sync)
-      ImGui.menu_item("Debug", "", pointerof(@debug_window))
-      ImGui.end_menu
-    end
+  # Audio
+
+  def sync? : Bool
+    @emu.apu.sync
+  end
+
+  # Debug
+
+  def render_debug_items : Nil
+    ImGui.menu_item("Debug", "", pointerof(@debug_window))
   end
 
   def render_windows : Nil
