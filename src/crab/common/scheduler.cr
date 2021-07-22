@@ -19,7 +19,7 @@ class Scheduler
 
   private record Event, cycles : UInt64, proc : Proc(Nil), type : EventType
 
-  @events : Deque(Event) = Deque(Event).new 10
+  getter events : Deque(Event) = Deque(Event).new 10
   getter cycles : UInt64 = 0
   @next_event : UInt64 = UInt64::MAX
 
