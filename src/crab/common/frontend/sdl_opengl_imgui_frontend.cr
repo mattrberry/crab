@@ -1,10 +1,15 @@
+require "imgui"
+require "imgui-backends"
+require "imgui-backends/lib"
+require "lib_gl"
+
 require "./controllers/*"
 require "./widgets/*"
 
 class SDLOpenGLImGuiFrontend < Frontend
   CONTROLLERS    = [StubbedController, GBController, GBAController]
   ROM_EXTENSIONS = CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions }
-  SCALE          = 4
+  SCALE          = 3
   SHADERS        = "src/crab/common/shaders"
 
   @controller : Controller
@@ -270,13 +275,11 @@ class SDLOpenGLImGuiFrontend < Frontend
     shader = LibGL.create_shader(type)
     LibGL.shader_source(shader, 1, pointerof(source_ptr), nil)
     LibGL.compile_shader(shader)
-    shader_compiled = 0
-    LibGL.get_shader_iv(shader, LibGL::COMPILE_STATUS, pointerof(shader_compiled))
+    LibGL.get_shader_iv(shader, LibGL::COMPILE_STATUS, out shader_compiled)
     if shader_compiled != LibGL::TRUE
-      log_length = 0
-      LibGL.get_shader_iv(shader, LibGL::INFO_LOG_LENGTH, pointerof(log_length))
+      LibGL.get_shader_iv(shader, LibGL::INFO_LOG_LENGTH, out log_length)
       s = " " * log_length
-      LibGL.get_shader_info_log(shader, log_length, pointerof(log_length), s) if log_length > 0
+      LibGL.get_shader_info_log(shader, log_length, out _, s) if log_length > 0
       abort "Error compiling shader: #{s}"
     end
     shader
@@ -307,8 +310,7 @@ class SDLOpenGLImGuiFrontend < Frontend
 
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
-    frame_buffer = 0_u32
-    LibGL.gen_textures(1, pointerof(frame_buffer))
+    LibGL.gen_textures(1, out frame_buffer)
     LibGL.active_texture(LibGL::TEXTURE0)
     LibGL.bind_texture(LibGL::TEXTURE_2D, frame_buffer)
     a = [LibGL::BLUE, LibGL::GREEN, LibGL::RED, LibGL::ONE] # flip the rgba to bgra where a is always 1
@@ -316,8 +318,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.tex_parameter_iv(LibGL::TEXTURE_2D, LibGL::TEXTURE_SWIZZLE_RGBA, a_ptr)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MIN_FILTER, LibGL::NEAREST)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MAG_FILTER, LibGL::NEAREST)
-    vao = 0_u32 # required even if not used in modern opengl
-    LibGL.gen_vertex_arrays(1, pointerof(vao))
+    LibGL.gen_vertex_arrays(1, out vao) # required even if not used in modern opengl
     LibGL.bind_vertex_array(vao)
 
     gl_context

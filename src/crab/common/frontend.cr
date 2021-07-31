@@ -1,5 +1,3 @@
-require "lib_gl"
-
 abstract class Frontend
   def self.new(bios : String?, rom : String?, headless = false)
     if headless

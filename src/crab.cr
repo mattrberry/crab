@@ -3,9 +3,6 @@ require "option_parser"
 
 require "bitfield"
 require "sdl"
-require "imgui"
-require "imgui-backends"
-require "imgui-backends/lib"
 
 require "./crab/common/*"
 require "./crab/common/frontend/*"
