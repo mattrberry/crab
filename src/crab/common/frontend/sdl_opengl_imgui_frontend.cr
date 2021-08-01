@@ -59,17 +59,25 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   def run : NoReturn
+    set_clear_color(87, 88, 153)
     loop do
       @controller.run_until_frame unless @pause
       handle_input
-      LibGL.clear_color(0, 0, 0, 1)
       LibGL.clear(LibGL::COLOR_BUFFER_BIT)
-      render_game
+      if stubbed?
+        render_logo
+      else
+        render_game
+      end
       render_imgui
       LibSDL.gl_swap_window(@window)
       update_draw_count
       handle_file_selection
     end
+  end
+
+  private def set_clear_color(red : Int, green : Int, blue : Int, alpha : Int = 255) : Nil
+    LibGL.clear_color(red / 255, green / 255, blue / 255, alpha / 255)
   end
 
   def pause(b : Bool) : Nil
@@ -158,6 +166,10 @@ class SDLOpenGLImGuiFrontend < Frontend
       @controller.get_framebuffer
     )
     LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
+  end
+
+  def render_logo : Nil
+
   end
 
   private def stubbed? : Bool
@@ -270,7 +282,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     end
   end
 
-  private def compile_shader(source : String, type : UInt32) : UInt32
+  private def compile_shader(source : String, type : LibGL::Enum) : UInt32
     source_ptr = source.to_unsafe
     shader = LibGL.create_shader(type)
     LibGL.shader_source(shader, 1, pointerof(source_ptr), nil)
@@ -310,9 +322,9 @@ class SDLOpenGLImGuiFrontend < Frontend
 
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
-    LibGL.gen_textures(1, out frame_buffer)
+    LibGL.gen_textures(1, out texture)
     LibGL.active_texture(LibGL::TEXTURE0)
-    LibGL.bind_texture(LibGL::TEXTURE_2D, frame_buffer)
+    LibGL.bind_texture(LibGL::TEXTURE_2D, texture)
     a = [LibGL::BLUE, LibGL::GREEN, LibGL::RED, LibGL::ONE] # flip the rgba to bgra where a is always 1
     a_ptr = pointerof(a).as(Int32*)
     LibGL.tex_parameter_iv(LibGL::TEXTURE_2D, LibGL::TEXTURE_SWIZZLE_RGBA, a_ptr)
@@ -324,8 +336,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     gl_context
   end
 
-  private def create_shader_program(shader_name : String?) : UInt32
-    return 0_u32 unless shader_name
+  private def create_shader_program(shader_name : String) : UInt32
     shader_program = LibGL.create_program
     vert_shader_id = compile_shader(File.read("#{SHADERS}/identity.vert"), LibGL::VERTEX_SHADER)
     frag_shader_id = compile_shader(File.read("#{SHADERS}/#{shader_name}"), LibGL::FRAGMENT_SHADER)

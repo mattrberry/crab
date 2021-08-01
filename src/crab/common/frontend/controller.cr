@@ -1,6 +1,4 @@
 abstract class Controller
-  class_getter shader : String? = nil
-
   abstract def emu : Emu
 
   # Window Config
