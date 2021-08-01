@@ -4,7 +4,8 @@ class StubbedController < Controller
   getter window_width : Int32 = 240
   getter window_height : Int32 = 160
   class_getter extensions = [] of String
-  class_getter shader : String = "stubbed_colors.frag"
+  class_getter vertex_shader : String = "logo_shader.vert"
+  class_getter fragment_shader : String = "stubbed_colors.frag"
 
   def emu : Emu
     abort "Called emu method in StubbedController"

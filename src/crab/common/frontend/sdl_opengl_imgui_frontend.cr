@@ -33,6 +33,9 @@ class SDLOpenGLImGuiFrontend < Frontend
 
   @opengl_info : OpenGLInfo
 
+  @game_texture : UInt32 = 0
+  @crab_texture : UInt32 = 0
+
   def initialize(bios : String?, rom : String?)
     SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
     LibSDL.joystick_open 0
@@ -48,8 +51,20 @@ class SDLOpenGLImGuiFrontend < Frontend
       flags: SDL::Window::Flags::OPENGL | SDL::Window::Flags::RESIZABLE
     )
     @gl_context = setup_gl
-    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| create_shader_program(controller.shader) })
-    LibGL.use_program(@shader_programs[@controller.class])
+
+    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| create_shader_program(controller.vertex_shader, controller.fragment_shader) })
+    shader_program = @shader_programs[@controller.class]
+    LibGL.use_program(shader_program)
+
+    if stubbed?
+      @crab_texture, canvas_aspect = texture_from_png("README/crab.png")
+      window_aspect = @window.width / @window.height
+      aspect = LibGL.get_uniform_location(shader_program, "aspect")
+      LibGL.uniform_1f(aspect, window_aspect * canvas_aspect)
+      scale = LibGL.get_uniform_location(shader_program, "scale")
+      LibGL.uniform_1f(scale, 0.5)
+    end
+
     @opengl_info = OpenGLInfo.new
     @io = setup_imgui
     pause(true) if stubbed?
@@ -59,7 +74,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   def run : NoReturn
-    set_clear_color(87, 88, 153)
+    set_clear_color(60, 61, 107)
     loop do
       @controller.run_until_frame unless @pause
       handle_input
@@ -114,6 +129,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
     LibGL.viewport(0, 0, @window.width, @window.height)
     LibGL.use_program(@shader_programs[@controller.class])
+    LibGL.disable(LibGL::BLEND)
 
     pause(false)
   end
@@ -154,6 +170,12 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   private def render_game : Nil
+    aspect = LibGL.get_uniform_location(@shader_programs[@controller.class], "aspect")
+    LibGL.uniform_1f(aspect, 1)
+    scale = LibGL.get_uniform_location(@shader_programs[@controller.class], "scale")
+    LibGL.uniform_1f(scale, 1)
+
+    LibGL.bind_texture(LibGL::TEXTURE_2D, @game_texture)
     LibGL.tex_image_2d(
       LibGL::TEXTURE_2D,
       0,
@@ -169,7 +191,8 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   def render_logo : Nil
-
+    LibGL.bind_texture(LibGL::TEXTURE_2D, @crab_texture)
+    LibGL.draw_arrays(LibGL::TRIANGLE_STRIP, 0, 4)
   end
 
   private def stubbed? : Bool
@@ -320,31 +343,44 @@ class SDLOpenGLImGuiFrontend < Frontend
     gl_context = LibSDL.gl_create_context @window
     LibSDL.gl_set_swap_interval(0) # disable vsync
 
+    LibGL.enable(LibGL::BLEND)
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
-    LibGL.gen_textures(1, out texture)
+    LibGL.gen_textures(1, out game_texture)
     LibGL.active_texture(LibGL::TEXTURE0)
-    LibGL.bind_texture(LibGL::TEXTURE_2D, texture)
+    LibGL.bind_texture(LibGL::TEXTURE_2D, game_texture)
+    @game_texture = game_texture
     a = [LibGL::BLUE, LibGL::GREEN, LibGL::RED, LibGL::ONE] # flip the rgba to bgra where a is always 1
     a_ptr = pointerof(a).as(Int32*)
     LibGL.tex_parameter_iv(LibGL::TEXTURE_2D, LibGL::TEXTURE_SWIZZLE_RGBA, a_ptr)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MIN_FILTER, LibGL::NEAREST)
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MAG_FILTER, LibGL::NEAREST)
+
     LibGL.gen_vertex_arrays(1, out vao) # required even if not used in modern opengl
     LibGL.bind_vertex_array(vao)
 
     gl_context
   end
 
-  private def create_shader_program(shader_name : String) : UInt32
+  private def texture_from_png(file : String) : Tuple(UInt32, Float64)
+    canvas = StumpyPNG.read(file)
+    pixels = canvas.pixels.map &.to_rgba
+    LibGL.gen_textures(1, out crab_texture)
+    LibGL.bind_texture(LibGL::TEXTURE_2D, crab_texture)
+    LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MIN_FILTER, LibGL::NEAREST)
+    LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MAG_FILTER, LibGL::NEAREST)
+    LibGL.tex_image_2d(LibGL::TEXTURE_2D, 0, LibGL::RGBA, canvas.width, canvas.height, 0, LibGL::RGBA, LibGL::UNSIGNED_BYTE, pixels)
+    {crab_texture, canvas.height / canvas.width}
+  end
+
+  private def create_shader_program(vertex_shader, fragment_shader : String) : UInt32
     shader_program = LibGL.create_program
-    vert_shader_id = compile_shader(File.read("#{SHADERS}/identity.vert"), LibGL::VERTEX_SHADER)
-    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{shader_name}"), LibGL::FRAGMENT_SHADER)
+    vert_shader_id = compile_shader(File.read("#{SHADERS}/#{vertex_shader}"), LibGL::VERTEX_SHADER)
+    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{fragment_shader}"), LibGL::FRAGMENT_SHADER)
     LibGL.attach_shader(shader_program, vert_shader_id)
     LibGL.attach_shader(shader_program, frag_shader_id)
     LibGL.link_program(shader_program)
     LibGL.validate_program(shader_program)
-    LibGL.use_program(shader_program)
     shader_program
   end
 

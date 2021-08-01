@@ -15,5 +15,4 @@ void main() {
                              30 * color.b + 230 * color.g +  10 * color.r,
                             220 * color.b +  10 * color.g +  50 * color.r) / 255,
                        vec3(1.0 / outGamma));
-  frag_color.a = 0.5;
 }
