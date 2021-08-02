@@ -10,7 +10,6 @@ require "./shaders/*"
 class SDLOpenGLImGuiFrontend < Frontend
   CONTROLLERS    = [StubbedController, GBController, GBAController]
   ROM_EXTENSIONS = CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions }
-  SCALE          = 3
   SHADERS        = Path["#{__DIR__}/shaders"]
 
   @controller : Controller
@@ -31,6 +30,8 @@ class SDLOpenGLImGuiFrontend < Frontend
   @enable_overlay = false
   @pause = false
   @recents : Array(String) = recents
+  @scale = 3
+  @fullscreen = false
 
   @opengl_info : OpenGLInfo
 
@@ -45,8 +46,8 @@ class SDLOpenGLImGuiFrontend < Frontend
     @controller = init_controller(bios, rom)
     @window = SDL::Window.new(
       window_title(59.7),
-      @controller.window_width * SCALE,
-      @controller.window_height * SCALE,
+      @controller.window_width * @scale,
+      @controller.window_height * @scale,
       x: LibSDL::WindowPosition::CENTERED,
       y: LibSDL::WindowPosition::CENTERED,
       flags: SDL::Window::Flags::OPENGL | SDL::Window::Flags::RESIZABLE
@@ -124,9 +125,8 @@ class SDLOpenGLImGuiFrontend < Frontend
     @recents.pop(@recents.size - 8) if @recents.size > 8
     set_recents @recents
 
-    LibSDL.set_window_size(@window, @controller.window_width * SCALE, @controller.window_height * SCALE)
+    LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
-    LibGL.viewport(0, 0, @window.width, @window.height)
     @shader_programs[@controller.class].use
     LibGL.disable(LibGL::BLEND)
 
@@ -151,14 +151,16 @@ class SDLOpenGLImGuiFrontend < Frontend
       when SDL::Event::Keyboard
         if @keybindings.wants_input?
           @keybindings.key_released(event.sym) unless event.pressed? # pass on key release
+        elsif event.mod.includes?(LibSDL::Keymod::LCTRL)
+          case event.sym
+          when LibSDL::Keycode::P then pause(!@pause) unless event.pressed?
+          when LibSDL::Keycode::F then @window.fullscreen = (@fullscreen = !@fullscreen) unless event.pressed?
+          when LibSDL::Keycode::Q then exit
+          end
         elsif input = @keybindings[event.sym]?
           @controller.handle_input(input, event.pressed?)
         elsif event.sym == LibSDL::Keycode::TAB
           @controller.toggle_sync if event.pressed?
-        elsif event.sym == LibSDL::Keycode::Q && event.mod.includes?(LibSDL::Keymod::LCTRL)
-          exit
-        elsif event.sym == LibSDL::Keycode::P && event.mod.includes?(LibSDL::Keymod::LCTRL)
-          pause(!@pause) unless event.pressed? # toggle pause on key release
         end
       when SDL::Event::JoyHat, SDL::Event::JoyButton then @controller.handle_controller_event(event)
       when SDL::Event::Window
@@ -239,6 +241,21 @@ class SDLOpenGLImGuiFrontend < Frontend
           @controller.toggle_sync if ImGui.menu_item "Audio Sync", "Tab", @controller.sync?, !stubbed?
 
           pause(pause)
+          ImGui.end_menu
+        end
+
+        if ImGui.begin_menu "Audio/Video"
+          if ImGui.begin_menu "Frame size"
+            (1..8).each do |scale|
+              if ImGui.menu_item "#{scale}x", selected: scale == @scale
+                @scale = scale
+                LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
+              end
+            end
+            ImGui.separator
+            @window.fullscreen = @fullscreen if ImGui.menu_item "Fullscreen", "Ctrl+F", pointerof(@fullscreen)
+            ImGui.end_menu
+          end
           ImGui.end_menu
         end
 
