@@ -27,6 +27,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   @last_time = Time.utc
   @seconds : Int32 = Time.utc.second
 
+  @last_sdl_timestamp = 0_u32
   @enable_overlay = false
   @pause = false
   @recents : Array(String) = recents
@@ -167,8 +168,9 @@ class SDLOpenGLImGuiFrontend < Frontend
         case LibSDL::WindowEventID.new(event.event.to_i!)
         when LibSDL::WindowEventID::SIZE_CHANGED then LibGL.viewport(0, 0, @window.width, @window.height)
         end
-      when SDL::Event::Quit then exit
-      else                       nil
+      when SDL::Event::MouseMotion then @last_sdl_timestamp = event.timestamp
+      when SDL::Event::Quit        then exit
+      else                              nil
       end
     end
   end
@@ -211,7 +213,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     open_bios_selection = false
     open_keybindings = false
 
-    if (LibSDL.get_mouse_focus || stubbed?) && !@file_explorer.open? && !@keybindings.open?
+    if ((LibSDL.get_mouse_focus && LibSDL.get_ticks - @last_sdl_timestamp < 3000) || stubbed?) && !@file_explorer.open? && !@keybindings.open?
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
           open_rom_selection = ImGui.menu_item "Open ROM"
