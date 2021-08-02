@@ -325,7 +325,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     gl_context = LibSDL.gl_create_context @window
     LibSDL.gl_set_swap_interval(0) # disable vsync
 
-    LibGL.enable(LibGL::BLEND)
+    LibGL.enable(LibGL::BLEND) if stubbed?
     LibGL.blend_func(LibGL::SRC_ALPHA, LibGL::ONE_MINUS_SRC_ALPHA)
 
     LibGL.gen_textures(1, out game_texture)
