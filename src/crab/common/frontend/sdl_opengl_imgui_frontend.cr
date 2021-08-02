@@ -53,7 +53,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     )
     @gl_context = setup_gl
 
-    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| Shader.new(SHADERS / controller.vertex_shader, SHADERS / controller.fragment_shader)})
+    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| Shader.new(SHADERS / controller.vertex_shader, SHADERS / controller.fragment_shader) })
     shader_program = @shader_programs[@controller.class]
     shader_program.use
 
@@ -160,8 +160,11 @@ class SDLOpenGLImGuiFrontend < Frontend
         elsif event.sym == LibSDL::Keycode::P && event.mod.includes?(LibSDL::Keymod::LCTRL)
           pause(!@pause) unless event.pressed? # toggle pause on key release
         end
-      when SDL::Event::JoyHat,
-           SDL::Event::JoyButton then @controller.handle_controller_event(event)
+      when SDL::Event::JoyHat, SDL::Event::JoyButton then @controller.handle_controller_event(event)
+      when SDL::Event::Window
+        case LibSDL::WindowEventID.new(event.event.to_i!)
+        when LibSDL::WindowEventID::SIZE_CHANGED then LibGL.viewport(0, 0, @window.width, @window.height)
+        end
       when SDL::Event::Quit then exit
       else                       nil
       end
