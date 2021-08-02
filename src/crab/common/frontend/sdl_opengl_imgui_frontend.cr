@@ -5,12 +5,13 @@ require "lib_gl"
 
 require "./controllers/*"
 require "./widgets/*"
+require "./shaders/*"
 
 class SDLOpenGLImGuiFrontend < Frontend
   CONTROLLERS    = [StubbedController, GBController, GBAController]
   ROM_EXTENSIONS = CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions }
   SCALE          = 3
-  SHADERS        = "src/crab/common/shaders"
+  SHADERS        = Path["#{__DIR__}/shaders"]
 
   @controller : Controller
 
@@ -20,7 +21,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   @shader_program : UInt32?
   @frag_shader_id : UInt32?
 
-  @shader_programs : Hash(Controller.class, UInt32)
+  @shader_programs : Hash(Controller.class, Shader)
 
   @microseconds = 0
   @frames = 0
@@ -52,17 +53,15 @@ class SDLOpenGLImGuiFrontend < Frontend
     )
     @gl_context = setup_gl
 
-    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| create_shader_program(controller.vertex_shader, controller.fragment_shader) })
+    @shader_programs = Hash.zip(CONTROLLERS, CONTROLLERS.map { |controller| Shader.new(SHADERS / controller.vertex_shader, SHADERS / controller.fragment_shader)})
     shader_program = @shader_programs[@controller.class]
-    LibGL.use_program(shader_program)
+    shader_program.use
 
     if stubbed?
       @crab_texture, canvas_aspect = texture_from_png("README/crab.png")
       window_aspect = @window.width / @window.height
-      aspect = LibGL.get_uniform_location(shader_program, "aspect")
-      LibGL.uniform_1f(aspect, window_aspect * canvas_aspect)
-      scale = LibGL.get_uniform_location(shader_program, "scale")
-      LibGL.uniform_1f(scale, 0.5)
+      shader_program.aspect = window_aspect * canvas_aspect
+      shader_program.scale = 0.5
     end
 
     @opengl_info = OpenGLInfo.new
@@ -128,7 +127,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibSDL.set_window_size(@window, @controller.window_width * SCALE, @controller.window_height * SCALE)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
     LibGL.viewport(0, 0, @window.width, @window.height)
-    LibGL.use_program(@shader_programs[@controller.class])
+    @shader_programs[@controller.class].use
     LibGL.disable(LibGL::BLEND)
 
     pause(false)
@@ -170,10 +169,8 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   private def render_game : Nil
-    aspect = LibGL.get_uniform_location(@shader_programs[@controller.class], "aspect")
-    LibGL.uniform_1f(aspect, 1)
-    scale = LibGL.get_uniform_location(@shader_programs[@controller.class], "scale")
-    LibGL.uniform_1f(scale, 1)
+    @shader_programs[@controller.class].aspect = 1
+    @shader_programs[@controller.class].scale = 1
 
     LibGL.bind_texture(LibGL::TEXTURE_2D, @game_texture)
     LibGL.tex_image_2d(
@@ -305,21 +302,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     end
   end
 
-  private def compile_shader(source : String, type : LibGL::Enum) : UInt32
-    source_ptr = source.to_unsafe
-    shader = LibGL.create_shader(type)
-    LibGL.shader_source(shader, 1, pointerof(source_ptr), nil)
-    LibGL.compile_shader(shader)
-    LibGL.get_shader_iv(shader, LibGL::COMPILE_STATUS, out shader_compiled)
-    if shader_compiled != LibGL::TRUE
-      LibGL.get_shader_iv(shader, LibGL::INFO_LOG_LENGTH, out log_length)
-      s = " " * log_length
-      LibGL.get_shader_info_log(shader, log_length, out _, s) if log_length > 0
-      abort "Error compiling shader: #{s}"
-    end
-    shader
-  end
-
   private def setup_gl : LibSDL::GLContext
     {% if flag?(:darwin) %}
       LibSDL.gl_set_attribute(LibSDL::GLattr::SDL_GL_CONTEXT_FLAGS, LibSDL::GLcontextFlag::FORWARD_COMPATIBLE_FLAG)
@@ -371,17 +353,6 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibGL.tex_parameter_i(LibGL::TEXTURE_2D, LibGL::TEXTURE_MAG_FILTER, LibGL::NEAREST)
     LibGL.tex_image_2d(LibGL::TEXTURE_2D, 0, LibGL::RGBA, canvas.width, canvas.height, 0, LibGL::RGBA, LibGL::UNSIGNED_BYTE, pixels)
     {crab_texture, canvas.height / canvas.width}
-  end
-
-  private def create_shader_program(vertex_shader, fragment_shader : String) : UInt32
-    shader_program = LibGL.create_program
-    vert_shader_id = compile_shader(File.read("#{SHADERS}/#{vertex_shader}"), LibGL::VERTEX_SHADER)
-    frag_shader_id = compile_shader(File.read("#{SHADERS}/#{fragment_shader}"), LibGL::FRAGMENT_SHADER)
-    LibGL.attach_shader(shader_program, vert_shader_id)
-    LibGL.attach_shader(shader_program, frag_shader_id)
-    LibGL.link_program(shader_program)
-    LibGL.validate_program(shader_program)
-    shader_program
   end
 
   private def setup_imgui : ImGui::ImGuiIO
