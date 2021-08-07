@@ -49,16 +49,14 @@ module GB
         bytes
       end
 
-      cartridge_type = rom[0x0147]
+      cartridge_type = CartridgeType.new(rom[0x0147].to_i)
       cartridge = case cartridge_type
-                  when 0x00, 0x08, 0x09 then ROM.new rom
-                  when 0x01, 0x02, 0x03 then MBC1.new rom
-                  when 0x05, 0x06       then MBC2.new rom
-                  when 0x0F, 0x10, 0x11,
-                       0x12, 0x13 then MBC3.new rom
-                  when 0x19, 0x1A, 0x1B,
-                       0x1C, 0x1D, 0x1E then MBC5.new rom
-                  else raise "Unimplemented cartridge type: #{hex_str cartridge_type}"
+                  when .is_rom?  then ROM.new rom, cartridge_type
+                  when .is_mbc1? then MBC1.new rom, cartridge_type
+                  when .is_mbc2? then MBC2.new rom, cartridge_type
+                  when .is_mbc3? then MBC3.new rom, cartridge_type
+                  when .is_mbc5? then MBC5.new rom, cartridge_type
+                  else                abort "Unimplemented cartridge type: #{hex_str cartridge_type.value.to_u8!}"
                   end
 
       cartridge.sav_file_path = rom_path.rpartition('.')[0] + ".sav"

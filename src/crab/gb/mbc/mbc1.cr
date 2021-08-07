@@ -1,6 +1,6 @@
 module GB
   class MBC1 < Cartridge
-    def initialize(@rom : Bytes)
+    def initialize(@rom : Bytes, @cartridge_type : CartridgeType)
       if ram_size == 0 && (@rom[0x0147] == 0x02 || @rom[0x0147] == 0x03)
         STDERR.puts "MBC1 cartridge has ram, but `ram_size` was reported as 0. Ignoring `ram_size` and using 8kB of ram."
         @ram = Bytes.new 0x2000

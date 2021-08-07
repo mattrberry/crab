@@ -1,6 +1,6 @@
 module GB
   class ROM < Cartridge
-    def initialize(@rom : Bytes)
+    def initialize(@rom : Bytes, @cartridge_type : CartridgeType)
       @ram = Bytes.new ram_size
     end
 

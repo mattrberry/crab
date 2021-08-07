@@ -1,6 +1,6 @@
 module GB
   class MBC5 < Cartridge
-    def initialize(@rom : Bytes)
+    def initialize(@rom : Bytes, @cartridge_type : CartridgeType)
       @ram = Bytes.new ram_size
       @ram_enabled = false
       @rom_bank_number = 1_u16 # 9-bit register

@@ -2,7 +2,7 @@ module GB
   class MBC2 < Cartridge
     getter ram_size : Int32 { 0x0200 }
 
-    def initialize(@rom : Bytes)
+    def initialize(@rom : Bytes, @cartridge_type : CartridgeType)
       @ram = Bytes.new ram_size
       @ram_enabled = false
       @rom_bank = 1_u8
