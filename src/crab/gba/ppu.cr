@@ -298,18 +298,22 @@ module GBA
       end
     end
 
+    def get_enables(col : Int) : Tuple(UInt16, Bool)
+      if @dispcnt.window_0_display && @win0h.x1 <= col < @win0h.x2 && @win0v.y1 <= @vcount < @win0v.y2 # win0
+        {bits(@winin.value, 0..4), @winin.window_0_color_special_effect}
+      elsif @dispcnt.window_1_display && @win1h.x1 <= col < @win1h.x2 && @win1v.y1 <= @vcount < @win1v.y2 # win1
+        {bits(@winin.value, 8..12), @winin.window_1_color_special_effect}
+      elsif @dispcnt.obj_window_display && @sprite_pixels[col].window # obj win
+        {bits(@winout.value, 8..12), @winout.obj_window_color_special_effect}
+      elsif @dispcnt.window_0_display || @dispcnt.window_1_display || @dispcnt.obj_window_display # winout
+        {bits(@winout.value, 0..4), @winout.outside_color_special_effect}
+      else # no windows
+        {bits(@dispcnt.value, 8..12), true}
+      end
+    end
+
     def calculate_color(col : Int) : UInt16
-      enables, effects = if @dispcnt.window_0_display && @win0h.x1 <= col < @win0h.x2 && @win0v.y1 <= @vcount < @win0v.y2 # win0
-                           {bits(@winin.value, 0..4), @winin.window_0_color_special_effect}
-                         elsif @dispcnt.window_1_display && @win1h.x1 <= col < @win1h.x2 && @win1v.y1 <= @vcount < @win1v.y2 # win1
-                           {bits(@winin.value, 8..12), @winin.window_1_color_special_effect}
-                         elsif @dispcnt.obj_window_display && @sprite_pixels[col].window # obj win
-                           {bits(@winout.value, 8..12), @winout.obj_window_color_special_effect}
-                         elsif @dispcnt.window_0_display || @dispcnt.window_1_display || @dispcnt.obj_window_display # winout
-                           {bits(@winout.value, 0..4), @winout.outside_color_special_effect}
-                         else # no windows
-                           {bits(@dispcnt.value, 8..12), true}
-                         end
+      enables, effects = get_enables(col)
       top_color = nil
       4.times do |priority|
         if bit?(enables, 4)

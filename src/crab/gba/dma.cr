@@ -22,6 +22,10 @@ module GBA
       end
     end
 
+    SRC_MASK = [0x07FFFFFF_u32, 0x0FFFFFFF_u32, 0x0FFFFFFF_u32, 0x0FFFFFFF_u32]
+    DST_MASK = [0x07FFFFFF_u32, 0x07FFFFFF_u32, 0x07FFFFFF_u32, 0x0FFFFFFF_u32]
+    LEN_MASK = [0x3FFF_u16, 0x3FFF_u16, 0x3FFF_u16, 0xFFFF_u16]
+
     getter dmacnt_l : Array(UInt16)
 
     @interrupt_flags : Array(Proc(Nil))
@@ -35,9 +39,6 @@ module GBA
       @dst = Array(UInt32).new 4, 0
       @interrupt_flags = [->{ @gba.interrupts.reg_if.dma0 = true }, ->{ @gba.interrupts.reg_if.dma1 = true },
                           ->{ @gba.interrupts.reg_if.dma2 = true }, ->{ @gba.interrupts.reg_if.dma3 = true }]
-      @src_mask = [0x07FFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF]
-      @dst_mask = [0x07FFFFFF, 0x07FFFFFF, 0x07FFFFFF, 0x0FFFFFFF]
-      @len_mask = [0x3FFF, 0x3FFF, 0x3FFF, 0xFFFF]
     end
 
     def read_io(io_addr : Int) : UInt8
@@ -66,19 +67,19 @@ module GBA
         mask = 0xFF_u32 << (8 * reg)
         value = value.to_u32 << (8 * reg)
         dmasad = @dmasad[channel]
-        @dmasad[channel] = ((dmasad & ~mask) | value) & @src_mask[channel]
+        @dmasad[channel] = ((dmasad & ~mask) | value) & SRC_MASK[channel]
       when 4, 5, 6, 7 # dmadad
         reg -= 4
         mask = 0xFF_u32 << (8 * reg)
         value = value.to_u32 << (8 * reg)
         dmadad = @dmadad[channel]
-        @dmadad[channel] = ((dmadad & ~mask) | value) & @dst_mask[channel]
+        @dmadad[channel] = ((dmadad & ~mask) | value) & DST_MASK[channel]
       when 8, 9 # dmacnt_l
         reg -= 8
         mask = 0xFF_u32 << (8 * reg)
         value = value.to_u16 << (8 * reg)
         dmacnt_l = @dmacnt_l[channel]
-        @dmacnt_l[channel] = ((dmacnt_l & ~mask) | value) & @len_mask[channel]
+        @dmacnt_l[channel] = ((dmacnt_l & ~mask) | value) & LEN_MASK[channel]
       when 10, 11 # dmacnt_h
         reg -= 10
         mask = 0xFF_u32 << (8 * reg)

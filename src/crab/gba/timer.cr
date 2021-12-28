@@ -1,6 +1,8 @@
 module GBA
   class Timer
-    PERIODS = [1, 64, 256, 1024]
+    PERIODS     = [1, 64, 256, 1024]
+    EVENT_TYPES = [Scheduler::EventType::Timer0, Scheduler::EventType::Timer1,
+                   Scheduler::EventType::Timer2, Scheduler::EventType::Timer3]
 
     @interrupt_flags : Array(Proc(Nil))
 
@@ -10,8 +12,6 @@ module GBA
       @tm = Array(UInt16).new 4, 0                          # counted values
       @cycle_enabled = Array(UInt64).new 4, 0               # cycle that the timer was enabled
       @events = Array(Proc(Nil)).new 4 { |i| overflow i }   # overflow closures for each timer
-      @event_types = [Scheduler::EventType::Timer0, Scheduler::EventType::Timer1,
-                      Scheduler::EventType::Timer2, Scheduler::EventType::Timer3]
       @interrupt_flags = [->{ @gba.interrupts.reg_if.timer0 = true }, ->{ @gba.interrupts.reg_if.timer1 = true },
                           ->{ @gba.interrupts.reg_if.timer2 = true }, ->{ @gba.interrupts.reg_if.timer3 = true }]
     end
@@ -29,7 +29,7 @@ module GBA
           @interrupt_flags[num].call
           @gba.interrupts.schedule_interrupt_check
         end
-        @gba.scheduler.schedule cycles_until_overflow(num), @events[num], @event_types[num] unless @tmcnt[num].cascade
+        @gba.scheduler.schedule cycles_until_overflow(num), @events[num], EVENT_TYPES[num] unless @tmcnt[num].cascade
       }
     end
 
@@ -79,14 +79,14 @@ module GBA
           tmcnt.value = (tmcnt.value & mask) | value
           if tmcnt.enable
             if tmcnt.cascade
-              @gba.scheduler.clear @event_types[num]
+              @gba.scheduler.clear EVENT_TYPES[num]
             elsif !was_enabled || was_cascade # enabled or no longer cascade
               @cycle_enabled[num] = @gba.scheduler.cycles
               @tm[num] = @tmd[num] if !was_enabled
-              @gba.scheduler.schedule cycles_until_overflow(num), @events[num], @event_types[num]
+              @gba.scheduler.schedule cycles_until_overflow(num), @events[num], EVENT_TYPES[num]
             end
           elsif was_enabled # disabled
-            @gba.scheduler.clear(@event_types[num])
+            @gba.scheduler.clear(EVENT_TYPES[num])
           end
         end
       else
