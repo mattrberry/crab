@@ -3,16 +3,15 @@ module ImGui
     POPUP_NAME  = "Keybindings"
     BUTTON_SIZE = ImGui::ImVec2.new(32, 0)
 
+    @config : Config
     @open = false
     @selection : Input? = nil
-    @keycodes : Hash(LibSDL::Keycode, Input)
     @editing_keycodes : Hash(LibSDL::Keycode, Input) = {} of LibSDL::Keycode => Input
 
-    delegate :[]?, to: @keycodes
+    delegate :[]?, to: @config.keybindings
 
-    def initialize
-      @keycodes = keybindings
-      overwrite_hash(@editing_keycodes, @keycodes)
+    def initialize(@config : Config)
+      overwrite_hash(@editing_keycodes, @config.keybindings)
     end
 
     def open? : Bool
@@ -36,7 +35,7 @@ module ImGui
     def render(open_popup : Bool) : Nil
       @open ||= open_popup
       if open_popup
-        overwrite_hash(@editing_keycodes, @keycodes)
+        overwrite_hash(@editing_keycodes, @config.keybindings)
         ImGui.open_popup(POPUP_NAME)
       end
       center = ImGui.get_main_viewport.get_center
@@ -70,8 +69,8 @@ module ImGui
     end
 
     private def apply : Nil
-      overwrite_hash(@keycodes, @editing_keycodes)
-      set_keybindings @keycodes
+      overwrite_hash(@config.keybindings, @editing_keycodes)
+      @config.commit
       close
     end
 

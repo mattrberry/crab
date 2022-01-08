@@ -12,6 +12,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   ROM_EXTENSIONS = CONTROLLERS.reduce([] of String) { |acc, controller| acc + controller.extensions }
   SHADERS        = Path["#{__DIR__}/shaders"]
 
+  @config : Config
   @controller : Controller
 
   @window : SDL::Window
@@ -30,7 +31,6 @@ class SDLOpenGLImGuiFrontend < Frontend
   @last_sdl_timestamp = 0_u32
   @enable_overlay = false
   @pause = false
-  @recents : Array(String) = recents
   @scale = 3
   @fullscreen = false
 
@@ -39,7 +39,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   @game_texture : UInt32 = 0
   @crab_texture : UInt32 = 0
 
-  def initialize(bios : String?, rom : String?)
+  def initialize(@config : Config, bios : String?, rom : String?)
     SDL.init(SDL::Init::VIDEO | SDL::Init::AUDIO | SDL::Init::JOYSTICK)
     LibSDL.joystick_open 0
     at_exit { SDL.quit }
@@ -70,8 +70,8 @@ class SDLOpenGLImGuiFrontend < Frontend
     @io = setup_imgui
     pause(true) if stubbed?
 
-    @file_explorer = ImGui::FileExplorer.new
-    @keybindings = ImGui::Keybindings.new
+    @file_explorer = ImGui::FileExplorer.new @config
+    @keybindings = ImGui::Keybindings.new @config
   end
 
   def run : NoReturn
@@ -121,10 +121,10 @@ class SDLOpenGLImGuiFrontend < Frontend
     @controller = init_controller(nil, rom)
     @file_explorer.clear_selection
 
-    @recents.delete(rom)
-    @recents.insert(0, rom)
-    @recents.pop(@recents.size - 8) if @recents.size > 8
-    set_recents @recents
+    @config.recents.delete(rom)
+    @config.recents.insert(0, rom)
+    @config.recents.pop(@config.recents.size - 8) if @config.recents.size > 8
+    @config.commit
 
     LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
     LibSDL.set_window_position(@window, LibSDL::WindowPosition::CENTERED, LibSDL::WindowPosition::CENTERED)
@@ -136,12 +136,13 @@ class SDLOpenGLImGuiFrontend < Frontend
 
   private def load_new_bios(bios : String) : Nil
     if @controller.class == GBController
-      set_gbc_bios(bios)
+      @config.gbc.bios = bios
     elsif @controller.class == GBAController
-      set_gba_bios(bios)
+      @config.gba.bios = bios
     else
       abort "Internal error: Cannot set bios #{bios} for controller #{@controller}"
     end
+    @config.commit
     @file_explorer.clear_selection
   end
 
@@ -218,14 +219,14 @@ class SDLOpenGLImGuiFrontend < Frontend
         if ImGui.begin_menu "File"
           open_rom_selection = ImGui.menu_item "Open ROM"
           open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
-          if ImGui.begin_menu "Recent", @recents.size > 0
-            @recents.each do |recent|
+          if ImGui.begin_menu "Recent", @config.recents.size > 0
+            @config.recents.each do |recent|
               load_new_rom(recent) if ImGui.menu_item recent
             end
             ImGui.separator
             if ImGui.menu_item "Clear"
-              @recents.clear
-              set_recents @recents
+              @config.recents.clear
+              @config.commit
             end
             ImGui.end_menu
           end

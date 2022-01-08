@@ -1,7 +1,8 @@
 class HeadlessFrontend < Frontend
+  @config : Config
   @controller : Controller
 
-  def initialize(bios : String?, rom : String?)
+  def initialize(@config : Config, bios : String?, rom : String?)
     @controller = init_controller(bios, rom.not_nil!)
   end
 

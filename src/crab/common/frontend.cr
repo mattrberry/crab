@@ -1,9 +1,10 @@
 abstract class Frontend
   def self.new(bios : String?, rom : String?, headless = false)
+    config = Config.new
     if headless
-      HeadlessFrontend.new(bios, rom)
+      HeadlessFrontend.new(config, bios, rom)
     else
-      SDLOpenGLImGuiFrontend.new(bios, rom)
+      SDLOpenGLImGuiFrontend.new(config, bios, rom)
     end
   end
 
@@ -13,12 +14,11 @@ abstract class Frontend
     return StubbedController.new unless rom
     extension = rom.rpartition('.')[2]
     if GBController.extensions.includes? extension
-      controller = GBController.new(bios, rom)
+      GBController.new(@config, bios, rom)
     elsif GBAController.extensions.includes? extension
-      controller = GBAController.new(bios, rom)
+      GBAController.new(@config, bios, rom)
     else
       abort "Unsupported file extension: #{extension}"
     end
-    controller
   end
 end

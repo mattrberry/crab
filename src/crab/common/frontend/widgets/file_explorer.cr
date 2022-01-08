@@ -1,6 +1,6 @@
 module ImGui
   class FileExplorer
-    @path : Path
+    @config : Config
     @matched_entries = [] of Entry
     @selected_entry_idx = 0
     @match_hidden = false
@@ -13,7 +13,7 @@ module ImGui
 
     getter selection : Tuple(Path, Symbol)? = nil
 
-    def initialize(@path = Path[explorer_dir].expand(home: true))
+    def initialize(@config : Config)
       gather_entries
     end
 
@@ -23,7 +23,7 @@ module ImGui
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
       if ImGui.begin_popup_modal(name.to_s, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize)
-        parts = @path.parts
+        parts = @config.explorer_dir.parts
         parts.each_with_index do |part, idx|
           ImGui.same_line unless idx == 0
           change_dir "../" * (parts.size - idx - 1) if ImGui.button(part)
@@ -76,20 +76,20 @@ module ImGui
     end
 
     private def open_file(name : Symbol) : Nil
-      @selection = {(@path / @matched_entries[@selected_entry_idx][:name]).normalize, name}
+      @selection = {(@config.explorer_dir / @matched_entries[@selected_entry_idx][:name]).normalize, name}
       close
-      set_explorer_dir @path.to_s
     end
 
     private def change_dir(name : String) : Nil
-      @path = (@path / name).normalize
+      @config.explorer_dir = (@config.explorer_dir / name).normalize
+      @config.commit
       gather_entries
     end
 
     private def gather_entries : Nil
       @matched_entries.clear
-      Dir.each_child(@path) do |name|
-        is_file = !Dir.exists?(@path / name)
+      Dir.each_child(@config.explorer_dir) do |name|
+        is_file = !Dir.exists?(@config.explorer_dir / name)
         rpart = name.rpartition('.')
         extension = rpart[2] unless rpart[1].size == 0
         hidden = name.starts_with?('.')
