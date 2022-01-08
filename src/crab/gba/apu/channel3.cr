@@ -51,11 +51,11 @@ module GBA
 
     def read_io(index : Int) : UInt8
       case index
-      when 0x70 then 0x7F | (@dac_enabled ? 0x80 : 0)
-      when 0x72 then 0xFF
-      when 0x73 then 0x9F | @volume_code << 5
-      when 0x74 then 0xFF
-      when 0x75 then 0xBF | (@length_enable ? 0x40 : 0)
+      when 0x70 then 0x7F_u8 | (@dac_enabled ? 0x80 : 0)
+      when 0x72 then 0xFF_u8
+      when 0x73 then 0x9F_u8 | @volume_code << 5
+      when 0x74 then 0xFF_u8
+      when 0x75 then 0xBF_u8 | (@length_enable ? 0x40 : 0)
       when WAVE_RAM_RANGE
         if @enabled
           @wave_ram[@wave_ram_bank][@wave_ram_position // 2]
@@ -63,7 +63,7 @@ module GBA
           @wave_ram[@wave_ram_bank][index - WAVE_RAM_RANGE.begin]
         end
       else puts "Reading from invalid Channel3 register: #{hex_str index.to_u16}".colorize.fore(:red); 0_u8 # todo: open bus
-      end.to_u8
+      end
     end
 
     def write_io(index : Int, value : UInt8) : Nil

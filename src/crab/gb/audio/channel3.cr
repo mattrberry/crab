@@ -39,19 +39,19 @@ module GB
       if @enabled && @dac_enabled
         dac_input = ((@wave_ram_sample_buffer >> (@wave_ram_position & 1 == 0 ? 4 : 0)) & 0x0F) >> @volume_code_shift
         dac_output = (dac_input / 7.5) - 1
-        dac_output
+        dac_output.to_f32
       else
-        0
-      end.to_f32
+        0_f32
+      end
     end
 
     def [](index : Int) : UInt8
       case index
-      when 0xFF1A then 0x7F | (@dac_enabled ? 0x80 : 0)
-      when 0xFF1B then 0xFF
-      when 0xFF1C then 0x9F | @volume_code << 5
-      when 0xFF1D then 0xFF
-      when 0xFF1E then 0xBF | (@length_enable ? 0x40 : 0)
+      when 0xFF1A then 0x7F_u8 | (@dac_enabled ? 0x80 : 0)
+      when 0xFF1B then 0xFF_u8
+      when 0xFF1C then 0x9F_u8 | @volume_code << 5
+      when 0xFF1D then 0xFF_u8
+      when 0xFF1E then 0xBF_u8 | (@length_enable ? 0x40 : 0)
       when WAVE_RAM_RANGE
         if @enabled
           @wave_ram[@wave_ram_position // 2]
@@ -59,7 +59,7 @@ module GB
           @wave_ram[index - WAVE_RAM_RANGE.begin]
         end
       else raise "Reading from invalid Channel3 register: #{hex_str index.to_u16}"
-      end.to_u8
+      end
     end
 
     def []=(index : Int, value : UInt8) : Nil
@@ -75,12 +75,12 @@ module GB
         @volume_code = (value & 0x60) >> 5
         # Internal values
         @volume_code_shift = case @volume_code
-                             when 0b00 then 4
-                             when 0b01 then 0
-                             when 0b10 then 1
-                             when 0b11 then 2
+                             when 0b00 then 4_u8
+                             when 0b01 then 0_u8
+                             when 0b10 then 1_u8
+                             when 0b11 then 2_u8
                              else           raise "Impossible volume code #{@volume_code}"
-                             end.to_u8
+                             end
       when 0xFF1D
         @frequency = (@frequency & 0x0700) | value
       when 0xFF1E

@@ -38,20 +38,20 @@ module GB
       if @enabled && @dac_enabled
         dac_input = (~@lfsr & 1) * @current_volume
         dac_output = (dac_input / 7.5) - 1
-        dac_output
+        dac_output.to_f32
       else
-        0
-      end.to_f32
+        0_f32
+      end
     end
 
     def [](index : Int) : UInt8
       case index
-      when 0xFF20 then 0xFF
+      when 0xFF20 then 0xFF_u8
       when 0xFF21 then read_NRx2
       when 0xFF22 then @clock_shift << 4 | @width_mode << 3 | @divisor_code
-      when 0xFF23 then 0xBF | (@length_enable ? 0x40 : 0)
+      when 0xFF23 then 0xBF_u8 | (@length_enable ? 0x40 : 0)
       else             raise "Reading from invalid Channel4 register: #{hex_str index.to_u16}"
-      end.to_u8
+      end
     end
 
     def []=(index : Int, value : UInt8) : Nil

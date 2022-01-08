@@ -62,10 +62,10 @@ module GB
       if @enabled && @dac_enabled
         dac_input = WAVE_DUTY[@duty][@wave_duty_position] * @current_volume
         dac_output = (dac_input / 7.5) - 1
-        dac_output
+        dac_output.to_f32
       else
-        0
-      end.to_f32
+        0_f32
+      end
     end
 
     # Calculate the new shadow frequency, disable channel if overflow 11 bits
@@ -80,13 +80,13 @@ module GB
 
     def [](index : Int) : UInt8
       case index
-      when 0xFF10 then 0x80 | @sweep_period << 4 | (@negate ? 0x08 : 0) | @shift
-      when 0xFF11 then 0x3F | @duty << 6
+      when 0xFF10 then 0x80_u8 | @sweep_period << 4 | (@negate ? 0x08 : 0) | @shift
+      when 0xFF11 then 0x3F_u8 | @duty << 6
       when 0xFF12 then read_NRx2
-      when 0xFF13 then 0xFF # write-only
-      when 0xFF14 then 0xBF | (@length_enable ? 0x40 : 0)
+      when 0xFF13 then 0xFF_u8 # write-only
+      when 0xFF14 then 0xBF_u8 | (@length_enable ? 0x40 : 0)
       else             raise "Reading from invalid Channel1 register: #{hex_str index.to_u16}"
-      end.to_u8
+      end
     end
 
     def []=(index : Int, value : UInt8) : Nil

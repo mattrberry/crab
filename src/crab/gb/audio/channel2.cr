@@ -38,20 +38,20 @@ module GB
       if @enabled && @dac_enabled
         dac_input = WAVE_DUTY[@duty][@wave_duty_position] * @current_volume
         dac_output = (dac_input / 7.5) - 1
-        dac_output
+        dac_output.to_f32
       else
-        0
-      end.to_f32
+        0_f32
+      end
     end
 
     def [](index : Int) : UInt8
       case index
-      when 0xFF16 then 0x3F | @duty << 6
+      when 0xFF16 then 0x3F_u8 | @duty << 6
       when 0xFF17 then read_NRx2
-      when 0xFF18 then 0xFF # write-only
-      when 0xFF19 then 0xBF | (@length_enable ? 0x40 : 0)
+      when 0xFF18 then 0xFF_u8 # write-only
+      when 0xFF19 then 0xBF_u8 | (@length_enable ? 0x40 : 0)
       else             raise "Reading from invalid Channel2 register: #{hex_str index.to_u16}"
-      end.to_u8
+      end
     end
 
     def []=(index : Int, value : UInt8) : Nil
