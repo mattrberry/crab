@@ -50,8 +50,6 @@ module GBA
       when 0x6C then 0xFF_u8 # write-only
       when 0x6D then 0xBF_u8 | (@length_enable ? 0x40 : 0)
       else           puts "Reading from invalid Channel2 register: #{hex_str index.to_u16}".colorize.fore(:red); 0_u8 # todo: open bus
-
-
       end
     end
 

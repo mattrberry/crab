@@ -50,8 +50,6 @@ module GBA
       when 0x7C then @clock_shift << 4 | @width_mode << 3 | @divisor_code
       when 0x7D then 0xBF | (@length_enable ? 0x40 : 0)
       else           puts "Reading from invalid Channel4 register: #{hex_str index.to_u16}".colorize.fore(:red); 0_u8 # todo: open bus
-
-
       end.to_u8
     end
 

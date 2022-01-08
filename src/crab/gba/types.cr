@@ -4,7 +4,7 @@ module GBA
   alias Word = UInt32
   alias Words = Slice(UInt32)
   record BGR16, value : UInt16 do # xBBBBBGGGGGRRRRR
-  # Create a new BGR16 struct with the given values. Trucates at 5 bits.
+    # Create a new BGR16 struct with the given values. Trucates at 5 bits.
     def initialize(blue : Number, green : Number, red : Number)
       @value = (blue <= 0x1F ? blue.to_u16 : 0x1F_u16) << 10 |
                (green <= 0x1F ? green.to_u16 : 0x1F_u16) << 5 |

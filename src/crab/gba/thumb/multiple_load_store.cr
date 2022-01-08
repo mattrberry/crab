@@ -7,7 +7,7 @@ module GBA
       address = @r[rb]
       unless list == 0
         final_addr = 4_u32 * list.popcount + address
-        if load # ldmia
+        if load               # ldmia
           @r[rb] = final_addr # thumb ldmia writes back immediately
           8.times do |idx|
             if bit?(list, idx)
