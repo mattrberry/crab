@@ -379,8 +379,6 @@ class SDLOpenGLImGuiFrontend < Frontend
   end
 
   private def setup_imgui : ImGui::ImGuiIO
-    LibImGuiBackends.gl3wInit
-
     ImGui.debug_check_version_and_data_layout(
       ImGui.get_version, *{
       sizeof(LibImGui::ImGuiIO), sizeof(LibImGui::ImGuiStyle), sizeof(ImGui::ImVec2),

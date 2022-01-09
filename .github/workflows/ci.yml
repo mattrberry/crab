@@ -26,7 +26,9 @@ jobs:
 
       - name: Install SDL2
         if: runner.os == 'Linux'
-        run: sudo apt-get -y install libsdl2-dev
+        run: |
+          sudo apt update
+          sudo apt-get -y install libsdl2-dev
       - name: Install SDL2
         if: runner.os == 'macOS'
         run: brew install sdl2

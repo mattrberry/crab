@@ -20,8 +20,10 @@ dependencies:
     github: nulldotpro/LibGL
   imgui:
     github: oprypin/crystal-imgui
+    commit: 3c57707 # lock a working v1.85 commit
   imgui-backends:
     github: mattrberry/crystal-imgui-backends
+    tag: v1.85
 
 development_dependencies:
   stumpy_png:
