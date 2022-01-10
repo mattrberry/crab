@@ -31,7 +31,7 @@ module ImGui
         display_size = ImGui.get_main_viewport.size
         width = Math.min(display_size.x - 40, 600)
         height = Math.min(display_size.y - 40, 16 * ImGui.get_text_line_height_with_spacing)
-        if ImGui.begin_list_box("", ImGui::ImVec2.new(width, height))
+        if ImGui.begin_list_box("##files", ImGui::ImVec2.new(width, height))
           @matched_entries.each_with_index do |entry, idx|
             next if entry[:hidden] && !@match_hidden
             next if entry[:file?] && !extensions.nil? && !extensions.includes?(entry[:extension])
