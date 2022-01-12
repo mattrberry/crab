@@ -42,7 +42,7 @@ unless acid_dir == ""
     puts "Acid #{"Fifo " if fifo}Tests"
     Dir.glob("#{acid_dir}/*acid2.gb*").sort.each do |path|
       test_name = get_test_name acid_dir, path
-      Process.run "bin/crab", [path, "--headless"] + (fifo ? ["--fifo"] : [] of String) do |process|
+      Process.run "bin/crab", [path, "--headless"] + (fifo ? ["--fifo"] : ["--scanline"] of String) do |process|
         kill process, after: 1
       end
       system %[touch out.png] # touch image in case something went wrong
@@ -84,7 +84,7 @@ unless mooneye_dir == ""
     next if path.includes?("util") || path.includes?("manual-only") || path.includes?("dmg") || path.includes?("mgb") || path.includes?("sgb")
     test_name = get_test_name mooneye_dir, path
     passed = false
-    Process.run("bin/crab", [path, "--headless"]) do |process|
+    Process.run("bin/crab", [path, "--headless", "--scanline"]) do |process|
       kill process, after: 10 # seconds
       result = process.output.gets 9
       process.terminate if process.exists?
