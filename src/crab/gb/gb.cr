@@ -15,7 +15,8 @@ require "./timer"
 module GB
   class GB < Emu
     getter bootrom : String?
-    getter cgb_ptr : Pointer(Bool) { pointerof(@cgb_enabled) }
+    @cgb_enabled : Bool
+    getter cgb_ptr : Pointer(Bool)
     getter cartridge : Cartridge
 
     getter! apu : APU
@@ -27,9 +28,10 @@ module GB
     getter! scheduler : Scheduler
     getter! timer : Timer
 
-    def initialize(@bootrom : String?, rom_path : String, @fifo : Bool, @headless : Bool)
+    def initialize(@bootrom : String?, rom_path : String, @fifo : Bool, @headless : Bool, @run_bios : Bool)
       @cartridge = Cartridge.new rom_path
-      @cgb_enabled = !(bootrom.nil? && @cartridge.cgb == Cartridge::CGB::NONE)
+      @cgb_enabled = (!bootrom.nil? && @run_bios) || @cartridge.cgb != Cartridge::CGB::NONE
+      @cgb_ptr = pointerof(@cgb_enabled)
     end
 
     def post_init : Nil
@@ -41,7 +43,8 @@ module GB
       @timer = Timer.new self
       @memory = Memory.new self
       @cpu = CPU.new self
-      skip_boot if @bootrom.nil?
+
+      skip_boot if @bootrom.nil? || !@run_bios
     end
 
     private def skip_boot : Nil

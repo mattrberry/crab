@@ -3,7 +3,7 @@ class HeadlessFrontend < Frontend
   @controller : Controller
 
   def initialize(@config : Config, bios : String?, rom : String?)
-    @controller = init_controller(bios, rom.not_nil!)
+    @controller = init_controller(bios, rom.not_nil!, @config.run_bios)
   end
 
   def run : NoReturn

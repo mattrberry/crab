@@ -107,6 +107,7 @@ module GB
     end
 
     def skip_boot : Nil
+      @bootrom = Bytes.new 0
       write_byte 0xFF10, 0x80_u8 # NR10
       write_byte 0xFF11, 0xBF_u8 # NR11
       write_byte 0xFF12, 0xF3_u8 # NR12

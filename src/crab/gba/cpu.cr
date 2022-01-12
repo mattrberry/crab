@@ -53,6 +53,10 @@ module GBA
     property halted = false
 
     def initialize(@gba : GBA)
+      clear_pipeline
+    end
+
+    def skip_bios : Nil
       @reg_banks[Mode::USR.bank][5] = @r[13] = 0x03007F00
       @reg_banks[Mode::IRQ.bank][5] = 0x03007FA0
       @reg_banks[Mode::SVC.bank][5] = 0x03007FE0

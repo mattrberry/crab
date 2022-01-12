@@ -1,5 +1,4 @@
 class GBController < Controller
-  @config : Config
   getter emu : GB::GB
   class_getter extensions : Array(String) = ["gb", "gbc"]
   class_getter vertex_shader : String = "identity.vert"
@@ -8,8 +7,13 @@ class GBController < Controller
   getter width : Int32 = 160
   getter height : Int32 = 144
 
-  def initialize(@config : Config, bios : String?, rom : String)
-    @emu = GB::GB.new(bios || @config.gbc.bios, rom, true, false)
+  def initialize(config : Config, bios : String?, rom : String)
+    fifo = if config.args.fifo.nil?
+             config.gbc.fifo
+           else
+             config.args.fifo.not_nil!
+           end
+    @emu = GB::GB.new(bios || config.gbc.bios, rom, fifo, config.args.headless, config.run_bios)
     @emu.post_init
   end
 

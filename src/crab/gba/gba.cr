@@ -30,7 +30,7 @@ module GBA
     getter! dma : DMA
     getter! debugger : Debugger
 
-    def initialize(@bios_path : String, @rom_path : String)
+    def initialize(@bios_path : String, @rom_path : String, @run_bios : Bool)
       @scheduler = Scheduler.new
       @cartridge = Cartridge.new @rom_path
       scheduler.schedule 280896, ->handle_saves
@@ -48,6 +48,8 @@ module GBA
       @apu = APU.new self
       @dma = DMA.new self
       @debugger = Debugger.new self
+
+      cpu.skip_bios unless @run_bios
     end
 
     def run_until_frame : Nil

@@ -23,8 +23,18 @@ class Config
     LibSDL::Keycode::R         => Input::R,
   }
   property recents : Array(String) = [] of String
+  property run_bios : Bool = false
   property gba : GBA = GBA.new
   property gbc : GBC = GBC.new
+
+  private class Args
+    property headless : Bool = false
+    property run_bios : Bool?
+    property fifo : Bool?
+  end
+
+  @[YAML::Field(ignore: true)]
+  getter args = Args.new
 
   def self.new : Config
     Config.from_yaml(File.read(CONFIG_FILE))
@@ -32,6 +42,14 @@ class Config
 
   def commit : Nil
     File.write(CONFIG_FILE, to_yaml)
+  end
+
+  def run_bios : Bool
+    unless (run_bios = args.run_bios).nil?
+      run_bios
+    else
+      @run_bios
+    end
   end
 
   class GBA
@@ -45,6 +63,7 @@ class Config
   class GBC
     include YAML::Serializable
     property bios : String?
+    property fifo : Bool = false
 
     def initialize
     end

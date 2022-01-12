@@ -1,7 +1,6 @@
 abstract class Frontend
-  def self.new(bios : String?, rom : String?, headless = false)
-    config = Config.new
-    if headless
+  def self.new(config : Config, bios : String?, rom : String?)
+    if config.args.headless
       HeadlessFrontend.new(config, bios, rom)
     else
       SDLOpenGLImGuiFrontend.new(config, bios, rom)
@@ -10,7 +9,7 @@ abstract class Frontend
 
   abstract def run : NoReturn
 
-  private def init_controller(bios : String?, rom : String?) : Controller
+  private def init_controller(bios : String?, rom : String?, skip_bios : Bool) : Controller
     return StubbedController.new unless rom
     extension = rom.rpartition('.')[2]
     if GBController.extensions.includes? extension

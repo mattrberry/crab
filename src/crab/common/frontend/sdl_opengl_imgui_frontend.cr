@@ -44,7 +44,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     LibSDL.joystick_open 0
     at_exit { SDL.quit }
 
-    @controller = init_controller(bios, rom)
+    @controller = init_controller(bios, rom, @config.run_bios)
     @window = SDL::Window.new(
       window_title(59.7),
       @controller.window_width * @scale,
@@ -118,7 +118,7 @@ class SDLOpenGLImGuiFrontend < Frontend
 
   private def load_new_rom(rom : String?) : Nil
     LibSDL.close_audio(1)
-    @controller = init_controller(nil, rom)
+    @controller = init_controller(nil, rom, @config.run_bios)
     @file_explorer.clear_selection
 
     @config.recents.delete(rom)

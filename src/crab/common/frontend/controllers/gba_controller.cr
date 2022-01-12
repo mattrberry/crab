@@ -1,5 +1,4 @@
 class GBAController < Controller
-  @config : Config
   getter emu : GBA::GBA
   class_getter extensions : Array(String) = ["gba"]
   class_getter vertex_shader : String = "identity.vert"
@@ -11,8 +10,8 @@ class GBAController < Controller
   @debug_window = false
   @scheduler_window = false
 
-  def initialize(@config : Config, bios : String?, rom : String)
-    @emu = GBA::GBA.new(bios || @config.gba.bios, rom)
+  def initialize(config : Config, bios : String?, rom : String)
+    @emu = GBA::GBA.new(bios || config.gba.bios, rom, config.run_bios)
     @emu.post_init
   end
 
