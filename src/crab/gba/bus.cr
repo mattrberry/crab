@@ -1,5 +1,12 @@
 module GBA
   class Bus
+    # Timings for rom are estimated for game compatibility.
+    ACCESS_TIMING_TABLE = [
+      [1, 1, 3, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2], # 8-bit and 16-bit accesses
+      [1, 1, 6, 1, 1, 2, 2, 1, 4, 4, 4, 4, 4, 4, 4, 4], # 32-bit accesses
+    ]
+    property cycles = 0
+
     getter bios = Bytes.new 0x4000
     getter wram_board = Bytes.new 0x40000
     getter wram_chip = Bytes.new 0x08000
@@ -9,6 +16,65 @@ module GBA
     end
 
     def [](index : Int) : Byte
+      @cycles += ACCESS_TIMING_TABLE[0][page(index)]
+      read_byte_internal(index)
+    end
+
+    def read_half(index : Int) : HalfWord
+      @cycles += ACCESS_TIMING_TABLE[0][page(index)]
+      read_half_internal(index)
+    end
+
+    def read_word(index : Int) : Word
+      @cycles += ACCESS_TIMING_TABLE[1][page(index)]
+      read_word_internal(index)
+    end
+
+    def []=(index : Int, value : Byte) : Nil
+      @cycles += ACCESS_TIMING_TABLE[0][page(index)]
+      write_byte_internal(index, value)
+    end
+
+    def []=(index : Int, value : HalfWord) : Nil
+      @cycles += ACCESS_TIMING_TABLE[0][page(index)]
+      write_half_internal(index, value)
+    end
+
+    def []=(index : Int, value : Word) : Nil
+      @cycles += ACCESS_TIMING_TABLE[1][page(index)]
+      write_word_internal(index, value)
+    end
+
+    def read_half_rotate(index : Int) : Word
+      half = read_half(index).to_u32!
+      bits = (index & 1) << 3
+      half >> bits | half << (32 - bits)
+    end
+
+    # On ARM7 aka ARMv4 aka NDS7/GBA:
+    #   LDRH Rd,[odd]   -->  LDRH Rd,[odd-1] ROR 8  ;read to bit0-7 and bit24-31
+    #   LDRSH Rd,[odd]  -->  LDRSB Rd,[odd]         ;sign-expand BYTE value
+    def read_half_signed(index : Int) : Word
+      if bit?(index, 0)
+        self[index].to_i8!.to_u32!
+      else
+        read_half(index).to_i16!.to_u32!
+      end
+    end
+
+    def read_word_rotate(index : Int) : Word
+      word = read_word index
+      bits = (index & 3) << 3
+      word >> bits | word << (32 - bits)
+    end
+
+    @[AlwaysInline]
+    private def page(index : Int) : Int
+      bits(index, 24..27)
+    end
+
+    @[AlwaysInline]
+    private def read_byte_internal(index : Int) : Byte
       case bits(index, 24..27)
       when 0x0 then @bios[index & 0x3FFF]
       when 0x1 then 0_u8 # todo: open bus
@@ -35,14 +101,15 @@ module GBA
       end
     end
 
-    def read_half(index : Int) : HalfWord
+    @[AlwaysInline]
+    private def read_half_internal(index : Int) : HalfWord
       index &= ~1
       case bits(index, 24..27)
       when 0x0 then (@bios.to_unsafe + (index & 0x3FFF)).as(HalfWord*).value
       when 0x1 then 0_u16 # todo: open bus
       when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(HalfWord*).value
       when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(HalfWord*).value
-      when 0x4 then read_half_slow(index)
+      when 0x4 then read_half_internal_slow(index)
       when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(HalfWord*).value
       when 0x6
         address = 0x1FFFF_u32 & index
@@ -63,31 +130,15 @@ module GBA
       end
     end
 
-    def read_half_rotate(index : Int) : Word
-      half = read_half(index).to_u32!
-      bits = (index & 1) << 3
-      half >> bits | half << (32 - bits)
-    end
-
-    # On ARM7 aka ARMv4 aka NDS7/GBA:
-    #   LDRH Rd,[odd]   -->  LDRH Rd,[odd-1] ROR 8  ;read to bit0-7 and bit24-31
-    #   LDRSH Rd,[odd]  -->  LDRSB Rd,[odd]         ;sign-expand BYTE value
-    def read_half_signed(index : Int) : Word
-      if bit?(index, 0)
-        self[index].to_i8!.to_u32!
-      else
-        read_half(index).to_i16!.to_u32!
-      end
-    end
-
-    def read_word(index : Int) : Word
+    @[AlwaysInline]
+    private def read_word_internal(index : Int) : Word
       index &= ~3
       case bits(index, 24..27)
       when 0x0 then (@bios.to_unsafe + (index & 0x3FFF)).as(Word*).value
       when 0x1 then 0_u32 # todo: open bus
       when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(Word*).value
       when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(Word*).value
-      when 0x4 then read_word_slow(index)
+      when 0x4 then read_word_internal_slow(index)
       when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(Word*).value
       when 0x6
         address = 0x1FFFF_u32 & index
@@ -108,13 +159,8 @@ module GBA
       end
     end
 
-    def read_word_rotate(index : Int) : Word
-      word = read_word index
-      bits = (index & 3) << 3
-      word >> bits | word << (32 - bits)
-    end
-
-    def []=(index : Int, value : Byte) : Nil
+    @[AlwaysInline]
+    private def write_byte_internal(index : Int, value : Byte) : Nil
       return if bits(index, 28..31) > 0
       @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
       case bits(index, 24..27)
@@ -131,14 +177,15 @@ module GBA
       end
     end
 
-    def []=(index : Int, value : HalfWord) : Nil
+    @[AlwaysInline]
+    private def write_half_internal(index : Int, value : HalfWord) : Nil
       return if bits(index, 28..31) > 0
       index &= ~1
       @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
       case bits(index, 24..27)
       when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(HalfWord*).value = value
       when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(HalfWord*).value = value
-      when 0x4 then write_half_slow(index, value)
+      when 0x4 then write_half_internal_slow(index, value)
       when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(HalfWord*).value = value
       when 0x6
         address = 0x1FFFF_u32 & index
@@ -146,19 +193,20 @@ module GBA
         (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = value
       when 0x7      then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(HalfWord*).value = value
       when 0xD      then @gba.storage[index] = value.to_u8! if @gba.storage.eeprom? index
-      when 0xE, 0xF then write_half_slow(index, value)
+      when 0xE, 0xF then write_half_internal_slow(index, value)
       else               log "Unmapped write: #{hex_str index.to_u32}"
       end
     end
 
-    def []=(index : Int, value : Word) : Nil
+    @[AlwaysInline]
+    private def write_word_internal(index : Int, value : Word) : Nil
       return if bits(index, 28..31) > 0
       index &= ~3
       @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
       case bits(index, 24..27)
       when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(Word*).value = value
       when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(Word*).value = value
-      when 0x4 then write_word_slow(index, value)
+      when 0x4 then write_word_internal_slow(index, value)
       when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FF)).as(Word*).value = value
       when 0x6
         address = 0x1FFFF_u32 & index
@@ -166,33 +214,37 @@ module GBA
         (@gba.ppu.vram.to_unsafe + address).as(Word*).value = value
       when 0x7      then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(Word*).value = value
       when 0xD      then @gba.storage[index] = value.to_u8! if @gba.storage.eeprom? index
-      when 0xE, 0xF then write_word_slow(index, value)
+      when 0xE, 0xF then write_word_internal_slow(index, value)
       else               log "Unmapped write: #{hex_str index.to_u32}"
       end
     end
 
-    private def read_half_slow(index : Int) : HalfWord
-      self[index].to_u16! |
-        (self[index + 1].to_u16! << 8)
+    @[AlwaysInline]
+    private def read_half_internal_slow(index : Int) : HalfWord
+      read_byte_internal(index).to_u16! |
+        (read_byte_internal(index + 1).to_u16! << 8)
     end
 
-    private def read_word_slow(index : Int) : Word
-      self[index].to_u32! |
-        (self[index + 1].to_u32! << 8) |
-        (self[index + 2].to_u32! << 16) |
-        (self[index + 3].to_u32! << 24)
+    @[AlwaysInline]
+    private def read_word_internal_slow(index : Int) : Word
+      read_byte_internal(index).to_u32! |
+        (read_byte_internal(index + 1).to_u32! << 8) |
+        (read_byte_internal(index + 2).to_u32! << 16) |
+        (read_byte_internal(index + 3).to_u32! << 24)
     end
 
-    private def write_half_slow(index : Int, value : HalfWord) : Nil
-      self[index] = value.to_u8!
-      self[index + 1] = (value >> 8).to_u8!
+    @[AlwaysInline]
+    private def write_half_internal_slow(index : Int, value : HalfWord) : Nil
+      write_byte_internal(index, value.to_u8!)
+      write_byte_internal(index + 1, (value >> 8).to_u8!)
     end
 
-    private def write_word_slow(index : Int, value : Word) : Nil
-      self[index] = value.to_u8!
-      self[index + 1] = (value >> 8).to_u8!
-      self[index + 2] = (value >> 16).to_u8!
-      self[index + 3] = (value >> 24).to_u8!
+    @[AlwaysInline]
+    private def write_word_internal_slow(index : Int, value : Word) : Nil
+      write_byte_internal(index, value.to_u8!)
+      write_byte_internal(index + 1, (value >> 8).to_u8!)
+      write_byte_internal(index + 2, (value >> 16).to_u8!)
+      write_byte_internal(index + 3, (value >> 24).to_u8!)
     end
   end
 end
