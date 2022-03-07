@@ -23,7 +23,7 @@ dependencies:
     tag: v1.86
   imgui-backends:
     github: mattrberry/crystal-imgui-backends
-    tag: v1.86
+    commit: c77bf84
 
 development_dependencies:
   stumpy_png:

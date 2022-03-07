@@ -6,4 +6,6 @@
 /shard.lock
 cimgui.so
 cimgui.dylib
+libcimgui.so
+libcimgui.dynlib
 imgui.ini
