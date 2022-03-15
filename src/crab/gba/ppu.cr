@@ -62,7 +62,7 @@ module GBA
       @vcount = (@vcount + 1) % 228
       @dispstat.vcounter = @vcount == @dispstat.vcount_setting
       @gba.interrupts.reg_if.vcounter = true if @dispstat.vcounter_irq_enable && @dispstat.vcounter
-      if @vcount == 0
+      if @vcount == 227
         @dispstat.vblank = false
       elsif @vcount == 160
         @dispstat.vblank = true
