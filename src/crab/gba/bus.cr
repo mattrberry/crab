@@ -169,8 +169,10 @@ module GBA
       when 0x4 then @gba.mmio[index] = value
       when 0x5 then (@gba.ppu.pram.to_unsafe + (index & 0x3FE)).as(HalfWord*).value = 0x0101_u16 * value
       when 0x6
-        address = 0x1FFFE_u32 & index # todo ignored range is different when in bitmap mode
-        (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = 0x0101_u16 * value if address <= 0x0FFFF
+        limit = @gba.ppu.bitmap? ? 0x13FFF : 0x0FFFF # (u8 write only) upper limit depends on display mode
+        address = 0x1FFFE_u32 & index                # (u8 write only) halfword-aligned
+        address -= 0x8000 if address > 0x17FFF       # todo: determine if this happens before or after the limit check
+        (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = 0x0101_u16 * value if address <= limit
       when 0xD      then @gba.storage[index] = value if @gba.storage.eeprom? index
       when 0xE, 0xF then @gba.storage[index] = value
       else               log "Unmapped write: #{hex_str index.to_u32}"

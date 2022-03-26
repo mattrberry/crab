@@ -35,6 +35,10 @@ module GBA
       start_line
     end
 
+    def bitmap? : Bool
+      @dispcnt.bg_mode >= 3
+    end
+
     def start_line : Nil
       @gba.scheduler.schedule 960, ->start_hblank
     end
