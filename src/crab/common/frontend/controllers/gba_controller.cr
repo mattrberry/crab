@@ -41,18 +41,19 @@ class GBAController < Controller
       cycles = @emu.scheduler.cycles
       ImGui.begin("Scheduler", pointerof(@scheduler_window))
       ImGui.text("Total cycles: #{cycles}")
-      ImGui.begin_table("Table", 2)
-      ImGui.table_setup_column("Cycles")
-      ImGui.table_setup_column("Type")
-      ImGui.table_headers_row
-      @emu.scheduler.events.each do |event|
-        ImGui.table_next_row
-        ImGui.table_set_column_index 0
-        ImGui.text_unformatted (event.cycles - cycles).to_s
-        ImGui.table_set_column_index 1
-        ImGui.text_unformatted event.type.to_s
+      if ImGui.begin_table("Table", 2)
+        ImGui.table_setup_column("Cycles")
+        ImGui.table_setup_column("Type")
+        ImGui.table_headers_row
+        @emu.scheduler.events.each do |event|
+          ImGui.table_next_row
+          ImGui.table_set_column_index 0
+          ImGui.text_unformatted (event.cycles - cycles).to_s
+          ImGui.table_set_column_index 1
+          ImGui.text_unformatted event.type.to_s
+        end
+        ImGui.end_table
       end
-      ImGui.end_table
       ImGui.end
     end
   end
