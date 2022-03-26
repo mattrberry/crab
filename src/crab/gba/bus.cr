@@ -161,8 +161,8 @@ module GBA
 
     @[AlwaysInline]
     private def write_byte_internal(index : Int, value : Byte) : Nil
-      return if bits(index, 28..31) > 0
-      @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
+      return if unlikely(bits(index, 28..31) > 0)
+      @gba.cpu.fill_pipeline if unlikely(index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4) # detect writes near pc
       case bits(index, 24..27)
       when 0x2 then @wram_board[index & 0x3FFFF] = value
       when 0x3 then @wram_chip[index & 0x7FFF] = value
@@ -181,9 +181,9 @@ module GBA
 
     @[AlwaysInline]
     private def write_half_internal(index : Int, value : HalfWord) : Nil
-      return if bits(index, 28..31) > 0
+      return if unlikely(bits(index, 28..31) > 0)
       index &= ~1
-      @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
+      @gba.cpu.fill_pipeline if unlikely(index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4) # detect writes near pc
       case bits(index, 24..27)
       when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(HalfWord*).value = value
       when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(HalfWord*).value = value
@@ -202,9 +202,9 @@ module GBA
 
     @[AlwaysInline]
     private def write_word_internal(index : Int, value : Word) : Nil
-      return if bits(index, 28..31) > 0
+      return if unlikely(bits(index, 28..31) > 0)
       index &= ~3
-      @gba.cpu.fill_pipeline if index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4 # detect writes near pc
+      @gba.cpu.fill_pipeline if unlikely(index <= @gba.cpu.r[15] && index >= @gba.cpu.r[15] &- 4) # detect writes near pc
       case bits(index, 24..27)
       when 0x2 then (@wram_board.to_unsafe + (index & 0x3FFFF)).as(Word*).value = value
       when 0x3 then (@wram_chip.to_unsafe + (index & 0x7FFF)).as(Word*).value = value

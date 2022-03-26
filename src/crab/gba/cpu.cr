@@ -119,7 +119,7 @@ module GBA
     end
 
     def read_instr : Word
-      if @pipeline.size == 0
+      if likely(@pipeline.size == 0)
         if @cpsr.thumb
           @r[15] &= ~1
           @gba.bus.read_half(@r[15] &- 4).to_u32!
@@ -133,7 +133,7 @@ module GBA
     end
 
     def tick : Nil
-      unless @halted
+      unless unlikely(@halted)
         instr = read_instr
         {% if flag? :trace %} print_state instr {% end %}
         if @cpsr.thumb
@@ -150,6 +150,7 @@ module GBA
 
     def check_cond(cond : Word) : Bool
       case cond
+      when 0xE then true
       when 0x0 then @cpsr.zero
       when 0x1 then !@cpsr.zero
       when 0x2 then @cpsr.carry
@@ -164,7 +165,6 @@ module GBA
       when 0xB then @cpsr.negative != @cpsr.overflow
       when 0xC then !@cpsr.zero && @cpsr.negative == @cpsr.overflow
       when 0xD then @cpsr.zero || @cpsr.negative != @cpsr.overflow
-      when 0xE then true
       else          raise "Cond 0xF is reserved"
       end
     end
@@ -180,7 +180,7 @@ module GBA
     @[AlwaysInline]
     def set_reg(reg : Int, value : Int) : UInt32
       @r[reg] = value.to_u32!
-      clear_pipeline if reg == 15
+      clear_pipeline if unlikely(reg == 15)
       value.to_u32!
     end
 

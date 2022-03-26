@@ -81,3 +81,15 @@ macro log(value, newline = true)
     {% end %}
   {% end %}
 end
+
+lib LibIntrinsics
+  fun expect_i1 = "llvm.expect.i1"(value : Bool, expected_value : Bool) : Bool
+end
+
+def likely(value : Bool)
+  LibIntrinsics.expect_i1(value, true)
+end
+
+def unlikely(value : Bool)
+  LibIntrinsics.expect_i1(value, false)
+end
