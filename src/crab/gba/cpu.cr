@@ -64,7 +64,7 @@ module GBA
       clear_pipeline
     end
 
-    def switch_mode(new_mode : Mode, caller = __FILE__) : Nil
+    def switch_mode(new_mode : Mode) : Nil
       old_mode = Mode.from_value @cpsr.mode
       return if new_mode == old_mode
       new_bank = new_mode.bank
