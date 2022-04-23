@@ -20,7 +20,7 @@ module GBA
     end
 
     def [](index : Int) : Byte
-      io_addr = 0x0FFF_u16 & index
+      io_addr = 0xFFFFFF_u32 & index
       if io_addr <= 0x05F
         @gba.ppu.read_io io_addr
       elsif io_addr <= 0xAF
@@ -38,17 +38,13 @@ module GBA
         @gba.interrupts.read_io io_addr
       elsif 0x204 <= io_addr <= 0x205
         (@waitcnt.value >> (8 * (io_addr & 1))).to_u8!
-      elsif not_used? io_addr
-        0xFF_u8 # todo what is returned here?
       else
-        # todo: oob reads
-        puts "Unmapped MMIO read: #{hex_str index.to_u32}".colorize(:red)
-        0_u8
+        0_u8 # todo: oob reads
       end
     end
 
     def []=(index : Int, value : Byte) : Nil
-      io_addr = 0x0FFF_u16 & index
+      io_addr = 0xFFFFFF_u32 & index
       if io_addr <= 0x05F
         @gba.ppu.write_io io_addr, value
       elsif io_addr <= 0xAF
@@ -73,19 +69,7 @@ module GBA
         else
           @gba.cpu.halted = true
         end
-      elsif not_used? io_addr
-      else
-        puts "Unmapped MMIO write ~ addr:#{hex_str index.to_u32}, val:#{hex_str value}".colorize(:yellow)
       end
-    end
-
-    def not_used?(io_addr : Int) : Bool
-      (0x0E0..0x0FF).includes?(io_addr) || (0x110..0x11F).includes?(io_addr) ||
-        (0x12C..0x12F).includes?(io_addr) || (0x138..0x13F).includes?(io_addr) ||
-        (0x142..0x14F).includes?(io_addr) || (0x15A..0x1FF).includes?(io_addr) ||
-        (0x206..0x207).includes?(io_addr) || (0x20A..0x2FF).includes?(io_addr) ||
-        (0x302..0x40F).includes?(io_addr) || (0x441..0x7FF).includes?(io_addr) ||
-        (0x804..0xFFFF).includes?(io_addr)
     end
   end
 end
