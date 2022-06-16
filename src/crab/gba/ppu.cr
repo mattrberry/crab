@@ -221,7 +221,7 @@ module GBA
     def render_sprites : Nil
       return unless @dispcnt.screen_display_obj
       base = 0x10000_u32
-      sprites = Slice(Sprite).new(@oam.to_unsafe.as(Sprite*), 128)
+      sprites = @oam.unsafe_slice_of(Sprite)
       sprites.each do |sprite|
         next if sprite.obj_shape == 3      # prohibited
         next if sprite.affine_mode == 0b10 # sprite disabled
