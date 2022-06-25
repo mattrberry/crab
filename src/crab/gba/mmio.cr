@@ -33,7 +33,11 @@ module GBA
         @gba.keypad.read_io io_addr
       elsif 0x120 <= io_addr <= 0x12F || 0x134 <= io_addr <= 0x1FF
         # todo: serial
-        0_u8
+        if io_addr == 0x135
+          0x80_u8
+        else
+          0_u8
+        end
       elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
         @gba.interrupts.read_io io_addr
       elsif 0x204 <= io_addr <= 0x205
