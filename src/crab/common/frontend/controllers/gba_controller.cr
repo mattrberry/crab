@@ -59,26 +59,45 @@ class GBAController < Controller
   end
 
   private def render_palettes_tab_item : Nil
-    ImGui.push_style_var(ImGui::ImGuiStyleVar::ItemSpacing, ImGui::ImVec2.new(0, 0))
     pram = @emu.ppu.pram.to_unsafe.as(UInt16*)
     flags = ImGui::ImGuiColorEditFlags::NoAlpha | ImGui::ImGuiColorEditFlags::NoPicker |
             ImGui::ImGuiColorEditFlags::NoOptions | ImGui::ImGuiColorEditFlags::NoInputs |
             ImGui::ImGuiColorEditFlags::NoLabel | ImGui::ImGuiColorEditFlags::NoSidePreview |
             ImGui::ImGuiColorEditFlags::NoDragDrop | ImGui::ImGuiColorEditFlags::NoBorder
-    2.times do |idx|
-      ImGui.begin_group
-      16.times do |palette_row|
-        16.times do |palette_col|
-          color = (pram + 0x100 * idx)[palette_row * 16 + palette_col]
-          rgb = ImGui::ImVec4.new((color & 0x1F) / 0x1F, (color >> 5 & 0x1F) / 0x1F, (color >> 10 & 0x1F) / 0x1F, 1)
-          ImGui.color_button("", rgb, flags, ImGui::ImVec2.new(10, 10))
-          ImGui.same_line unless palette_col == 15
+    with_style(ImGui::ImGuiStyleVar::ItemSpacing, ImGui::ImVec2.new(0, 0)) do
+      2.times do |idx|
+        group do
+          16.times do |palette_row|
+            16.times do |palette_col|
+              color = (pram + 0x100 * idx)[palette_row * 16 + palette_col]
+              rgb = ImGui::ImVec4.new((color & 0x1F) / 0x1F, (color >> 5 & 0x1F) / 0x1F, (color >> 10 & 0x1F) / 0x1F, 1)
+              ImGui.color_button("", rgb, flags, ImGui::ImVec2.new(10, 10))
+              ImGui.same_line unless palette_col == 15
+            end
+          end
         end
+        ImGui.same_line(spacing: 4_f32) if idx == 0
       end
-      ImGui.end_group
-      ImGui.same_line(spacing: 4_f32) if idx == 0
     end
-    ImGui.pop_style_var
     ImGui.end_tab_item
+  end
+
+  def group(&) : Nil
+    ImGui.begin_group
+    yield
+    ImGui.end_group
+  end
+
+  def child(*args, **kwargs, &) : Nil
+    if ImGui.begin_child(*args, **kwargs)
+      yield
+    end
+    ImGui.end_child
+  end
+
+  def with_style(*args, **kwargs, &) : Nil
+    ImGui.push_style_var(*args, **kwargs)
+    yield
+    ImGui.pop_style_var
   end
 end
