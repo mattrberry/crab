@@ -2,8 +2,8 @@ module GBA
   class Channel4 < VolumeEnvelopeChannel
     RANGE = 0x78..0x7F
 
-    def ===(value) : Bool
-      value.is_a?(Int) && RANGE.includes?(value)
+    def ===(other) : Bool
+      other.is_a?(Int) && RANGE.includes?(other)
     end
 
     @lfsr : UInt16 = 0x0000

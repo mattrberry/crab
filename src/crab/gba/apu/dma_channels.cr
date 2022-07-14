@@ -8,8 +8,8 @@ module GBA
     @timers : Array(Proc(UInt16))
     @latches = Array(Int16).new 2, 0
 
-    def ===(value) : Bool
-      value.is_a?(Int) && RANGE.includes?(value)
+    def ===(other) : Bool
+      other.is_a?(Int) && RANGE.includes?(other)
     end
 
     def initialize(@gba : GBA, @control : Reg::SOUNDCNT_H)

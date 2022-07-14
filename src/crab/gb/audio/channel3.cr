@@ -3,8 +3,8 @@ module GB
     RANGE          = 0xFF1A..0xFF1E
     WAVE_RAM_RANGE = 0xFF30..0xFF3F
 
-    def ===(value) : Bool
-      value.is_a?(Int) && RANGE.includes?(value) || WAVE_RAM_RANGE.includes?(value)
+    def ===(other) : Bool
+      other.is_a?(Int) && RANGE.includes?(other) || WAVE_RAM_RANGE.includes?(other)
     end
 
     @wave_ram = Bytes.new(WAVE_RAM_RANGE.size) { |idx| idx & 1 == 0 ? 0x00_u8 : 0xFF_u8 }

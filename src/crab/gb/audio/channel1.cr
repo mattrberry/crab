@@ -9,8 +9,8 @@ module GB
 
     RANGE = 0xFF10..0xFF14
 
-    def ===(value) : Bool
-      value.is_a?(Int) && RANGE.includes?(value)
+    def ===(other) : Bool
+      other.is_a?(Int) && RANGE.includes?(other)
     end
 
     @wave_duty_position = 0
