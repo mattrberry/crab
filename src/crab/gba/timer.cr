@@ -51,7 +51,7 @@ module GBA
       @cycle_enabled[num] = @gba.scheduler.cycles
     end
 
-    def read_io(io_addr : Int) : UInt8
+    def [](io_addr : Int) : UInt8
       num = (io_addr & 0xF) // 4
       value = if bit?(io_addr, 1)
                 @tmcnt[num].value
@@ -62,7 +62,7 @@ module GBA
       value.to_u8!
     end
 
-    def write_io(io_addr : Int, value : UInt8) : Nil
+    def []=(io_addr : Int, value : UInt8) : Nil
       num = (io_addr & 0xF) // 4
       high = bit?(io_addr, 0)
       mask = 0xFF00_u16

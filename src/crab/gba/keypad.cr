@@ -36,7 +36,7 @@ module GBA
     def initialize(@gba : GBA)
     end
 
-    def read_io(io_addr : Int) : Byte
+    def [](io_addr : Int) : Byte
       case io_addr
       when 0x130 then 0xFF_u8 & @keyinput.value
       when 0x131 then 0xFF_u8 & @keyinput.value >> 8
@@ -46,7 +46,7 @@ module GBA
       end
     end
 
-    def write_io(io_addr : Int, value : Byte) : Nil
+    def []=(io_addr : Int, value : Byte) : Nil
       case io_addr
       when 0x130 then nil
       when 0x131 then nil

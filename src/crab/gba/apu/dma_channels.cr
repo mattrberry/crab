@@ -19,11 +19,11 @@ module GBA
       ]
     end
 
-    def read_io(index : Int) : UInt8
+    def [](index : Int) : UInt8
       0_u8
     end
 
-    def write_io(index : Int, value : Byte) : Nil
+    def []=(index : Int, value : Byte) : Nil
       channel = bit?(index, 2).to_unsafe
       if @sizes[channel] < 32
         @fifos[channel][(@positions[channel] + @sizes[channel]) % 32] = value.to_i8!

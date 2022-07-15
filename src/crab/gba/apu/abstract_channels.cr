@@ -42,8 +42,8 @@ module GBA
 
     abstract def get_amplitude : Int16
 
-    abstract def read_io(index : Int) : UInt8
-    abstract def write_io(index : Int, value : UInt8) : Nil
+    abstract def [](index : Int) : UInt8
+    abstract def []=(index : Int, value : UInt8) : Nil
   end
 
   abstract class VolumeEnvelopeChannel < SoundChannel

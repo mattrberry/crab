@@ -1,5 +1,5 @@
-require "./audio/abstract_channels" # so that channels don't need to all import
-require "./audio/*"
+require "./apu/abstract_channels" # so that channels don't need to all import
+require "./apu/*"
 
 module GB
   class APU

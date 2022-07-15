@@ -77,7 +77,7 @@ module GBA
       calculated
     end
 
-    def read_io(index : Int) : UInt8
+    def [](index : Int) : UInt8
       case index
       when 0x60 then 0x80_u8 | @sweep_period << 4 | (@negate ? 0x08 : 0) | @shift
       when 0x62 then 0x3F_u8 | @duty << 6
@@ -88,7 +88,7 @@ module GBA
       end
     end
 
-    def write_io(index : Int, value : UInt8) : Nil
+    def []=(index : Int, value : UInt8) : Nil
       case index
       when 0x60
         @sweep_period = (value & 0x70) >> 4

@@ -385,7 +385,7 @@ module GBA
       end
     end
 
-    def read_io(io_addr : Int) : Byte
+    def [](io_addr : Int) : Byte
       case io_addr
       when 0x000..0x001 then @dispcnt.read_byte(io_addr & 1)
       when 0x002..0x003 then 0_u8 # todo green swap
@@ -422,7 +422,7 @@ module GBA
       end
     end
 
-    def write_io(io_addr : Int, value : Byte) : Nil
+    def []=(io_addr : Int, value : Byte) : Nil
       case io_addr
       when 0x000..0x001 then @dispcnt.write_byte(io_addr & 1, value)
       when 0x002..0x003 # undocumented - green swap

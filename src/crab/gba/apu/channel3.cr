@@ -49,7 +49,7 @@ module GBA
       end
     end
 
-    def read_io(index : Int) : UInt8
+    def [](index : Int) : UInt8
       case index
       when 0x70 then 0x7F_u8 | (@dac_enabled ? 0x80 : 0)
       when 0x72 then 0xFF_u8
@@ -66,7 +66,7 @@ module GBA
       end
     end
 
-    def write_io(index : Int, value : UInt8) : Nil
+    def []=(index : Int, value : UInt8) : Nil
       case index
       when 0x70
         @dac_enabled = value & 0x80 > 0

@@ -136,13 +136,13 @@ module GBA
       @dma_channels.timer_overflow timer
     end
 
-    def read_io(io_addr : Int) : UInt8
+    def [](io_addr : Int) : UInt8
       case io_addr
-      when @channel1     then @channel1.read_io io_addr
-      when @channel2     then @channel2.read_io io_addr
-      when @channel3     then @channel3.read_io io_addr
-      when @channel4     then @channel4.read_io io_addr
-      when @dma_channels then @dma_channels.read_io io_addr
+      when @channel1     then @channel1[io_addr]
+      when @channel2     then @channel2[io_addr]
+      when @channel3     then @channel3[io_addr]
+      when @channel4     then @channel4[io_addr]
+      when @dma_channels then @dma_channels[io_addr]
       when 0x80          then @soundcnt_l.value.to_u8!
       when 0x81          then (@soundcnt_l.value >> 8).to_u8!
       when 0x82          then @soundcnt_h.value.to_u8!
@@ -162,21 +162,21 @@ module GBA
     end
 
     # write to apu memory
-    def write_io(io_addr : Int, value : UInt8) : Nil
+    def []=(io_addr : Int, value : UInt8) : Nil
       return unless @sound_enabled || 0x82 <= io_addr <= 0x89 || Channel3::WAVE_RAM_RANGE.includes?(io_addr)
       case io_addr
-      when @channel1     then @channel1.write_io io_addr, value
-      when @channel2     then @channel2.write_io io_addr, value
-      when @channel3     then @channel3.write_io io_addr, value
-      when @channel4     then @channel4.write_io io_addr, value
-      when @dma_channels then @dma_channels.write_io io_addr, value
+      when @channel1     then @channel1[io_addr] = value
+      when @channel2     then @channel2[io_addr] = value
+      when @channel3     then @channel3[io_addr] = value
+      when @channel4     then @channel4[io_addr] = value
+      when @dma_channels then @dma_channels[io_addr] = value
       when 0x80          then @soundcnt_l.value = (@soundcnt_l.value & 0xFF00) | value
       when 0x81          then @soundcnt_l.value = (@soundcnt_l.value & 0x00FF) | value.to_u16 << 8
       when 0x82          then @soundcnt_h.value = (@soundcnt_h.value & 0xFF00) | value
       when 0x83          then @soundcnt_h.value = (@soundcnt_h.value & 0x00FF) | value.to_u16 << 8
       when 0x84
         if value & 0x80 == 0 && @sound_enabled
-          (0x60..0x81).each { |addr| self.write_io addr, 0x00 }
+          (0x60..0x81).each { |addr| self[addr] = 0x00 }
           @sound_enabled = false
         elsif value & 0x80 > 0 && !@sound_enabled
           @sound_enabled = true

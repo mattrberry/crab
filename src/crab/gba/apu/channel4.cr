@@ -43,7 +43,7 @@ module GBA
       end
     end
 
-    def read_io(index : Int) : UInt8
+    def [](index : Int) : UInt8
       case index
       when 0x78 then 0xFF_u8
       when 0x79 then read_NRx2
@@ -53,7 +53,7 @@ module GBA
       end
     end
 
-    def write_io(index : Int, value : UInt8) : Nil
+    def []=(index : Int, value : UInt8) : Nil
       case index
       when 0x78
         @length_load = value & 0x3F
