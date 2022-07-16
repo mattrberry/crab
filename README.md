@@ -75,6 +75,7 @@ To enable the experimental FIFO renderer (as opposed to the scanline renderer), 
     - SRAM
     - EEPROM
   - Timers run effeciently on the scheduler
+  - Real-time clock support
 
 ### Remaining Work
 - GB / GBC
@@ -108,6 +109,7 @@ A special thanks goes out to those in the emudev community who are always helpfu
 - https://github.com/DenSinH
 - https://github.com/fleroviux
 - https://github.com/destoer
+- https://github.com/GhostRain0
 
 ## Contributing
 

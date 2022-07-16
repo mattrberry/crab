@@ -1,3 +1,5 @@
+require "./gpio"
+
 module GBA
   class Bus
     # Timings for rom are estimated for game compatibility.
@@ -11,8 +13,11 @@ module GBA
     getter wram_board = Bytes.new 0x40000
     getter wram_chip = Bytes.new 0x08000
 
+    @gpio : GPIO
+
     def initialize(@gba : GBA, bios_path : String)
       File.open(bios_path) { |file| file.read @bios }
+      @gpio = GPIO.new(@gba)
     end
 
     def [](index : Int) : Byte
@@ -87,11 +92,10 @@ module GBA
         address -= 0x8000 if address > 0x17FFF
         @gba.ppu.vram[address]
       when 0x7 then @gba.ppu.oam[index & 0x3FF]
-      when 0x8, 0x9,
-           0xA, 0xB,
-           0xC then @gba.cartridge.rom[index & 0x01FFFFFF]
-      when 0xD
-        if @gba.storage.eeprom? index
+      when 0x8, 0x9, 0xA, 0xB, 0xC, 0xD
+        if @gpio.address?(index) && @gpio.allow_reads
+          @gpio[index]
+        elsif @gba.storage.eeprom?(index)
           @gba.storage[index]
         else
           @gba.cartridge.rom[index & 0x01FFFFFF]
@@ -116,11 +120,10 @@ module GBA
         address -= 0x8000 if address > 0x17FFF
         (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value
       when 0x7 then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(HalfWord*).value
-      when 0x8, 0x9,
-           0xA, 0xB,
-           0xC then (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(HalfWord*).value
-      when 0xD
-        if @gba.storage.eeprom? index
+      when 0x8, 0x9, 0xA, 0xB, 0xC, 0xD
+        if @gpio.address?(index) && @gpio.allow_reads
+          @gpio[index].to_u16!
+        elsif @gba.storage.eeprom?(index)
           @gba.storage[index].to_u16!
         else
           (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(HalfWord*).value
@@ -145,11 +148,10 @@ module GBA
         address -= 0x8000 if address > 0x17FFF
         (@gba.ppu.vram.to_unsafe + address).as(Word*).value
       when 0x7 then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(Word*).value
-      when 0x8, 0x9,
-           0xA, 0xB,
-           0xC then (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(Word*).value
-      when 0xD
-        if @gba.storage.eeprom? index
+      when 0x8, 0x9, 0xA, 0xB, 0xC, 0xD
+        if @gpio.address?(index) && @gpio.allow_reads
+          @gpio[index].to_u32!
+        elsif @gba.storage.eeprom?(index)
           @gba.storage[index].to_u32!
         else
           (@gba.cartridge.rom.to_unsafe + (index & 0x01FFFFFF)).as(Word*).value
@@ -173,7 +175,13 @@ module GBA
         address = 0x1FFFE_u32 & index                # (u8 write only) halfword-aligned
         address -= 0x8000 if address > 0x17FFF       # todo: determine if this happens before or after the limit check
         (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = 0x0101_u16 * value if address <= limit
-      when 0xD      then @gba.storage[index] = value if @gba.storage.eeprom? index
+      when 0x7      # can't write bytes to oam
+      when 0x8, 0xD # all address between aren't writable
+        if @gpio.address? index
+          @gpio[index] = value
+        elsif @gba.storage.eeprom? index
+          @gba.storage[index]
+        end
       when 0xE, 0xF then @gba.storage[index] = value
       else               log "Unmapped write: #{hex_str index.to_u32}"
       end
@@ -193,8 +201,13 @@ module GBA
         address = 0x1FFFF_u32 & index
         address -= 0x8000 if address > 0x17FFF
         (@gba.ppu.vram.to_unsafe + address).as(HalfWord*).value = value
-      when 0x7      then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(HalfWord*).value = value
-      when 0xD      then @gba.storage[index] = value.to_u8! if @gba.storage.eeprom? index
+      when 0x7 then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(HalfWord*).value = value
+      when 0x8, 0xD # all address between aren't writable
+        if @gpio.address? index
+          @gpio[index] = value.to_u8!
+        elsif @gba.storage.eeprom? index
+          @gba.storage[index] = value.to_u8!
+        end
       when 0xE, 0xF then write_half_internal_slow(index, value)
       else               log "Unmapped write: #{hex_str index.to_u32}"
       end
@@ -214,8 +227,13 @@ module GBA
         address = 0x1FFFF_u32 & index
         address -= 0x8000 if address > 0x17FFF
         (@gba.ppu.vram.to_unsafe + address).as(Word*).value = value
-      when 0x7      then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(Word*).value = value
-      when 0xD      then @gba.storage[index] = value.to_u8! if @gba.storage.eeprom? index
+      when 0x7 then (@gba.ppu.oam.to_unsafe + (index & 0x3FF)).as(Word*).value = value
+      when 0x8, 0xD # all address between aren't writable
+        if @gpio.address? index
+          @gpio[index] = value.to_u8!
+        elsif @gba.storage.eeprom? index
+          @gba.storage[index] = value.to_u8!
+        end
       when 0xE, 0xF then write_word_internal_slow(index, value)
       else               log "Unmapped write: #{hex_str index.to_u32}"
       end
