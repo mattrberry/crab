@@ -114,10 +114,10 @@ module GBA
       bool screen_display_bg2
       bool screen_display_bg1
       bool screen_display_bg0
-      bool forced_blank               # (1=Allow access to VRAM,Palette,OAM)
-      bool obj_character_vram_mapping # (0=Two dimensional, 1=One dimensional)
-      bool hblank_interval_free       # (1=Allow access to OAM during H-Blank)
-      bool display_frame_select       # (0-1=Frame 0-1) (for BG Modes 4,5 only)
+      bool forced_blank         # (1=Allow access to VRAM,Palette,OAM)
+      bool obj_mapping_1d       # (0=Two dimensional, 1=One dimensional)
+      bool hblank_interval_free # (1=Allow access to OAM during H-Blank)
+      bool display_frame_select # (0-1=Frame 0-1) (for BG Modes 4,5 only)
       bool reserved_for_bios, lock: true
       num bg_mode, 3 # (0-5=Video Mode 0-5, 6-7=Prohibited)
     end
@@ -139,7 +139,7 @@ module GBA
       num screen_size, 2
       bool affine_wrap
       num screen_base_block, 5
-      bool color_mode
+      bool color_mode_8bpp
       bool mosaic
       num not_used, 2, lock: true
       num character_base_block, 2

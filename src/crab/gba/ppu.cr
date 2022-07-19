@@ -174,7 +174,7 @@ module GBA
         y = (effective_row & 7) ^ (7 * (screen_entry >> 11 & 1))
         x = (effective_col & 7) ^ (7 * (screen_entry >> 10 & 1))
 
-        if bgcnt.color_mode # 8bpp
+        if bgcnt.color_mode_8bpp
           pal_idx = @vram[character_base + tile_id * 0x40 + y * 8 + x]
         else # 4bpp
           palette_bank = bits(screen_entry, 12..15)
@@ -226,8 +226,8 @@ module GBA
         next if sprite.obj_shape == 3      # prohibited
         next if sprite.affine_mode == 0b10 # sprite disabled
         x_coord, y_coord = sprite.x_coord.to_i16, sprite.y_coord.to_i16
-        x_coord -= 512 if x_coord > 239
-        y_coord -= 256 if y_coord > 159
+        x_coord -= 512 if x_coord > 239 # wrap x
+        y_coord -= 256 if y_coord > 159 # wrap y
         orig_width, orig_height = SIZES[sprite.obj_shape][sprite.obj_size]
         width, height = orig_width, orig_height
         center_x, center_y = x_coord + width // 2, y_coord + height // 2 # off of center
@@ -249,52 +249,59 @@ module GBA
         end
         if y_coord <= @vcount < y_coord + height
           iy = @vcount.to_i16 - center_y
+          flip_x = bit?(sprite.attr1, 12) && !sprite.affine
+          flip_y = bit?(sprite.attr1, 13) && !sprite.affine
           min_x, max_x = Math.max(0, x_coord), Math.min(240, x_coord + width)
+
           (-(width // 2)...(width // 2)).each do |ix|
             col = center_x + ix
             next unless min_x <= col < max_x
+
             # transform to texture coordinates
-            px = (pa * ix + pb * iy) >> 8
-            py = (pc * ix + pd * iy) >> 8
+            tex_x = (pa * ix + pb * iy) >> 8
+            tex_y = (pc * ix + pd * iy) >> 8
+
             # bring origin back to top-left of the sprite
-            px += (orig_width // 2)
-            py += (orig_height // 2)
+            tex_x += (orig_width // 2)
+            tex_y += (orig_height // 2)
 
-            next unless 0 <= px < orig_width && 0 <= py < orig_height
+            next unless 0 <= tex_x < orig_width && 0 <= tex_y < orig_height
 
-            px = orig_width - px - 1 if bit?(sprite.attr1, 12) && !sprite.affine
-            py = orig_height - py - 1 if bit?(sprite.attr1, 13) && !sprite.affine
+            # flip coordinates if necessary
+            tex_x = orig_width - tex_x - 1 if flip_x
+            tex_y = orig_height - tex_y - 1 if flip_y
 
-            x = px & 7
-            y = py & 7
+            # select pixel offsets within the specified tile
+            tile_x = tex_x & 7
+            tile_y = tex_y & 7
 
-            tile_id = sprite.character_name
-            offset = py >> 3
-            if @dispcnt.obj_character_vram_mapping
+            tile_id = sprite.tile_idx
+            offset = tex_y >> 3
+            if @dispcnt.obj_mapping_1d
               offset *= orig_width >> 3
             else
-              if sprite.color_mode
+              if sprite.color_mode_8bpp
                 offset *= 0x10
               else
                 offset *= 0x20
               end
             end
-            offset += px >> 3
-            if sprite.color_mode # 8bpp
+            offset += tex_x >> 3
+            if sprite.color_mode_8bpp
               tile_id >>= 1
               tile_id += offset
-              pal_idx = @vram[base + tile_id * 0x40 + y * 8 + x]
+              pal_idx = @vram[base + tile_id * 0x40 + tile_y * 8 + tile_x]
             else # 4bpp
               tile_id += offset
-              palettes = @vram[base + tile_id * 0x20 + y * 4 + (x >> 1)]
-              pal_idx = ((palettes >> ((x & 1) * 4)) & 0xF)
-              pal_idx += (sprite.palette_number << 4) if pal_idx > 0
+              palettes = @vram[base + tile_id * 0x20 + tile_y * 4 + (tile_x >> 1)]
+              pal_idx = ((palettes >> ((tile_x & 1) * 4)) & 0xF)
+              pal_idx += (sprite.palette_bank << 4) if pal_idx > 0 # convert palette index to absolute value
             end
 
-            if sprite.obj_mode == 0b10
+            if sprite.obj_mode == 0b10 # object window
               @sprite_pixels[col] = @sprite_pixels[col].copy_with window: true if pal_idx > 0
             elsif sprite.priority < @sprite_pixels[col].priority || @sprite_pixels[col].palette == 0
-              @sprite_pixels[col] = @sprite_pixels[col].copy_with priority: sprite.priority
+              @sprite_pixels[col] = @sprite_pixels[col].copy_with priority: sprite.priority # priority is copied even if the sprite is transparent
               @sprite_pixels[col] = @sprite_pixels[col].copy_with palette: pal_idx.to_u16, blends: sprite.obj_mode == 0b01 if pal_idx > 0
             end
           end
@@ -302,6 +309,7 @@ module GBA
       end
     end
 
+    # Returns a u16 representing the layer enable bits and a bool indicating whether effects are enabled.
     def get_enables(col : Int) : Tuple(UInt16, Bool)
       if @dispcnt.window_0_display && @win0h.x1 <= col < @win0h.x2 && @win0v.y1 <= @vcount < @win0v.y2 # win0
         {bits(@winin.value, 0..4), @winin.window_0_color_special_effect}
@@ -489,7 +497,7 @@ module GBA
       bits(attr0, 14..15)
     end
 
-    def color_mode
+    def color_mode_8bpp
       bit?(attr0, 13)
     end
 
@@ -533,7 +541,7 @@ module GBA
 
     # OBJ Attribute 2
 
-    def character_name
+    def tile_idx
       bits(attr2, 0..9)
     end
 
@@ -541,7 +549,7 @@ module GBA
       bits(attr2, 10..11)
     end
 
-    def palette_number
+    def palette_bank
       bits(attr2, 12..15)
     end
   end
