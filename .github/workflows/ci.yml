@@ -12,7 +12,12 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-22.04
+          - ubuntu-20.04
+          - ubuntu-18.04
           - macos-latest
+          - macos-12
+          - macos-11
           # - windows-latest
     runs-on: ${{matrix.os}}
     env:
