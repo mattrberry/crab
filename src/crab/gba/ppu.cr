@@ -325,15 +325,83 @@ module GBA
     end
 
     def calculate_color(col : Int) : UInt16
-      enables, effects = get_enables(col)
+      enable_flags, effects_enabled = get_enables(col)
       top_color = nil
+      colors = uninitialized Color[5]
+      sprite_pixel = @sprite_pixels[col]
+      colors[0] = Color.new(
+        sprite_pixel.priority,
+        sprite_pixel.palette,
+        sprite_pixel.blends,
+        4,    # sprites are bit 4 in the enable flags
+        true, # sprite
+      )
+      4.times do |bg|
+        colors[bg + 1] = Color.new(
+          @bgcnt[bg].priority,
+          @layer_palettes[bg][col],
+          true, # backgrounds always blend
+          bg,
+          false, # not a sprite
+        )
+      end
       4.times do |priority|
-        if bit?(enables, 4)
+        colors.each do |color|
+          if bit?(enable_flags, color.target_bit) # check that layer is enabled
+            if color.priority == priority         # check that priority matches (effectively orders backgrounds)
+              if top_color.nil?
+                if color.palette > 0                   # check that color is opaque
+                  if !effects_enabled || !color.blends # if effects are disabled, always take the first opaque color
+                    return BGR16.new(@pram, color).value
+                  elsif @bldcnt.is_bg_target(color.target_bit, target: 1)
+                    top_color = color
+                  end
+                end
+              else # top color has been selected
+                top_color_u16 = BGR16.new(@pram, top_color).value
+                if !@bldcnt.is_bg_target(color.target_bit, target: 2) # second layer isn't set in bldcnt, don't blend
+                  return top_color_u16
+                elsif color.palette > 0 # is a target and color is opaque
+                  if @bldcnt.blending_mode == 1 || top_color.sprite
+                    return (BGR16.new(@pram, top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) +
+                      BGR16.new(@pram, color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)).value
+                  elsif @bldcnt.blending_mode == 0
+                    return top_color_u16
+                  elsif @bldcnt.blending_mode == 2
+                    # blend with white
+                    return top_color_u16 # todo
+                  elsif @bldcnt.blending_mode == 3
+                    # blend with black
+                    return top_color_u16 # todo
+                  end
+                else # is a target and color is transparent
+                  if @bldcnt.blending_mode == 0
+                    return top_color_u16
+                  elsif @bldcnt.blending_mode == 1
+                    return top_color_u16
+                  elsif @bldcnt.blending_mode == 2
+                    # blend with white
+                    return top_color_u16 # todo
+                  elsif @bldcnt.blending_mode == 3
+                    # blend with black
+                    return top_color_u16 # todo
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+      backdrop_color = @pram.to_unsafe.as(UInt16*)[0]
+      return top_color.nil? ? backdrop_color : BGR16.new(@pram, top_color).value
+
+      4.times do |priority|
+        if bit?(enable_flags, 4)
           sprite_pixel = @sprite_pixels[col]
           if sprite_pixel.priority == priority && sprite_pixel.palette > 0
             selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
             if top_color.nil? # todo: brightness for sprites
-              if !(sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects))
+              if !(sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects_enabled))
                 return selected_color
               elsif @bldcnt.color_special_effect == 1 # alpha blending
                 top_color = selected_color
@@ -355,13 +423,13 @@ module GBA
           end
         end
         4.times do |bg|
-          if bit?(enables, bg)
+          if bit?(enable_flags, bg)
             if @bgcnt[bg].priority == priority
               palette = @layer_palettes[bg][col]
               next if palette == 0
               selected_color = @pram.to_unsafe.as(UInt16*)[palette]
               if top_color.nil?
-                if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) || !effects
+                if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) || !effects_enabled
                   return selected_color
                 elsif @bldcnt.color_special_effect == 1 # alpha blending
                   top_color = selected_color
@@ -427,6 +495,8 @@ module GBA
       when 0x052..0x053 then @bldalpha.read_byte(io_addr & 1)
       when 0x054..0x055 then @bldy.read_byte(io_addr & 1)
       else                   log "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"; 0_u8 # todo: open bus
+
+
       end
     end
 

@@ -81,3 +81,9 @@ macro log(value, newline = true)
     {% end %}
   {% end %}
 end
+
+struct Slice(T)
+  def [](index : Int, t : R.class, index_r : Int) : R forall R
+    Pointer(R).new((self.to_unsafe + index).address)[index_r]
+  end
+end

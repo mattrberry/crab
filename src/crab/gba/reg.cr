@@ -228,7 +228,7 @@ module GBA
       bool bg2_2nd_target_pixel
       bool bg1_2nd_target_pixel
       bool bg0_2nd_target_pixel
-      num color_special_effect, 2
+      num blending_mode, 2
       bool bd_1st_target_pixel
       bool obj_1st_target_pixel
       bool bg3_1st_target_pixel

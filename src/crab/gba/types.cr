@@ -3,12 +3,22 @@ module GBA
   alias HalfWord = UInt16
   alias Word = UInt32
   alias Words = Slice(UInt32)
+
+  record Color, priority : Int32, palette : Int32, blends : Bool, target_bit : Int32, sprite : Bool do
+  end
+
   record BGR16, value : UInt16 do # xBBBBBGGGGGRRRRR
     # Create a new BGR16 struct with the given values. Trucates at 5 bits.
     def initialize(blue : Number, green : Number, red : Number)
       @value = (blue <= 0x1F ? blue.to_u16 : 0x1F_u16) << 10 |
                (green <= 0x1F ? green.to_u16 : 0x1F_u16) << 5 |
                (red <= 0x1F ? red.to_u16 : 0x1F_u16)
+    end
+
+    def initialize(pram : Slice(UInt8), color : Color)
+      palette_base = pram.to_unsafe
+      palette_base += 0x200 if color.sprite
+      @value = palette_base.as(UInt16*)[color.palette]
     end
 
     def blue : UInt16
