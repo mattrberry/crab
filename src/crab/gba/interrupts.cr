@@ -51,7 +51,7 @@ module GBA
     end
 
     def schedule_interrupt_check : Nil
-      @gba.scheduler.schedule 0, ->check_interrupts
+      @gba.scheduler.schedule 0, ->check_interrupts, Scheduler::EventType::Interrupts
     end
 
     private def check_interrupts : Nil

@@ -40,11 +40,11 @@ module GBA
     end
 
     def start_line : Nil
-      @gba.scheduler.schedule 960, ->start_hblank
+      @gba.scheduler.schedule 960, ->start_hblank, Scheduler::EventType::PPU
     end
 
     def start_hblank : Nil
-      @gba.scheduler.schedule 272, ->end_hblank
+      @gba.scheduler.schedule 272, ->end_hblank, Scheduler::EventType::PPU
       @dispstat.hblank = true
       if @dispstat.hblank_irq_enable
         @gba.interrupts.reg_if.hblank = true
@@ -61,7 +61,7 @@ module GBA
     end
 
     def end_hblank : Nil
-      @gba.scheduler.schedule 0, ->start_line
+      @gba.scheduler.schedule 0, ->start_line, Scheduler::EventType::PPU
       @dispstat.hblank = false
       @vcount = (@vcount + 1) % 228
       @dispstat.vcounter = @vcount == @dispstat.vcount_setting

@@ -1,7 +1,6 @@
 class Scheduler
   enum EventType
     # Shared
-    DEFAULT
     APU
     APUChannel1
     APUChannel2
@@ -11,6 +10,9 @@ class Scheduler
     # GB
     IME
     # GBA
+    Saves
+    Interrupts
+    PPU
     Timer0
     Timer1
     Timer2
@@ -25,7 +27,7 @@ class Scheduler
 
   @current_speed : UInt8 = 0
 
-  def schedule(cycles : Int, proc : Proc(Nil), type = EventType::DEFAULT) : Nil
+  def schedule(cycles : Int, proc : Proc(Nil), type : EventType) : Nil
     self << Event.new @cycles + cycles, proc, type
   end
 

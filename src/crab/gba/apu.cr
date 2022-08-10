@@ -90,7 +90,7 @@ module GBA
       else nil
       end
       @frame_sequencer_stage = 0 if (@frame_sequencer_stage += 1) > 7
-      @gba.scheduler.schedule FRAME_SEQUENCER_PERIOD, ->tick_frame_sequencer
+      @gba.scheduler.schedule FRAME_SEQUENCER_PERIOD, ->tick_frame_sequencer, Scheduler::EventType::APU
     end
 
     def get_sample : Nil
@@ -129,7 +129,7 @@ module GBA
         @buffer_pos = 0
       end
 
-      @gba.scheduler.schedule SAMPLE_PERIOD, ->get_sample
+      @gba.scheduler.schedule SAMPLE_PERIOD, ->get_sample, Scheduler::EventType::APU
     end
 
     def timer_overflow(timer : Int) : Nil

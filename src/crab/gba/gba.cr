@@ -33,7 +33,6 @@ module GBA
     def initialize(@bios_path : String, @rom_path : String, @run_bios : Bool)
       @scheduler = Scheduler.new
       @cartridge = Cartridge.new @rom_path
-      scheduler.schedule 280896, ->handle_saves
     end
 
     def post_init : Nil
@@ -49,6 +48,7 @@ module GBA
       @dma = DMA.new self
       @debugger = Debugger.new self
 
+      handle_saves
       cpu.skip_bios unless @run_bios
     end
 
@@ -72,7 +72,7 @@ module GBA
     end
 
     def handle_saves : Nil
-      scheduler.schedule 280896, ->handle_saves
+      scheduler.schedule 280896, ->handle_saves, Scheduler::EventType::Saves
       storage.write_save
     end
   end
