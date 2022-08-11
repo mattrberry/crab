@@ -324,7 +324,19 @@ module GBA
       end
     end
 
+    def bgr16_from_color(color : Color) : BGR16
+      BGR16.new(@pram, color)
+    end
+
+    @fresh_log = true
+
     def calculate_color(col : Int) : UInt16
+      log = @vcount == 50 && 60 < col < 180
+      if log && @fresh_log
+        puts "\n\n\n\n LOG \n\n\n\n"
+        @fresh_log = false
+      end
+      @fresh_log = true if !log
       enable_flags, effects_enabled = get_enables(col)
       top_color = nil
       colors = uninitialized Color[5]
@@ -345,47 +357,55 @@ module GBA
           false, # not a sprite
         )
       end
+      blending_mode = @bldcnt.blending_mode
       4.times do |priority|
         colors.each do |color|
-          if bit?(enable_flags, color.target_bit) # check that layer is enabled
-            if color.priority == priority         # check that priority matches (effectively orders backgrounds)
-              if top_color.nil?
-                if color.palette > 0                   # check that color is opaque
-                  if !effects_enabled || !color.blends # if effects are disabled, always take the first opaque color
-                    return BGR16.new(@pram, color).value
-                  elsif @bldcnt.is_bg_target(color.target_bit, target: 1)
+          if bit?(enable_flags, color.target_bit) && color.priority == priority # check that layer is enabled and priorities match
+            if top_color.nil?
+              if color.palette > 0
+                if !effects_enabled || !color.blends # if effects are disabled, always take the first opaque color
+                  return bgr16_from_color(color).value
+                elsif @bldcnt.is_bg_target(color.target_bit, target: 1)
+                  if color.sprite || blending_mode == 1 # pass along to blending routine
                     top_color = color
+                  elsif blending_mode == 0 # don't blend
+                    return bgr16_from_color(color).value
+                  elsif blending_mode == 2 # blend with white
+                    
+                  else # blend with black
                   end
+                else # pixel is not a blending target
+                  return bgr16_from_color(color).value # todo: condense with previous condition
                 end
-              else # top color has been selected
-                top_color_u16 = BGR16.new(@pram, top_color).value
-                if !@bldcnt.is_bg_target(color.target_bit, target: 2) # second layer isn't set in bldcnt, don't blend
+              end
+            else # top color has been selected
+              top_color_u16 = bgr16_from_color(top_color).value
+              if !@bldcnt.is_bg_target(color.target_bit, target: 2) # second layer isn't set in bldcnt, don't blend
+                return top_color_u16
+              elsif color.palette > 0 # is a target and color is opaque
+                if blending_mode == 1 || top_color.sprite
+                  return (bgr16_from_color(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) +
+                    bgr16_from_color(color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)).value
+                elsif blending_mode == 0
                   return top_color_u16
-                elsif color.palette > 0 # is a target and color is opaque
-                  if @bldcnt.blending_mode == 1 || top_color.sprite
-                    return (BGR16.new(@pram, top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) +
-                      BGR16.new(@pram, color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)).value
-                  elsif @bldcnt.blending_mode == 0
-                    return top_color_u16
-                  elsif @bldcnt.blending_mode == 2
-                    # blend with white
-                    return top_color_u16 # todo
-                  elsif @bldcnt.blending_mode == 3
-                    # blend with black
-                    return top_color_u16 # todo
-                  end
-                else # is a target and color is transparent
-                  if @bldcnt.blending_mode == 0
-                    return top_color_u16
-                  elsif @bldcnt.blending_mode == 1
-                    return top_color_u16
-                  elsif @bldcnt.blending_mode == 2
-                    # blend with white
-                    return top_color_u16 # todo
-                  elsif @bldcnt.blending_mode == 3
-                    # blend with black
-                    return top_color_u16 # todo
-                  end
+                elsif blending_mode == 2 # blend with white
+                  bgr16 = bgr16_from_color(top_color)
+                  return (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+                elsif blending_mode == 3   # blend with black
+                  bgr16 = bgr16_from_color(top_color)
+                  return (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+                end
+              elsif top_color.sprite # is a target and color is transparent
+                if blending_mode == 0
+                  return top_color_u16
+                elsif blending_mode == 1
+                  return top_color_u16
+                elsif blending_mode == 2 # blend with white
+                  bgr16 = bgr16_from_color(top_color)
+                  return (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+                elsif blending_mode == 3 # blend with black
+                  bgr16 = bgr16_from_color(top_color)
+                  return (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
                 end
               end
             end
@@ -393,7 +413,14 @@ module GBA
         end
       end
       backdrop_color = @pram.to_unsafe.as(UInt16*)[0]
-      return top_color.nil? ? backdrop_color : BGR16.new(@pram, top_color).value
+      if log
+        if top_color.nil?
+          puts "No top color, returning backdrop"
+        else
+          puts " Didn't find second layer, returning top color"
+        end
+      end
+      return top_color.nil? ? backdrop_color : bgr16_from_color(top_color).value
 
       4.times do |priority|
         if bit?(enable_flags, 4)
