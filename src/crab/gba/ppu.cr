@@ -324,67 +324,70 @@ module GBA
       end
     end
 
-    def calculate_color(col : Int) : UInt16
-      enables, effects = get_enables(col)
-      top_color = nil
+    # Simple blending routine just to mix two UInt16 colors.
+    def blend(top : UInt16, bot : UInt16, blend_mode : BlendMode) : UInt16
+      case blend_mode
+      in BlendMode::None then top
+      in BlendMode::Blend
+        color = (BGR16.new(top) * (Math.min(16, @bldalpha.eva_coefficient) / 16) +
+                 BGR16.new(bot) * (Math.min(16, @bldalpha.evb_coefficient) / 16))
+        color.value
+      in BlendMode::Brighten
+        bgr16 = BGR16.new(top)
+        (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+      in BlendMode::Darken
+        bgr16 = BGR16.new(top)
+        (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
+      end
+    end
+
+    # Blend the colors handling special-case sprite logic.
+    def blend(top : Color, bot : Color, effects_enabled : Bool) : UInt16
+      pram_u16 = @pram.to_unsafe.as(UInt16*)
+      top_u16 = pram_u16[top.palette]
+      if effects_enabled # only blend if effects are enabled
+        bot_u16 = pram_u16[bot.palette]
+        top_selected = @bldcnt.layer_target?(top.layer, 1)
+        bot_selected = @bldcnt.layer_target?(bot.layer, 2)
+        blend_mode = BlendMode.new(@bldcnt.blend_mode)
+        if top.special_handling && bot_selected # sprite is semi-transparent and bottom is selected
+          return blend(top_u16, bot_u16, BlendMode::Blend)
+        elsif top_selected && (bot_selected || blend_mode != BlendMode::Blend) # both selected or bottom isn't needed
+          return blend(top_u16, bot_u16, blend_mode)
+        end
+      end
+      top_u16 # fall back to just the top color
+    end
+
+    # Select the top two colors at the current position.
+    def select_top_colors(enable_bits : Int, col : Int) : Tuple(Color, Color)
+      sprite = @sprite_pixels[col]
+      backdrop_color = Color.new(0, 5, false)
+      top = nil
       4.times do |priority|
-        if bit?(enables, 4)
-          sprite_pixel = @sprite_pixels[col]
-          if sprite_pixel.priority == priority && sprite_pixel.palette > 0
-            selected_color = (@pram + 0x200).to_unsafe.as(UInt16*)[sprite_pixel.palette]
-            if top_color.nil? # todo: brightness for sprites
-              if !(sprite_pixel.blends || (@bldcnt.is_bg_target(4, target: 1) && effects))
-                return selected_color
-              elsif @bldcnt.color_special_effect == 1 # alpha blending
-                top_color = selected_color
-              elsif @bldcnt.color_special_effect == 2 # brightness increase
-                bgr16 = BGR16.new(selected_color)
-                return (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
-              else # brightness decrease
-                bgr16 = BGR16.new(selected_color)
-                return (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
-              end
-            else
-              if @bldcnt.is_bg_target(4, target: 2) || sprite_pixel.blends
-                color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-                return color.value
-              else
-                return top_color
-              end
-            end
-          end
+        if bit?(enable_bits, 4) && sprite.priority == priority && sprite.palette != 0
+          color = Color.new(sprite.palette + 0x100, 4, sprite.blends)
+          return {top, color} unless top.nil?
+          top = color
         end
         4.times do |bg|
-          if bit?(enables, bg)
-            if @bgcnt[bg].priority == priority
-              palette = @layer_palettes[bg][col]
-              next if palette == 0
-              selected_color = @pram.to_unsafe.as(UInt16*)[palette]
-              if top_color.nil?
-                if @bldcnt.color_special_effect == 0 || !@bldcnt.is_bg_target(bg, target: 1) || !effects
-                  return selected_color
-                elsif @bldcnt.color_special_effect == 1 # alpha blending
-                  top_color = selected_color
-                elsif @bldcnt.color_special_effect == 2 # brightness increase
-                  bgr16 = BGR16.new(selected_color)
-                  return (bgr16 + (BGR16.new(0xFFFF) - bgr16) * (Math.min(16, @bldy.evy_coefficient) / 16)).value
-                else # brightness decrease
-                  bgr16 = BGR16.new(selected_color)
-                  return (bgr16 - bgr16 * (Math.min(16, @bldy.evy_coefficient) / 16)).value
-                end
-              else
-                if @bldcnt.is_bg_target(bg, target: 2)
-                  color = BGR16.new(top_color) * (Math.min(16, @bldalpha.eva_coefficient) / 16) + BGR16.new(selected_color) * (Math.min(16, @bldalpha.evb_coefficient) / 16)
-                  return color.value
-                else # second layer isn't set in bldcnt, don't blend
-                  return top_color
-                end
-              end
-            end
+          if bit?(enable_bits, bg) && @bgcnt[bg].priority == priority
+            palette = @layer_palettes[bg][col]
+            next if palette == 0
+            color = Color.new(palette, bg, false)
+            return {top, color} unless top.nil?
+            top = color
           end
         end
       end
-      top_color || @pram.to_unsafe.as(UInt16*)[0]
+      {top || backdrop_color, backdrop_color}
+    end
+
+    # Calculate the color at the current position.
+    def calculate_color(col : Int) : UInt16
+      enable_bits, effects_enabled = get_enables(col)
+      top, bot = select_top_colors(enable_bits, col)
+      blend(top, bot, effects_enabled)
     end
 
     def composite(scanline : Slice(UInt16)) : Nil
@@ -555,4 +558,47 @@ module GBA
   end
 
   record SpritePixel, priority : UInt16, palette : UInt16, blends : Bool, window : Bool
+
+  # Special_handling indicates a sprite with semi-transparency.
+  record Color, palette : Int32, layer : Int32, special_handling : Bool
+
+  enum BlendMode
+    None
+    Blend
+    Brighten
+    Darken
+  end
+
+  record BGR16, value : UInt16 do # xBBBBBGGGGGRRRRR
+    # Create a new BGR16 struct with the given values. Trucates at 5 bits.
+    def initialize(blue : Number, green : Number, red : Number)
+      @value = (blue <= 0x1F ? blue.to_u16 : 0x1F_u16) << 10 |
+               (green <= 0x1F ? green.to_u16 : 0x1F_u16) << 5 |
+               (red <= 0x1F ? red.to_u16 : 0x1F_u16)
+    end
+
+    def blue : UInt16
+      bits(value, 0xA..0xE)
+    end
+
+    def green : UInt16
+      bits(value, 0x5..0x9)
+    end
+
+    def red : UInt16
+      bits(value, 0x0..0x4)
+    end
+
+    def +(other : BGR16) : BGR16
+      BGR16.new(blue + other.blue, green + other.green, red + other.red)
+    end
+
+    def -(other : BGR16) : BGR16
+      BGR16.new(blue.to_i - other.blue, green.to_i - other.green, red.to_i - other.red)
+    end
+
+    def *(operand : Number) : BGR16
+      BGR16.new(blue * operand, green * operand, red * operand)
+    end
+  end
 end

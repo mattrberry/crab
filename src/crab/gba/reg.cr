@@ -228,7 +228,7 @@ module GBA
       bool bg2_2nd_target_pixel
       bool bg1_2nd_target_pixel
       bool bg0_2nd_target_pixel
-      num color_special_effect, 2
+      num blend_mode, 2
       bool bd_1st_target_pixel
       bool obj_1st_target_pixel
       bool bg3_1st_target_pixel
@@ -236,8 +236,8 @@ module GBA
       bool bg1_1st_target_pixel
       bool bg0_1st_target_pixel
 
-      def is_bg_target(bg : Int, target : Int) : Bool
-        bit?(value, bg + ((target - 1) * 8))
+      def layer_target?(layer : Int, target : Int) : Bool
+        bit?(value, layer + ((target - 1) * 8))
       end
     end
 
