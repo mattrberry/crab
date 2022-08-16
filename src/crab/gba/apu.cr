@@ -14,7 +14,7 @@ module GBA
     @soundcnt_l = Reg::SOUNDCNT_L.new 0
     getter soundcnt_h = Reg::SOUNDCNT_H.new 0
     @sound_enabled : Bool = false
-    @soundbias = Reg::SOUNDBIAS.new 0x3FE
+    @soundbias = Reg::SOUNDBIAS.new 0x200
 
     @buffer = Slice(Int16).new BUFFER_SIZE
     @buffer_pos = 0
