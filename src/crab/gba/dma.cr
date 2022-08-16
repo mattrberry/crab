@@ -47,11 +47,11 @@ module GBA
       reg = (io_addr - 0xB0) % 12
       case reg
       when 0, 1, 2, 3 # dmasad
-        (@dmasad[channel] >> 8 * reg).to_u8!
+        0_u8 # todo: OOB read
       when 4, 5, 6, 7 # dmadad
-        (@dmadad[channel] >> 8 * (reg - 4)).to_u8!
+        0_u8 # todo: OOB read
       when 8, 9 # dmacnt_l
-        (@dmacnt_l[channel] >> 8 * (reg - 8)).to_u8!
+        0_u8 # write-only
       when 10, 11 # dmacnt_h
         (@dmacnt_h[channel].value >> 8 * (reg - 10)).to_u8!
       else abort "Unmapped DMA read ~ addr:#{hex_str io_addr.to_u8}"
