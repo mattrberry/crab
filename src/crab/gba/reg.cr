@@ -79,10 +79,6 @@ module GBA
       num source_control, 2
       num dest_control, 2
       num not_used, 5
-
-      def to_s(io)
-        io << "enable:#{enable}, irq:#{irq_enable}, timing:#{start_timing}, game_pak:#{game_pak}, type:#{type}, repeat:#{repeat}, srcctl:#{source_control}, dstctl:#{dest_control}"
-      end
     end
 
     ####################
@@ -95,10 +91,6 @@ module GBA
       num not_used_2, 3, lock: true
       bool cascade
       num frequency, 2
-
-      def to_s(io)
-        io << "enable:#{enable}, irq:#{irq_enable}, cascade:#{cascade}, freq:#{frequency}"
-      end
     end
 
     ####################
