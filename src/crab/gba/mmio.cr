@@ -1,20 +1,6 @@
 module GBA
   class MMIO
-    class WAITCNT < BitField(UInt16)
-      bool gamepak_type, lock: true
-      bool gamepack_prefetch_buffer
-      bool not_used, lock: true
-      num phi_terminal_output, 2
-      num wait_state_2_second_access, 1
-      num wait_state_2_first_access, 2
-      num wait_state_1_second_access, 1
-      num wait_state_1_first_access, 2
-      num wait_state_0_second_access, 1
-      num wait_state_0_first_access, 2
-      num sram_wait_control, 2
-    end
-
-    @waitcnt = WAITCNT.new 0
+    @waitcnt = Reg::WAITCNT.new 0
 
     def initialize(@gba : GBA)
     end
@@ -41,7 +27,7 @@ module GBA
       elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
         @gba.interrupts[io_addr]
       elsif 0x204 <= io_addr <= 0x205
-        (@waitcnt.value >> (8 * (io_addr & 1))).to_u8!
+        @waitcnt.read_byte(io_addr & 1)
       else
         0_u8 # todo: oob reads
       end
@@ -64,9 +50,7 @@ module GBA
       elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
         @gba.interrupts[io_addr] = value
       elsif 0x204 <= io_addr <= 0x205
-        shift = 8 * (io_addr & 1)
-        mask = 0xFF00_u16 >> shift
-        @waitcnt.value = (@waitcnt.value & mask) | value.to_u16 << shift
+        @waitcnt.write_byte(io_addr & 1, value)
       elsif io_addr == 0x301
         if bit?(value, 7)
           abort "Stopping not supported"

@@ -1,25 +1,7 @@
 module GBA
   class Interrupts
-    class InterruptReg < BitField(UInt16)
-      num not_used, 2, lock: true
-      bool game_pak
-      bool keypad
-      bool dma3
-      bool dma2
-      bool dma1
-      bool dma0
-      bool serial
-      bool timer3
-      bool timer2
-      bool timer1
-      bool timer0
-      bool vcounter
-      bool hblank
-      bool vblank
-    end
-
-    getter reg_ie : InterruptReg = InterruptReg.new 0
-    getter reg_if : InterruptReg = InterruptReg.new 0
+    getter reg_ie = Reg::InterruptReg.new 0
+    getter reg_if = Reg::InterruptReg.new 0
     getter ime : Bool = false
 
     def initialize(@gba : GBA)

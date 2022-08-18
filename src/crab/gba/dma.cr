@@ -47,13 +47,15 @@ module GBA
       reg = (io_addr - 0xB0) % 12
       case reg
       when 0, 1, 2, 3 # dmasad
-        0_u8 # todo: OOB read
+        0_u8          # todo: OOB read
       when 4, 5, 6, 7 # dmadad
-        0_u8 # todo: OOB read
-      when 8, 9 # dmacnt_l
-        0_u8 # write-only
-      when 10, 11 # dmacnt_h
-        (@dmacnt_h[channel].value >> 8 * (reg - 10)).to_u8!
+        0_u8          # todo: OOB read
+      when 8, 9       # dmacnt_l
+        0_u8          # write-only
+      when 10, 11     # dmacnt_h
+        val = @dmacnt_h[channel].read_byte(io_addr & 1)
+        val |= 0b1000 if io_addr == 0xDF && @dmacnt_h[3].game_pak # DMA3 only
+        val
       else abort "Unmapped DMA read ~ addr:#{hex_str io_addr.to_u8}"
       end
     end
@@ -81,12 +83,9 @@ module GBA
         dmacnt_l = @dmacnt_l[channel]
         @dmacnt_l[channel] = ((dmacnt_l & ~mask) | value) & LEN_MASK[channel]
       when 10, 11 # dmacnt_h
-        reg -= 10
-        mask = 0xFF_u32 << (8 * reg)
-        value = value.to_u16 << (8 * reg)
         dmacnt_h = @dmacnt_h[channel]
         enabled = dmacnt_h.enable
-        dmacnt_h.value = (dmacnt_h.value & ~mask) | value
+        dmacnt_h.write_byte(io_addr & 1, value)
         if dmacnt_h.enable && !enabled
           @src[channel], @dst[channel] = @dmasad[channel], @dmadad[channel]
           trigger channel if dmacnt_h.start_timing == StartTiming::Immediate.value

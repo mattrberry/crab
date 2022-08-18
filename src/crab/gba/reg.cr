@@ -27,6 +27,45 @@ module GBA
     end
 
     ####################
+    # General
+
+    class WAITCNT < BitField(UInt16)
+      include Base16
+      bool gamepak_type, read_only: true
+      bool gamepack_prefetch_buffer
+      bool not_used, read_only: true
+      num phi_terminal_output, 2
+      num wait_state_2_second_access, 1
+      num wait_state_2_first_access, 2
+      num wait_state_1_second_access, 1
+      num wait_state_1_first_access, 2
+      num wait_state_0_second_access, 1
+      num wait_state_0_first_access, 2
+      num sram_wait_control, 2
+    end
+
+    ####################
+    # Interrupts
+
+    class InterruptReg < BitField(UInt16)
+      num not_used, 2, read_only: true
+      bool game_pak
+      bool keypad
+      bool dma3
+      bool dma2
+      bool dma1
+      bool dma0
+      bool serial
+      bool timer3
+      bool timer2
+      bool timer1
+      bool timer0
+      bool vcounter
+      bool hblank
+      bool vblank
+    end
+
+    ####################
     # APU
 
     class SOUNDCNT_L < BitField(UInt16)
@@ -38,22 +77,22 @@ module GBA
       num channel_3_right, 1
       num channel_2_right, 1
       num channel_1_right, 1
-      bool not_used_1, lock: true
+      bool not_used_1, read_only: true
       num left_volume, 3
-      bool not_used_2, lock: true
+      bool not_used_2, read_only: true
       num right_volume, 3
     end
 
     class SOUNDCNT_H < BitField(UInt16)
-      bool dma_sound_b_reset, lock: true
+      bool dma_sound_b_reset, read_only: true
       num dma_sound_b_timer, 1
       num dma_sound_b_left, 1
       num dma_sound_b_right, 1
-      bool dma_sound_a_reset, lock: true
+      bool dma_sound_a_reset, read_only: true
       num dma_sound_a_timer, 1
       num dma_sound_a_left, 1
       num dma_sound_a_right, 1
-      num not_used, 4, lock: true
+      num not_used, 4, read_only: true
       num dma_sound_b_volume, 1
       num dma_sound_a_volume, 1
       num sound_volume, 2
@@ -70,25 +109,26 @@ module GBA
     # DMA
 
     class DMACNT < BitField(UInt16)
+      include Base16
       bool enable
       bool irq_enable
       num start_timing, 2
-      bool game_pak
+      bool game_pak, write_only: true # special dma3 case handled separately
       num type, 1
       bool repeat
       num source_control, 2
       num dest_control, 2
-      num not_used, 5
+      num not_used, 5, read_only: true
     end
 
     ####################
     # Timer
 
     class TMCNT < BitField(UInt16)
-      num not_used_1, 8, lock: true
+      num not_used_1, 8, read_only: true
       bool enable
       bool irq_enable
-      num not_used_2, 3, lock: true
+      num not_used_2, 3, read_only: true
       bool cascade
       num frequency, 2
     end
@@ -110,7 +150,7 @@ module GBA
       bool obj_mapping_1d       # (0=Two dimensional, 1=One dimensional)
       bool hblank_interval_free # (1=Allow access to OAM during H-Blank)
       bool display_frame_select # (0-1=Frame 0-1) (for BG Modes 4,5 only)
-      bool reserved_for_bios, lock: true
+      bool reserved_for_bios, read_only: true
       num bg_mode, 3 # (0-5=Video Mode 0-5, 6-7=Prohibited)
     end
 
@@ -121,9 +161,9 @@ module GBA
       bool vcounter_irq_enable
       bool hblank_irq_enable
       bool vblank_irq_enable
-      bool vcounter, lock: true
-      bool hblank, lock: true
-      bool vblank, lock: true
+      bool vcounter, read_only: true
+      bool hblank, read_only: true
+      bool vblank, read_only: true
     end
 
     class BGCNT < BitField(UInt16)
@@ -133,14 +173,14 @@ module GBA
       num screen_base_block, 5
       bool color_mode_8bpp
       bool mosaic
-      num not_used, 2, lock: true
+      num not_used, 2, read_only: true
       num character_base_block, 2
       num priority, 2
     end
 
     class BGOFS < BitField(UInt16)
       include Base16
-      num not_used, 7, lock: true
+      num not_used, 7, read_only: true
       num offset, 9
     end
 
@@ -157,7 +197,7 @@ module GBA
 
     class BGREF < BitField(UInt32)
       include Base32
-      num not_used, 4, lock: true
+      num not_used, 4, read_only: true
       bool sign
       num integer, 19
       num fraction, 8
@@ -181,11 +221,11 @@ module GBA
 
     class WININ < BitField(UInt16)
       include Base16
-      num not_used_1, 2, lock: true
+      num not_used_1, 2, read_only: true
       bool window_1_color_special_effect
       bool window_1_obj_enable
       num window_1_enable_bits, 4
-      num not_used_0, 2, lock: true
+      num not_used_0, 2, read_only: true
       bool window_0_color_special_effect
       bool window_0_obj_enable
       num window_0_enable_bits, 4
@@ -193,11 +233,11 @@ module GBA
 
     class WINOUT < BitField(UInt16)
       include Base16
-      num not_used_obj, 2, lock: true
+      num not_used_obj, 2, read_only: true
       bool obj_window_color_special_effect
       bool obj_window_obj_enable
       num obj_window_enable_bits, 4
-      num not_used_outside, 2, lock: true
+      num not_used_outside, 2, read_only: true
       bool outside_color_special_effect
       bool outside_obj_enable
       num outside_enable_bits, 4
@@ -213,7 +253,7 @@ module GBA
 
     class BLDCNT < BitField(UInt16)
       include Base16
-      num not_used, 2, lock: true
+      num not_used, 2, read_only: true
       bool bd_2nd_target_pixel
       bool obj_2nd_target_pixel
       bool bg3_2nd_target_pixel
@@ -235,15 +275,15 @@ module GBA
 
     class BLDALPHA < BitField(UInt16)
       include Base16
-      num not_used_13_15, 3, lock: true
+      num not_used_13_15, 3, read_only: true
       num evb_coefficient, 5
-      num not_used_5_7, 3, lock: true
+      num not_used_5_7, 3, read_only: true
       num eva_coefficient, 5
     end
 
     class BLDY < BitField(UInt16)
       include Base16
-      num not_used, 11, lock: true
+      num not_used, 11, read_only: true
       num evy_coefficient, 5
     end
   end
