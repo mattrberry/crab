@@ -45,11 +45,10 @@ module GBA
 
     def [](index : Int) : UInt8
       case index
-      when 0x68 then 0x3F_u8 | @duty << 6
+      when 0x68 then @duty << 6
       when 0x69 then read_NRx2
-      when 0x6C then 0xFF_u8 # write-only
-      when 0x6D then 0xBF_u8 | (@length_enable ? 0x40 : 0)
-      else           puts "Reading from invalid Channel2 register: #{hex_str index.to_u16}".colorize.fore(:red); 0_u8 # todo: open bus
+      when 0x6D then (@length_enable ? 0x40_u8 : 0_u8)
+      else           0_u8
       end
     end
 

@@ -169,11 +169,11 @@ module GBA
     class BGCNT < BitField(UInt16)
       include Base16
       num screen_size, 2
-      bool affine_wrap
+      bool affine_wrap, write_only: true # used only in bg2 and bg3
       num screen_base_block, 5
       bool color_mode_8bpp
       bool mosaic
-      num not_used, 2, read_only: true
+      num not_used, 2
       num character_base_block, 2
       num priority, 2
     end

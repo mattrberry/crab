@@ -20,7 +20,7 @@ module GBA
     end
 
     def [](index : Int) : UInt8
-      0_u8
+      @gba.bus.read_open_bus_value(index)
     end
 
     def []=(index : Int, value : Byte) : Nil

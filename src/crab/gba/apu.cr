@@ -148,20 +148,19 @@ module GBA
       when 0x82          then @soundcnt_h.value.to_u8!
       when 0x83          then (@soundcnt_h.value >> 8).to_u8!
       when 0x84
-        0x70_u8 |
-          (@sound_enabled ? 0x80 : 0) |
+        (@sound_enabled ? 0x80_u8 : 0_u8) |
           (@channel4.enabled ? 0b1000 : 0) |
           (@channel3.enabled ? 0b0100 : 0) |
           (@channel2.enabled ? 0b0010 : 0) |
           (@channel1.enabled ? 0b0001 : 0)
-      when 0x85 then 0_u8 # unused
-      when 0x88 then @soundbias.value.to_u8!
-      when 0x89 then (@soundbias.value >> 8).to_u8!
-      else           puts "Unmapped APU read ~ addr:#{hex_str io_addr.to_u8}".colorize.fore(:red); 0_u8 # todo: open bus
+      when 0x85, 0x86, 0x87 then 0_u8
+      when 0x88             then @soundbias.value.to_u8!
+      when 0x89             then (@soundbias.value >> 8).to_u8!
+      when 0x8A, 0x8B       then 0_u8
+      else                       @gba.bus.read_open_bus_value(io_addr)
       end
     end
 
-    # write to apu memory
     def []=(io_addr : Int, value : UInt8) : Nil
       return unless @sound_enabled || 0x82 <= io_addr <= 0x89 || Channel3::WAVE_RAM_RANGE.includes?(io_addr)
       case io_addr
@@ -190,7 +189,6 @@ module GBA
       when 0x88 then @soundbias.value = (@soundbias.value & 0xFF00) | value
       when 0x89 then @soundbias.value = (@soundbias.value & 0x00FF) | value.to_u16 << 8
       when 0xA8..0xAF # unused
-      else puts "Unmapped APU write ~ addr:#{hex_str io_addr.to_u8}, val:#{value}".colorize(:yellow)
       end
     end
   end

@@ -266,5 +266,19 @@ module GBA
       write_byte_internal(index + 2, (value >> 16).to_u8!)
       write_byte_internal(index + 3, (value >> 24).to_u8!)
     end
+
+    def read_open_bus_value(index : Int, _file = __FILE__) : Byte
+      log "Reading open bus at #{hex_str index.to_u32} from #{_file}"
+      shift = (index & 3) * 8
+      if @gba.cpu.cpsr.thumb
+        # todo: special handling for 16-bit vs 32-bit regions
+        # todo: does this need to have both of the previous opcodes?
+        opcode = read_half_internal(@gba.cpu.r[15] & ~1).to_u32!
+        word = opcode << 16 | opcode
+      else
+        word = read_word_internal(@gba.cpu.r[15] & ~3)
+      end
+      (word >> shift).to_u8!
+    end
   end
 end

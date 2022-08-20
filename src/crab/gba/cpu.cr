@@ -43,7 +43,7 @@ module GBA
     end
 
     getter r = Slice(Word).new 16
-    @cpsr : PSR = PSR.new CPU::Mode::SYS.value
+    getter cpsr : PSR = PSR.new CPU::Mode::SYS.value
     @spsr : PSR = PSR.new CPU::Mode::SYS.value
     getter pipeline = Pipeline.new
     getter lut : Slice(Proc(Word, Nil)) { fill_lut }
@@ -100,12 +100,12 @@ module GBA
     def fill_pipeline : Nil
       if @cpsr.thumb
         pc = @r[15] & ~1
-        @pipeline.push @gba.bus.read_half(@r[15] &- 2).to_u32! if @pipeline.size == 0
-        @pipeline.push @gba.bus.read_half(@r[15]).to_u32! if @pipeline.size == 1
+        @pipeline.push @gba.bus.read_half(pc &- 2).to_u32! if @pipeline.size == 0
+        @pipeline.push @gba.bus.read_half(pc).to_u32! if @pipeline.size == 1
       else
         pc = @r[15] & ~3
-        @pipeline.push @gba.bus.read_word(@r[15] &- 4) if @pipeline.size == 0
-        @pipeline.push @gba.bus.read_word(@r[15]) if @pipeline.size == 1
+        @pipeline.push @gba.bus.read_word(pc &- 4) if @pipeline.size == 0
+        @pipeline.push @gba.bus.read_word(pc) if @pipeline.size == 1
       end
     end
 

@@ -46,17 +46,12 @@ module GBA
       channel = (io_addr - 0xB0) // 12
       reg = (io_addr - 0xB0) % 12
       case reg
-      when 0, 1, 2, 3 # dmasad
-        0_u8          # todo: OOB read
-      when 4, 5, 6, 7 # dmadad
-        0_u8          # todo: OOB read
-      when 8, 9       # dmacnt_l
-        0_u8          # write-only
-      when 10, 11     # dmacnt_h
+      when 8, 9 then 0_u8 # dmacnt_l write-only
+      when 10, 11
         val = @dmacnt_h[channel].read_byte(io_addr & 1)
         val |= 0b1000 if io_addr == 0xDF && @dmacnt_h[3].game_pak # DMA3 only
         val
-      else abort "Unmapped DMA read ~ addr:#{hex_str io_addr.to_u8}"
+      else @gba.bus.read_open_bus_value(io_addr)
       end
     end
 

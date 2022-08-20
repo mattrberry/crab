@@ -402,34 +402,16 @@ module GBA
       when 0x002..0x003 then 0_u8 # todo green swap
       when 0x004..0x005 then @dispstat.read_byte(io_addr & 1)
       when 0x006..0x007 then (@vcount >> (8 * (io_addr & 1))).to_u8!
-      when 0x008..0x00F then @bgcnt[(io_addr - 0x008) >> 1].read_byte(io_addr & 1)
-      when 0x010..0x01F
-        bg_num = (io_addr - 0x010) >> 2
-        if bit?(io_addr, 1)
-          @bgvofs[bg_num].read_byte(io_addr & 1)
-        else
-          @bghofs[bg_num].read_byte(io_addr & 1)
-        end
-      when 0x020..0x03F
-        bg_num = (io_addr & 0x10) >> 4 # (bg 0/1 represents bg 2/3, since those are the only aff bgs)
-        offs = io_addr & 0xF
-        if offs >= 8
-          offs -= 8
-          @bgref[bg_num][offs >> 2].read_byte(offs & 3)
-        else
-          @bgaff[bg_num][offs >> 1].read_byte(offs & 1)
-        end
-      when 0x040..0x041 then @win0h.read_byte(io_addr & 1)
-      when 0x042..0x043 then @win1h.read_byte(io_addr & 1)
-      when 0x044..0x045 then @win0v.read_byte(io_addr & 1)
-      when 0x046..0x047 then @win1v.read_byte(io_addr & 1)
+      when 0x008..0x00F
+        bg_num = (io_addr - 0x008) >> 1
+        val = @bgcnt[bg_num].read_byte(io_addr & 1)
+        val |= 0x20 if (io_addr == 0xD || io_addr == 0xF) && @bgcnt[bg_num].affine_wrap
+        val
       when 0x048..0x049 then @winin.read_byte(io_addr & 1)
       when 0x04A..0x04B then @winout.read_byte(io_addr & 1)
-      when 0x04C..0x04D then @mosaic.read_byte(io_addr & 1)
       when 0x050..0x051 then @bldcnt.read_byte(io_addr & 1)
       when 0x052..0x053 then @bldalpha.read_byte(io_addr & 1)
-      when 0x054..0x055 then @bldy.read_byte(io_addr & 1)
-      else                   log "Unmapped PPU read ~ addr:#{hex_str io_addr.to_u8}"; 0_u8 # todo: open bus
+      else                   @gba.bus.read_open_bus_value(io_addr)
       end
     end
 
