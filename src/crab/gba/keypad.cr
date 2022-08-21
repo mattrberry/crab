@@ -1,57 +1,21 @@
 module GBA
   class Keypad
-    class KEYINPUT < BitField(UInt16)
-      num not_used, 6
-      bool l
-      bool r
-      bool down
-      bool up
-      bool left
-      bool right
-      bool start
-      bool :select
-      bool b
-      bool a
-    end
-
-    class KEYCNT < BitField(UInt16)
-      bool irq_condition
-      bool irq_enable
-      num not_used, 4
-      bool l
-      bool r
-      bool down
-      bool up
-      bool left
-      bool right
-      bool start
-      bool :select
-      bool b
-      bool a
-    end
-
-    @keyinput = KEYINPUT.new 0xFFFF_u16
-    @keycnt = KEYCNT.new 0xFFFF_u16
+    @keyinput = Reg::KEYINPUT.new 0xFFFF_u16
+    @keycnt = Reg::KEYCNT.new 0xFFFF_u16
 
     def initialize(@gba : GBA)
     end
 
     def [](io_addr : Int) : Byte
       case io_addr
-      when 0x130 then 0xFF_u8 & @keyinput.value
-      when 0x131 then 0xFF_u8 & @keyinput.value >> 8
-      when 0x132 then 0xFF_u8 & @keycnt.value
-      when 0x133 then 0xFF_u8 & @keycnt.value >> 8
-      else            raise "Unimplemented keypad read ~ addr:#{hex_str io_addr.to_u8!}"
+      when 0x130..0x131 then @keyinput.read_byte(io_addr & 1)
+      when 0x132..0x133 then @keycnt.read_byte(io_addr & 1)
+      else                   abort "Unreachable keypad read #{hex_str io_addr}"
       end
     end
 
     def []=(io_addr : Int, value : Byte) : Nil
-      case io_addr
-      when 0x130 then nil
-      when 0x131 then nil
-      else            raise "Unimplemented keypad write ~ addr:#{hex_str io_addr.to_u8!}, val:#{value}"
-      end
+      puts "TODO: Implement stopping and keycnt behavior" if 0x132 <= io_addr <= 0x133
     end
 
     def handle_input(input : Input, pressed : Bool) : Nil

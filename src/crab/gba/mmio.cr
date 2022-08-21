@@ -12,8 +12,7 @@ module GBA
       when 0x060..0x0A7 then @gba.apu[io_addr]
       when 0x0B0..0x0DF then @gba.dma[io_addr]
       when 0x100..0x10F then @gba.timer[io_addr]
-      when 0x120..0x12B, 0x134..0x159
-        # todo: serial
+      when 0x120..0x12B, 0x134..0x159 # todo: serial
         if io_addr == 0x135
           0x80_u8
         else
@@ -29,25 +28,19 @@ module GBA
 
     def []=(index : Int, value : Byte) : Nil
       io_addr = 0xFFFFFF_u32 & index
-      if io_addr <= 0x05F
-        @gba.ppu[io_addr] = value
-      elsif io_addr <= 0xAF
-        @gba.apu[io_addr] = value
-      elsif io_addr <= 0xFF
-        @gba.dma[io_addr] = value
-      elsif 0x100 <= io_addr <= 0x10F
-        @gba.timer[io_addr] = value
-      elsif 0x130 <= io_addr <= 0x133
-        @gba.keypad[io_addr]
-      elsif 0x120 <= io_addr <= 0x12F || 0x134 <= io_addr <= 0x1FF
-        # todo: serial
-      elsif 0x200 <= io_addr <= 0x203 || 0x208 <= io_addr <= 0x209
-        @gba.interrupts[io_addr] = value
-      elsif 0x204 <= io_addr <= 0x205
-        @waitcnt.write_byte(io_addr & 1, value)
-      elsif io_addr == 0x301
+      case io_addr
+      when 0x000..0x055 then @gba.ppu[io_addr] = value
+      when 0x060..0x0A7 then @gba.apu[io_addr] = value
+      when 0x0B0..0x0DF then @gba.dma[io_addr] = value
+      when 0x100..0x10F then @gba.timer[io_addr] = value
+      when 0x120..0x12B, 0x134..0x159 # todo: serial
+      when 0x130..0x133 then @gba.keypad[io_addr] = value
+      when 0x200..0x203,
+           0x208..0x209 then @gba.interrupts[io_addr] = value
+      when 0x204..0x205 then @waitcnt.write_byte(io_addr & 1, value)
+      when 0x301
         if bit?(value, 7)
-          abort "Stopping not supported"
+          puts "TODO: Implement stopping behavior"
         else
           @gba.cpu.halted = true
         end

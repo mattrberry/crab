@@ -286,5 +286,40 @@ module GBA
       num not_used, 11, read_only: true
       num evy_coefficient, 5
     end
+
+    ####################
+    # Keypad
+
+    class KEYINPUT < BitField(UInt16)
+      include Base16
+      num not_used, 6
+      bool l
+      bool r
+      bool down
+      bool up
+      bool left
+      bool right
+      bool start
+      bool :select
+      bool b
+      bool a
+    end
+
+    class KEYCNT < BitField(UInt16)
+      include Base16
+      bool irq_condition
+      bool irq_enable
+      num not_used, 4
+      bool l
+      bool r
+      bool down
+      bool up
+      bool left
+      bool right
+      bool start
+      bool :select
+      bool b
+      bool a
+    end
   end
 end
