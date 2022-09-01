@@ -31,15 +31,15 @@ module GBA
     end
 
     class PSR < BitField(UInt32)
-      bool negative
-      bool zero
-      bool carry
-      bool overflow
-      num reserved, 20
-      bool irq_disable
-      bool fiq_disable
-      bool thumb
       num mode, 5
+      bool thumb
+      bool fiq_disable
+      bool irq_disable
+      num reserved, 20
+      bool overflow
+      bool carry
+      bool zero
+      bool negative
     end
 
     getter r = Slice(Word).new 16
