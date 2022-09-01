@@ -63,19 +63,19 @@ module GBA
         end
       when .includes? State::CMD_2
         if index == 0x5555
-          case value
-          when Command::ENTER_IDENT.value   then @state |= State::IDENTIFICATION
-          when Command::EXIT_IDENT.value    then @state ^= State::IDENTIFICATION
-          when Command::PREPARE_ERASE.value then @state |= State::PREPARE_ERASE
-          when Command::ERASE_ALL.value
+          case Command.new(value)
+          when Command::ENTER_IDENT   then @state |= State::IDENTIFICATION
+          when Command::EXIT_IDENT    then @state ^= State::IDENTIFICATION
+          when Command::PREPARE_ERASE then @state |= State::PREPARE_ERASE
+          when Command::ERASE_ALL
             if @state.includes? State::PREPARE_ERASE
               @memory.size.times { |i| @memory[i] = 0xFF }
               @dirty = true
               @state ^= State::PREPARE_ERASE
             end
-          when Command::PREPARE_WRITE.value then @state |= State::PREPARE_WRITE
-          when Command::SET_BANK.value      then @state |= State::SET_BANK if @type == Type::FLASH1M
-          else                                   puts "Unsupported flash command #{hex_str value}"
+          when Command::PREPARE_WRITE then @state |= State::PREPARE_WRITE
+          when Command::SET_BANK      then @state |= State::SET_BANK if @type == Type::FLASH1M
+          else                             puts "Unsupported flash command #{hex_str value}"
           end
         elsif @state.includes?(State::PREPARE_ERASE) && index & 0x0FFF == 0 && value == Command::ERASE_CHUNK.value
           0x1000.times { |i| @memory[0x10000 * @bank + index + i] = 0xFF }
