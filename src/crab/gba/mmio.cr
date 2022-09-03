@@ -40,7 +40,7 @@ module GBA
       when 0x204..0x205 then @waitcnt.write_byte(io_addr & 1, value)
       when 0x301
         if bit?(value, 7)
-          puts "TODO: Implement stopping behavior"
+          # TODO: See about supporting some kind of stopping
         else
           @gba.cpu.halted = true
         end

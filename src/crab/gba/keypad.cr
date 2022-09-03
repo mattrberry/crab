@@ -15,7 +15,7 @@ module GBA
     end
 
     def []=(io_addr : Int, value : Byte) : Nil
-      puts "TODO: Implement stopping and keycnt behavior" if 0x132 <= io_addr <= 0x133
+      # TODO: If stopping is implemented, implement keycnt to exit stop mode
     end
 
     def handle_input(input : Input, pressed : Bool) : Nil
