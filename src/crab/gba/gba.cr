@@ -12,7 +12,6 @@ require "./cpu"
 require "./ppu"
 require "./apu"
 require "./dma"
-require "./debugger"
 
 module GBA
   class GBA < Emu
@@ -28,7 +27,6 @@ module GBA
     getter! ppu : PPU
     getter! apu : APU
     getter! dma : DMA
-    getter! debugger : Debugger
 
     def initialize(@bios_path : String, @rom_path : String, @run_bios : Bool)
       @scheduler = Scheduler.new
@@ -46,7 +44,6 @@ module GBA
       @ppu = PPU.new self
       @apu = APU.new self
       @dma = DMA.new self
-      @debugger = Debugger.new self
 
       handle_saves
       cpu.skip_bios unless @run_bios
