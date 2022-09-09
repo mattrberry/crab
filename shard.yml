@@ -8,7 +8,9 @@ targets:
   crab:
     main: src/crab.cr
 
-crystal: ">=0.36.1, < 2.0.0"
+# Crystal 1.5.1 is required only for macOS due to a C-binding issue.
+# If you aren't on macOS, lower Crystal versions may work.
+crystal: ">=1.5.1, < 2.0.0"
 
 dependencies:
   bitfield:
