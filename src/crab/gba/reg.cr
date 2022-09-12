@@ -186,25 +186,25 @@ module GBA
 
     class BGAFF < BitField(UInt16)
       include Base16
+      num fraction, 8
+      num integer, 7
+      bool sign
 
       def num : Int16
         value.to_i16!
       end
-      num fraction, 8
-      num integer, 7
-      bool sign
     end
 
     class BGREF < BitField(UInt32)
       include Base32
-
-      def num : Int32
-        (value << 4).to_i32! >> 4
-      end
       num fraction, 8
       num integer, 19
       bool sign
       num not_used, 4, read_only: true
+
+      def num : Int32
+        (value << 4).to_i32! >> 4
+      end
     end
 
     class WINH < BitField(UInt16)
@@ -253,10 +253,6 @@ module GBA
 
     class BLDCNT < BitField(UInt16)
       include Base16
-
-      def layer_target?(layer : Int, target : Int) : Bool
-        bit?(value, layer + ((target - 1) * 8))
-      end
       bool bg0_1st_target_pixel
       bool bg1_1st_target_pixel
       bool bg2_1st_target_pixel
@@ -271,6 +267,10 @@ module GBA
       bool obj_2nd_target_pixel
       bool bd_2nd_target_pixel
       num not_used, 2, read_only: true
+
+      def layer_target?(layer : Int, target : Int) : Bool
+        bit?(value, layer + ((target - 1) * 8))
+      end
     end
 
     class BLDALPHA < BitField(UInt16)
