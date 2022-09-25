@@ -141,8 +141,8 @@ module GBA
         else
           arm_execute instr
         end
-        @gba.scheduler.tick @gba.bus.cycles
-        @gba.bus.cycles = 0
+        cycles, @gba.bus.cycles = @gba.bus.cycles, 0
+        @gba.scheduler.tick cycles
       else
         @gba.scheduler.fast_forward
       end
