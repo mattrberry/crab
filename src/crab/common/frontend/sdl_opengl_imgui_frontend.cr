@@ -28,7 +28,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   @last_time = Time.utc
   @seconds : Int32 = Time.utc.second
 
-  @last_sdl_timestamp = 0_u32
+  @last_mouse_motion = 0_u32
   @enable_overlay = false
   @pause = false
   @scale = 3
@@ -169,7 +169,7 @@ class SDLOpenGLImGuiFrontend < Frontend
         case LibSDL::WindowEventID.new(event.event.to_i!)
         when LibSDL::WindowEventID::SIZE_CHANGED then LibGL.viewport(0, 0, @window.width, @window.height)
         end
-      when SDL::Event::MouseMotion then @last_sdl_timestamp = event.timestamp
+      when SDL::Event::MouseMotion then @last_mouse_motion = event.timestamp
       when SDL::Event::Quit        then exit
       else                              nil
       end
@@ -204,6 +204,17 @@ class SDLOpenGLImGuiFrontend < Frontend
     @controller.class == StubbedController
   end
 
+  # Determine whether to show the main menu bar and set the cursor accordingly.
+  # todo: don't time out menu bar when menu item is open
+  private def show_menu_bar? : Bool
+    window_focused = LibSDL.get_mouse_focus == @window.to_unsafe
+    mouse_timed_out = LibSDL.get_ticks - @last_mouse_motion > 3000 # 3 second timeout
+    dialog_open = @file_explorer.open? || @keybindings.open?
+    res = stubbed? || (window_focused && !mouse_timed_out) || dialog_open
+    LibSDL.show_cursor(res)
+    res
+  end
+
   private def render_imgui : Nil
     ImGui::OpenGL3.new_frame
     ImGui::SDL2.new_frame(@window)
@@ -214,7 +225,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     open_bios_selection = false
     open_keybindings = false
 
-    if ((LibSDL.get_mouse_focus && LibSDL.get_ticks - @last_sdl_timestamp < 3000) || stubbed?) && !@file_explorer.open? && !@keybindings.open?
+    if show_menu_bar?
       if ImGui.begin_main_menu_bar
         if ImGui.begin_menu "File"
           open_rom_selection = ImGui.menu_item "Open ROM"
