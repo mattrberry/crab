@@ -226,62 +226,56 @@ class SDLOpenGLImGuiFrontend < Frontend
     open_keybindings = false
 
     if show_menu_bar?
-      if ImGui.begin_main_menu_bar
-        if ImGui.begin_menu "File"
-          open_rom_selection = ImGui.menu_item "Open ROM"
-          open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
-          if ImGui.begin_menu "Recent", @config.recents.size > 0
-            @config.recents.each do |recent|
-              load_new_rom(recent) if ImGui.menu_item recent
-            end
-            ImGui.separator
-            if ImGui.menu_item "Clear"
-              @config.recents.clear
-              @config.commit
-            end
-            ImGui.end_menu
-          end
-          ImGui.separator
-          open_keybindings = ImGui.menu_item "Keybindings"
-          ImGui.separator
-          exit if ImGui.menu_item "Exit", "Ctrl+Q"
-          ImGui.end_menu
-        end
+      if ImGui.main_menu_bar do
+           ImGui.menu "File" do
+             open_rom_selection = ImGui.menu_item "Open ROM"
+             open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
+             ImGui.menu "Recent", @config.recents.size > 0 do
+               @config.recents.each do |recent|
+                 load_new_rom(recent) if ImGui.menu_item recent
+               end
+               ImGui.separator
+               if ImGui.menu_item "Clear"
+                 @config.recents.clear
+                 @config.commit
+               end
+             end
+             ImGui.separator
+             open_keybindings = ImGui.menu_item "Keybindings"
+             ImGui.separator
+             exit if ImGui.menu_item "Exit", "Ctrl+Q"
+           end
 
-        if ImGui.begin_menu "Emulation"
-          pause = @pause
+           ImGui.menu "Emulation" do
+             pause = @pause
 
-          ImGui.menu_item "Pause", "Ctrl+P", pointerof(pause)
-          @controller.toggle_sync if ImGui.menu_item "Audio Sync", "Tab", @controller.sync?, !stubbed?
+             ImGui.menu_item "Pause", "Ctrl+P", pointerof(pause)
+             @controller.toggle_sync if ImGui.menu_item "Audio Sync", "Tab", @controller.sync?, !stubbed?
 
-          pause(pause)
-          ImGui.end_menu
-        end
+             pause(pause)
+           end
 
-        if ImGui.begin_menu "Audio/Video"
-          if ImGui.begin_menu "Frame size"
-            (1..8).each do |scale|
-              if ImGui.menu_item "#{scale}x", selected: scale == @scale
-                @scale = scale
-                LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
-              end
-            end
-            ImGui.separator
-            @window.fullscreen = @fullscreen if ImGui.menu_item "Fullscreen", "Ctrl+F", pointerof(@fullscreen)
-            ImGui.end_menu
-          end
-          ImGui.end_menu
-        end
+           ImGui.menu "Audio/Video" do
+             ImGui.menu "Frame size" do
+               (1..8).each do |scale|
+                 if ImGui.menu_item "#{scale}x", selected: scale == @scale
+                   @scale = scale
+                   LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
+                 end
+               end
+               ImGui.separator
+               @window.fullscreen = @fullscreen if ImGui.menu_item "Fullscreen", "Ctrl+F", pointerof(@fullscreen)
+             end
+           end
 
-        if ImGui.begin_menu "Debug"
-          ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
-          ImGui.separator
-          @controller.render_debug_items
-          ImGui.end_menu
-        end
+           ImGui.menu "Debug" do
+             ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
+             ImGui.separator
+             @controller.render_debug_items
+           end
 
-        overlay_height += ImGui.get_window_size.y
-        ImGui.end_main_menu_bar
+           overlay_height += ImGui.get_window_size.y
+         end
       end
     end
 
@@ -293,17 +287,17 @@ class SDLOpenGLImGuiFrontend < Frontend
     if @enable_overlay
       ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)
       ImGui.set_next_window_bg_alpha(0.5)
-      ImGui.begin("Overlay", pointerof(@enable_overlay),
+      ImGui.window("Overlay", pointerof(@enable_overlay),
         ImGui::ImGuiWindowFlags::NoDecoration | ImGui::ImGuiWindowFlags::NoMove |
-        ImGui::ImGuiWindowFlags::NoSavedSettings)
-      io_framerate = @io.framerate
-      ImGui.text("FPS:        #{io_framerate.format(decimal_places: 1)}")
-      ImGui.text("Frame time: #{(1000 / io_framerate).format(decimal_places: 3)}ms")
-      ImGui.separator
-      ImGui.text("OpenGL")
-      ImGui.text("  Version: #{@opengl_info.version}")
-      ImGui.text("  Shading: #{@opengl_info.shading}")
-      ImGui.end
+        ImGui::ImGuiWindowFlags::NoSavedSettings) do
+        io_framerate = @io.framerate
+        ImGui.text("FPS:        #{io_framerate.format(decimal_places: 1)}")
+        ImGui.text("Frame time: #{(1000 / io_framerate).format(decimal_places: 3)}ms")
+        ImGui.separator
+        ImGui.text("OpenGL")
+        ImGui.text("  Version: #{@opengl_info.version}")
+        ImGui.text("  Shading: #{@opengl_info.shading}")
+      end
     end
 
     @controller.render_windows

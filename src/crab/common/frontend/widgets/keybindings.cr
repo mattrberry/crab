@@ -41,7 +41,7 @@ module ImGui
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
       hovered_button_color = ImGui.get_style_color_vec4(ImGui::ImGuiCol::ButtonHovered)
-      if ImGui.begin_popup_modal(POPUP_NAME, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize)
+      ImGui.popup_modal(POPUP_NAME, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize) do
         Input.each do |input|
           selected = @selection == input
           keycode = @editing_keycodes.key_for?(input)
@@ -58,7 +58,6 @@ module ImGui
         apply if ImGui.button "Apply"
         ImGui.same_line
         close if ImGui.button "Cancel"
-        ImGui.end_popup
       end
     end
 

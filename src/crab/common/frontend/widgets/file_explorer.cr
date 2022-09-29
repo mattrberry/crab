@@ -22,7 +22,7 @@ module ImGui
       ImGui.open_popup(name.to_s) if open_popup
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
-      if ImGui.begin_popup_modal(name.to_s, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize)
+      ImGui.popup_modal(name.to_s, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize) do
         parts = @config.explorer_dir.parts
         parts.each_with_index do |part, idx|
           ImGui.same_line unless idx == 0
@@ -31,7 +31,7 @@ module ImGui
         display_size = ImGui.get_main_viewport.size
         width = Math.min(display_size.x - 40, 600)
         height = Math.min(display_size.y - 40, 16 * ImGui.get_text_line_height_with_spacing)
-        if ImGui.begin_list_box("##files", ImGui::ImVec2.new(width, height))
+        ImGui.list_box("##files", ImGui::ImVec2.new(width, height)) do
           @matched_entries.each_with_index do |entry, idx|
             next if entry[:hidden] && !@match_hidden
             next if entry[:file?] && !extensions.nil? && !extensions.includes?(entry[:extension])
@@ -53,16 +53,14 @@ module ImGui
             end
             ImGui.set_item_default_focus if is_selected
           end
-          ImGui.end_list_box
         end
-        ImGui.begin_group
-        open_file(name) if ImGui.button "Open"
-        ImGui.same_line
-        close if ImGui.button "Cancel"
-        ImGui.same_line(spacing: 10)
-        ImGui.checkbox("Show hidden files?", pointerof(@match_hidden))
-        ImGui.end_group
-        ImGui.end_popup
+        ImGui.group do
+          open_file(name) if ImGui.button "Open"
+          ImGui.same_line
+          close if ImGui.button "Cancel"
+          ImGui.same_line(spacing: 10)
+          ImGui.checkbox("Show hidden files?", pointerof(@match_hidden))
+        end
       end
     end
 
