@@ -7,5 +7,5 @@
 cimgui.so
 cimgui.dylib
 libcimgui.so
-libcimgui.dynlib
+libcimgui.dylib
 imgui.ini
