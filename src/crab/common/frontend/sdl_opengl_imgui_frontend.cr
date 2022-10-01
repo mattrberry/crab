@@ -88,7 +88,6 @@ class SDLOpenGLImGuiFrontend < Frontend
       render_imgui
       LibSDL.gl_swap_window(@window)
       update_draw_count
-      handle_file_selection
     end
   end
 
@@ -103,23 +102,9 @@ class SDLOpenGLImGuiFrontend < Frontend
     end
   end
 
-  private def handle_file_selection : Nil
-    if selection = @file_explorer.selection
-      file, symbol = selection
-      if symbol == :ROM
-        load_new_rom(file.to_s)
-      elsif symbol == :BIOS
-        load_new_bios(file.to_s)
-      else
-        abort "Internal error: Unexpected file explorer symbol #{symbol}"
-      end
-    end
-  end
-
   private def load_new_rom(rom : String?) : Nil
     LibSDL.close_audio(1)
     @controller = init_controller(nil, rom, @config.run_bios)
-    @file_explorer.clear_selection
 
     @config.recents.delete(rom)
     @config.recents.insert(0, rom)
@@ -143,7 +128,6 @@ class SDLOpenGLImGuiFrontend < Frontend
       abort "Internal error: Cannot set bios #{bios} for controller #{@controller}"
     end
     @config.commit
-    @file_explorer.clear_selection
   end
 
   private def handle_input : Nil
@@ -279,8 +263,12 @@ class SDLOpenGLImGuiFrontend < Frontend
       end
     end
 
-    @file_explorer.render(:ROM, open_rom_selection, ROM_EXTENSIONS)
-    @file_explorer.render(:BIOS, open_bios_selection)
+    @file_explorer.render("ROM", open_rom_selection, ROM_EXTENSIONS) do |path|
+      load_new_rom(path.to_s)
+    end
+    @file_explorer.render("BIOS", open_bios_selection) do |path|
+      load_new_bios(path.to_s)
+    end
 
     @keybindings.render(open_keybindings)
 

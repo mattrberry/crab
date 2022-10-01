@@ -11,18 +11,19 @@ module ImGui
       @open
     end
 
-    getter selection : Tuple(Path, Symbol)? = nil
-
     def initialize(@config : Config)
       gather_entries
     end
 
-    def render(name : Symbol, open_popup : Bool, extensions : Array(String)? = nil) : Nil
+    # Render a file selection dialog with title [name]. Files are filtered by
+    # [estensions]. [handler] is executed and the dialog is closed when a file
+    # is selected.
+    def render(name : String, open_popup : Bool, extensions : Array(String)? = nil, &handler : Path -> _) : Nil
       @open ||= open_popup
-      ImGui.open_popup(name.to_s) if open_popup
+      ImGui.open_popup(name) if open_popup
       center = ImGui.get_main_viewport.get_center
       ImGui.set_next_window_pos(center, ImGui::ImGuiCond::Appearing, ImGui::ImVec2.new(0.5, 0.5))
-      ImGui.popup_modal(name.to_s, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize) do
+      ImGui.popup_modal(name, flags: ImGui::ImGuiWindowFlags::AlwaysAutoResize) do
         parts = @config.explorer_dir.parts
         parts.each_with_index do |part, idx|
           ImGui.same_line unless idx == 0
@@ -46,7 +47,10 @@ module ImGui
             if ImGui.selectable("[#{letter}] #{entry[:name]}#{'/' unless entry[:file?]}", is_selected, flags)
               if entry[:file?]
                 @selected_entry_idx = idx
-                open_file(name) if ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
+                if ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
+                  yield selected_path
+                  close
+                end
               elsif ImGui.is_mouse_double_clicked(ImGui::ImGuiMouseButton::Left)
                 change_dir entry[:name]
               end
@@ -55,7 +59,10 @@ module ImGui
           end
         end
         ImGui.group do
-          open_file(name) if ImGui.button "Open"
+          if ImGui.button "Open"
+            yield selected_path
+            close
+          end
           ImGui.same_line
           close if ImGui.button "Cancel"
           ImGui.same_line(spacing: 10)
@@ -69,13 +76,8 @@ module ImGui
       ImGui.close_current_popup
     end
 
-    def clear_selection : Nil
-      @selection = nil
-    end
-
-    private def open_file(name : Symbol) : Nil
-      @selection = {(@config.explorer_dir / @matched_entries[@selected_entry_idx][:name]).normalize, name}
-      close
+    private def selected_path : Path
+      (@config.explorer_dir / @matched_entries[@selected_entry_idx][:name]).normalize
     end
 
     private def change_dir(name : String) : Nil
