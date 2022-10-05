@@ -210,56 +210,55 @@ class SDLOpenGLImGuiFrontend < Frontend
     open_keybindings = false
 
     if show_menu_bar?
-      if ImGui.main_menu_bar do
-           ImGui.menu "File" do
-             open_rom_selection = ImGui.menu_item "Open ROM"
-             open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
-             ImGui.menu "Recent", @config.recents.size > 0 do
-               @config.recents.each do |recent|
-                 load_new_rom(recent) if ImGui.menu_item recent
-               end
-               ImGui.separator
-               if ImGui.menu_item "Clear"
-                 @config.recents.clear
-                 @config.commit
-               end
-             end
-             ImGui.separator
-             open_keybindings = ImGui.menu_item "Keybindings"
-             ImGui.separator
-             exit if ImGui.menu_item "Exit", "Ctrl+Q"
-           end
+      ImGui.main_menu_bar do
+        ImGui.menu "File" do
+          open_rom_selection = ImGui.menu_item "Open ROM"
+          open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
+          ImGui.menu "Recent", @config.recents.size > 0 do
+            @config.recents.each do |recent|
+              load_new_rom(recent) if ImGui.menu_item recent
+            end
+            ImGui.separator
+            if ImGui.menu_item "Clear"
+              @config.recents.clear
+              @config.commit
+            end
+          end
+          ImGui.separator
+          open_keybindings = ImGui.menu_item "Keybindings"
+          ImGui.separator
+          exit if ImGui.menu_item "Exit", "Ctrl+Q"
+        end
 
-           ImGui.menu "Emulation" do
-             pause = @pause
+        ImGui.menu "Emulation" do
+          pause = @pause
 
-             ImGui.menu_item "Pause", "Ctrl+P", pointerof(pause)
-             @controller.toggle_sync if ImGui.menu_item "Audio Sync", "Tab", @controller.sync?, !stubbed?
+          ImGui.menu_item "Pause", "Ctrl+P", pointerof(pause)
+          @controller.toggle_sync if ImGui.menu_item "Audio Sync", "Tab", @controller.sync?, !stubbed?
 
-             pause(pause)
-           end
+          pause(pause)
+        end
 
-           ImGui.menu "Audio/Video" do
-             ImGui.menu "Frame size" do
-               (1..8).each do |scale|
-                 if ImGui.menu_item "#{scale}x", selected: scale == @scale
-                   @scale = scale
-                   LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
-                 end
-               end
-               ImGui.separator
-               @window.fullscreen = @fullscreen if ImGui.menu_item "Fullscreen", "Ctrl+F", pointerof(@fullscreen)
-             end
-           end
+        ImGui.menu "Audio/Video" do
+          ImGui.menu "Frame size" do
+            (1..8).each do |scale|
+              if ImGui.menu_item "#{scale}x", selected: scale == @scale
+                @scale = scale
+                LibSDL.set_window_size(@window, @controller.window_width * @scale, @controller.window_height * @scale)
+              end
+            end
+            ImGui.separator
+            @window.fullscreen = @fullscreen if ImGui.menu_item "Fullscreen", "Ctrl+F", pointerof(@fullscreen)
+          end
+        end
 
-           ImGui.menu "Debug" do
-             ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
-             ImGui.separator
-             @controller.render_debug_items
-           end
+        ImGui.menu "Debug" do
+          ImGui.menu_item "Overlay", "", pointerof(@enable_overlay)
+          ImGui.separator
+          @controller.render_debug_items
+        end
 
-           overlay_height += ImGui.get_window_size.y
-         end
+        overlay_height += ImGui.get_window_size.y
       end
     end
 
