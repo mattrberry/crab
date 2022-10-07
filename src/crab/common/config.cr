@@ -54,9 +54,15 @@ class Config
 
   class GBA
     include YAML::Serializable
-    property bios : String = "bios.bin"
+    property bios : String?
+
+    DEFAULT_BIOS = Path["#{__DIR__}/../../../bios.bin"].normalize
 
     def initialize
+    end
+
+    def bios : String
+      @bios || DEFAULT_BIOS.to_s
     end
   end
 

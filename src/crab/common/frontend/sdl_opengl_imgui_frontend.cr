@@ -71,7 +71,7 @@ class SDLOpenGLImGuiFrontend < Frontend
     pause(true) if stubbed?
 
     @file_explorer = ImGui::FileExplorer.new @config
-    @keybindings = ImGui::Keybindings.new @config
+    @config_editor = ConfigEditor.new @config, @file_explorer
   end
 
   def run : NoReturn
@@ -119,31 +119,21 @@ class SDLOpenGLImGuiFrontend < Frontend
     pause(false)
   end
 
-  private def load_new_bios(bios : String) : Nil
-    if @controller.class == GBController
-      @config.gbc.bios = bios
-    elsif @controller.class == GBAController
-      @config.gba.bios = bios
-    else
-      abort "Internal error: Cannot set bios #{bios} for controller #{@controller}"
-    end
-    @config.commit
-  end
-
   private def handle_input : Nil
     while event = SDL::Event.poll
       ImGui::SDL2.process_event(event)
       case event
       when SDL::Event::Keyboard
-        if @keybindings.wants_input?
-          @keybindings.key_released(event.sym) unless event.pressed? # pass on key release
+        next if @io.want_capture_keyboard # let ImGui handle keyboard input when focused
+        if @config_editor.keybindings.wants_input?
+          @config_editor.keybindings.key_released(event.sym) unless event.pressed? # pass on key release
         elsif event.mod.includes?(LibSDL::Keymod::LCTRL)
           case event.sym
           when LibSDL::Keycode::P then pause(!@pause) unless event.pressed?
           when LibSDL::Keycode::F then @window.fullscreen = (@fullscreen = !@fullscreen) unless event.pressed?
           when LibSDL::Keycode::Q then exit
           end
-        elsif input = @keybindings[event.sym]?
+        elsif input = @config_editor.keybindings[event.sym]?
           @controller.handle_input(input, event.pressed?)
         elsif event.sym == LibSDL::Keycode::TAB
           @controller.toggle_sync if event.pressed?
@@ -193,8 +183,7 @@ class SDLOpenGLImGuiFrontend < Frontend
   private def show_menu_bar? : Bool
     window_focused = LibSDL.get_mouse_focus == @window.to_unsafe
     mouse_timed_out = LibSDL.get_ticks - @last_mouse_motion > 3000 # 3 second timeout
-    dialog_open = @file_explorer.open? || @keybindings.open?
-    res = stubbed? || (window_focused && !mouse_timed_out) || dialog_open
+    res = stubbed? || (window_focused && !mouse_timed_out)
     LibSDL.show_cursor(res)
     res
   end
@@ -206,14 +195,11 @@ class SDLOpenGLImGuiFrontend < Frontend
 
     overlay_height = 10.0
     open_rom_selection = false
-    open_bios_selection = false
-    open_keybindings = false
 
     if show_menu_bar?
       ImGui.main_menu_bar do
         ImGui.menu "File" do
           open_rom_selection = ImGui.menu_item "Open ROM"
-          open_bios_selection = ImGui.menu_item "Select BIOS" unless stubbed?
           ImGui.menu "Recent", @config.recents.size > 0 do
             @config.recents.each do |recent|
               load_new_rom(recent) if ImGui.menu_item recent
@@ -225,7 +211,7 @@ class SDLOpenGLImGuiFrontend < Frontend
             end
           end
           ImGui.separator
-          open_keybindings = ImGui.menu_item "Keybindings"
+          @config_editor.open = true if ImGui.menu_item "Settings"
           ImGui.separator
           exit if ImGui.menu_item "Exit", "Ctrl+Q"
         end
@@ -265,11 +251,8 @@ class SDLOpenGLImGuiFrontend < Frontend
     @file_explorer.render("ROM", open_rom_selection, ROM_EXTENSIONS) do |path|
       load_new_rom(path.to_s)
     end
-    @file_explorer.render("BIOS", open_bios_selection) do |path|
-      load_new_bios(path.to_s)
-    end
 
-    @keybindings.render(open_keybindings)
+    @config_editor.render
 
     if @enable_overlay
       ImGui.set_next_window_pos(ImGui::ImVec2.new 10, overlay_height)
