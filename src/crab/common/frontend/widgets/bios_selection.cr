@@ -16,7 +16,9 @@ class BiosSelection < Resolvable
   end
 
   def render : Nil
-    ImGui.text("GBC BIOS File:")
+    ImGui.text("GBC BIOS:")
+    ImGui.same_line
+    help_marker("A BIOS is only necessary if you want to see the boot animation. It serves no other purpose. If you decide to use one, make sure to use a BIOS for the CGB, not the DMG.")
     ImGui.same_line
     gbc_bios_text_buffer_valid = @gbc_bios_text_buffer_valid
     ImGui.push_style_color(ImGui::ImGuiCol::Text, RED_TEXT_COL) unless gbc_bios_text_buffer_valid
@@ -28,7 +30,9 @@ class BiosSelection < Resolvable
     ImGui.same_line
     gbc_bios_browse = ImGui.button("Browse##gbc_bios")
 
-    ImGui.text("GBA BIOS File:")
+    ImGui.text("GBA BIOS:")
+    ImGui.same_line
+    help_marker("While a BIOS is included for you, using the official GBA BIOS will *always* be more accurate.")
     ImGui.same_line
     gba_bios_text_buffer_valid = @gba_bios_text_buffer_valid
     ImGui.push_style_color(ImGui::ImGuiCol::Text, RED_TEXT_COL) unless gba_bios_text_buffer_valid
