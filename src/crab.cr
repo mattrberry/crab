@@ -21,7 +21,6 @@ module Crab
 
     rom = nil
     bios = nil
-    headless = false
 
     OptionParser.parse do |parser|
       parser.banner = "#{"crab".colorize.bold} - An accurate and readable Game Boy (Color) (Advance) emulator"

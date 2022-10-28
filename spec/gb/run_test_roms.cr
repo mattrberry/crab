@@ -28,7 +28,7 @@ mooneye_dir = ""
 
 OptionParser.parse do |parser|
   parser.on("--acid PATH", "Path to directory with acid tests") { |path| acid_dir = path }
-  parser.on("--blargg PATH", "Path to directory with blargg tests") { |path| blargg = path }
+  parser.on("--blargg PATH", "Path to directory with blargg tests") { |path| blargg_dir = path }
   parser.on("--mealybug PATH", "Path to directory with mealybug tests") { |path| mealybug_dir = path }
   parser.on("--mooneye PATH", "Path to directory with mooneye tests") { |path| mooneye_dir = path }
   parser.invalid_option { abort parser }
