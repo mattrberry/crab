@@ -36,7 +36,7 @@ class BiosSelection < Resolvable
     ImGui.same_line
     gba_bios_text_buffer_valid = @gba_bios_text_buffer_valid
     ImGui.push_style_color(ImGui::ImGuiCol::Text, RED_TEXT_COL) unless gba_bios_text_buffer_valid
-    ImGui.input_text_with_hint("##gba_bios", "optional", @gba_bios_text_buffer, ImGui::ImGuiInputTextFlags::CallbackAlways) do |data|
+    ImGui.input_text_with_hint("##gba_bios", "optional", @gba_bios_text_buffer, ImGui::ImGuiInputTextFlags::CallbackAlways) do
       @gba_bios_text_buffer_valid = @gba_bios_text_buffer.bytesize == 0 || File.file?(@gba_bios_text_buffer.to_s)
       0 # allow input to proceed
     end

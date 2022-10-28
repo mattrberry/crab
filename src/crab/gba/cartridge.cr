@@ -14,7 +14,7 @@ module GBA
     end
 
     def initialize(rom_path : String)
-      File.open(rom_path) { |file| file.read @rom }
+      File.open(rom_path, &.read(@rom))
       # The following logic accounts for improperly dumped ROMs or bad homebrews.
       # All proper ROMs should have a power-of-two size. The handling here is
       # really pretty arbitrary. mGBA chooses to fill the entire ROM address

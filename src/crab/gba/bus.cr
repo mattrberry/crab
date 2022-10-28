@@ -16,7 +16,7 @@ module GBA
     @gpio : GPIO
 
     def initialize(@gba : GBA, bios_path : String)
-      File.open(bios_path) { |file| file.read @bios }
+      File.open(bios_path, &.read(@bios))
       @gpio = GPIO.new(@gba)
     end
 

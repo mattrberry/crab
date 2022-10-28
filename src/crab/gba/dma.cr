@@ -134,7 +134,7 @@ module GBA
       delta_source = word_size * source_control.delta
       delta_dest = word_size * dest_control.delta
 
-      len.times do |idx|
+      len.times do
         @gba.bus[@dst[channel]] = word_size == 4 ? @gba.bus.read_word(@src[channel]) : @gba.bus.read_half(@src[channel])
         @src[channel] &+= delta_source
         @dst[channel] &+= delta_dest
