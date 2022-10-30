@@ -41,7 +41,7 @@ module GBA
                           ->{ @gba.interrupts.reg_if.dma2 = true }, ->{ @gba.interrupts.reg_if.dma3 = true }]
     end
 
-    def [](io_addr : Int) : UInt8
+    def [](io_addr : UInt32) : UInt8
       channel = (io_addr - 0xB0) // 12
       reg = (io_addr - 0xB0) % 12
       case reg
@@ -54,7 +54,7 @@ module GBA
       end
     end
 
-    def []=(io_addr : Int, value : UInt8) : Nil
+    def []=(io_addr : UInt32, value : UInt8) : Nil
       channel = (io_addr - 0xB0) // 12
       reg = (io_addr - 0xB0) % 12
       case reg

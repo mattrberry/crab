@@ -10,7 +10,7 @@ module GBA
       @rtc = RTC.new(@gba) # todo: support other forms of gpio
     end
 
-    def [](io_addr : Int) : Byte
+    def [](io_addr : UInt32) : UInt8
       case io_addr & 0xFF
       when 0xC4 # IO Port Data
         if @allow_reads
@@ -27,7 +27,7 @@ module GBA
       end
     end
 
-    def []=(io_addr : Int, value : Byte) : Nil
+    def []=(io_addr : UInt32, value : UInt8) : Nil
       case io_addr & 0xFF
       when 0xC4 # IO Port Data
         @data &= value & 0xF_u8

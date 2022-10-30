@@ -1,6 +1,6 @@
 module GBA
   module ARM
-    def arm_multiply_long(instr : Word) : Nil
+    def arm_multiply_long(instr : UInt32) : Nil
       signed = bit?(instr, 22)
       accumulate = bit?(instr, 21)
       set_conditions = bit?(instr, 20)

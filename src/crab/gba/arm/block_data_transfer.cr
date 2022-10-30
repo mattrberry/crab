@@ -1,7 +1,7 @@
 module GBA
   module ARM
-    def arm_block_data_transfer(instr : Word) : Nil
-      pre_index = bit?(instr, 24)
+    def arm_block_data_transfer(instr : UInt32) : Nil
+      pre_address = bit?(instr, 24)
       add = bit?(instr, 23)
       s_bit = bit?(instr, 22)
       write_back = bit?(instr, 21)
@@ -23,10 +23,10 @@ module GBA
       end
       final_addr = address + bits_set * (add ? 4 : -4)
       if add
-        address += 4 if pre_index
+        address += 4 if pre_address
       else
         address = final_addr
-        address += 4 unless pre_index
+        address += 4 unless pre_address
       end
       first_transfer = false
       16.times do |idx| # always transfered to/from incrementing addresses

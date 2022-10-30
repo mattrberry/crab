@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_load_address(instr : Word) : Nil
+    def thumb_load_address(instr : UInt32) : Nil
       source = bit?(instr, 11)
       rd = bits(instr, 8..10)
       word = bits(instr, 0..7)

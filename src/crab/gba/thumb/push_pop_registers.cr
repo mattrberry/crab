@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_push_pop_registers(instr : Word) : Nil
+    def thumb_push_pop_registers(instr : UInt32) : Nil
       pop = bit?(instr, 11)
       pclr = bit?(instr, 8)
       list = bits(instr, 0..7)

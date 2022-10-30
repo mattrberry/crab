@@ -6,7 +6,7 @@ module GBA
     def initialize(@gba : GBA)
     end
 
-    def [](io_addr : Int) : Byte
+    def [](io_addr : UInt32) : UInt8
       case io_addr
       when 0x130..0x131 then @keyinput.read_byte(io_addr & 1)
       when 0x132..0x133 then @keycnt.read_byte(io_addr & 1)
@@ -14,7 +14,7 @@ module GBA
       end
     end
 
-    def []=(io_addr : Int, value : Byte) : Nil
+    def []=(io_addr : UInt32, value : UInt8) : Nil
       # TODO: If stopping is implemented, implement keycnt to exit stop mode
     end
 

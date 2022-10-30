@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_software_interrupt(instr : Word) : Nil
+    def thumb_software_interrupt(instr : UInt32) : Nil
       lr = @r[15] - 2
       switch_mode CPU::Mode::SVC
       set_reg(14, lr)

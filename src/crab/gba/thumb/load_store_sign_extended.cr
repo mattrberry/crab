@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_load_store_sign_extended(instr : Word) : Nil
+    def thumb_load_store_sign_extended(instr : UInt32) : Nil
       hs = bits(instr, 10..11)
       ro = bits(instr, 6..8)
       rb = bits(instr, 3..5)

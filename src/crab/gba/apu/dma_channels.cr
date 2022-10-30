@@ -19,12 +19,12 @@ module GBA
       ]
     end
 
-    def [](index : Int) : UInt8
-      @gba.bus.read_open_bus_value(index)
+    def [](address : UInt32) : UInt8
+      @gba.bus.read_open_bus_value(address)
     end
 
-    def []=(index : Int, value : Byte) : Nil
-      channel = bit?(index, 2).to_unsafe
+    def []=(address : UInt32, value : UInt8) : Nil
+      channel = bit?(address, 2).to_unsafe
       if @sizes[channel] < 32
         @fifos[channel][(@positions[channel] + @sizes[channel]) % 32] = value.to_i8!
         @sizes[channel] += 1

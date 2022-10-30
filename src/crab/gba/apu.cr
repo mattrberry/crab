@@ -136,7 +136,7 @@ module GBA
       @dma_channels.timer_overflow timer
     end
 
-    def [](io_addr : Int) : UInt8
+    def [](io_addr : UInt32) : UInt8
       case io_addr
       when @channel1     then @channel1[io_addr]
       when @channel2     then @channel2[io_addr]
@@ -161,7 +161,7 @@ module GBA
       end
     end
 
-    def []=(io_addr : Int, value : UInt8) : Nil
+    def []=(io_addr : UInt32, value : UInt8) : Nil
       return unless @sound_enabled || 0x82 <= io_addr <= 0x89 || Channel3::WAVE_RAM_RANGE.includes?(io_addr)
       case io_addr
       when @channel1     then @channel1[io_addr] = value
@@ -175,7 +175,7 @@ module GBA
       when 0x83          then @soundcnt_h.value = (@soundcnt_h.value & 0x00FF) | value.to_u16 << 8
       when 0x84
         if value & 0x80 == 0 && @sound_enabled
-          (0x60..0x81).each { |addr| self[addr] = 0x00 }
+          (0x60_u32..0x81_u32).each { |addr| self[addr] = 0x00 }
           @sound_enabled = false
         elsif value & 0x80 > 0 && !@sound_enabled
           @sound_enabled = true

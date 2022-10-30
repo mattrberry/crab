@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_alu_operations(instr : Word) : Nil
+    def thumb_alu_operations(instr : UInt32) : Nil
       op = bits(instr, 6..9)
       rs = bits(instr, 3..5)
       rd = bits(instr, 0..2)

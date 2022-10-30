@@ -1,6 +1,6 @@
 module GBA
   module ARM
-    def arm_data_processing(instr : Word) : Nil
+    def arm_data_processing(instr : UInt32) : Nil
       imm_flag = bit?(instr, 25)
       opcode = bits(instr, 21..24)
       set_conditions = bit?(instr, 20)

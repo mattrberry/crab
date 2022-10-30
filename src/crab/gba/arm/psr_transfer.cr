@@ -1,6 +1,6 @@
 module GBA
   module ARM
-    def arm_psr_transfer(instr : Word) : Nil
+    def arm_psr_transfer(instr : UInt32) : Nil
       spsr = bit?(instr, 22)
       mode = CPU::Mode.from_value @cpsr.mode
       has_spsr = mode != CPU::Mode::USR && mode != CPU::Mode::SYS

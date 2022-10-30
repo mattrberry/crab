@@ -5,8 +5,8 @@ module GBA
     def initialize(@gba : GBA)
     end
 
-    def [](index : Int) : Byte
-      io_addr = 0xFFFFFF_u32 & index
+    def [](address : UInt32) : UInt8
+      io_addr = 0xFFFFFF_u32 & address
       case io_addr
       when 0x000..0x055 then @gba.ppu[io_addr]
       when 0x060..0x0A7 then @gba.apu[io_addr]
@@ -29,8 +29,8 @@ module GBA
       end
     end
 
-    def []=(index : Int, value : Byte) : Nil
-      io_addr = 0xFFFFFF_u32 & index
+    def []=(address : UInt32, value : UInt8) : Nil
+      io_addr = 0xFFFFFF_u32 & address
       case io_addr
       when 0x000..0x055 then @gba.ppu[io_addr] = value
       when 0x060..0x0A7 then @gba.apu[io_addr] = value

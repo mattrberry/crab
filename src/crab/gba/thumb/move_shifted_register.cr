@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_move_shifted_register(instr : Word) : Nil
+    def thumb_move_shifted_register(instr : UInt32) : Nil
       op = bits(instr, 11..12)
       offset = bits(instr, 6..10)
       rs = bits(instr, 3..5)

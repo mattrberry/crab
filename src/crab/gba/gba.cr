@@ -1,4 +1,3 @@
-require "./types"
 require "./reg"
 require "./cartridge"
 require "./storage"

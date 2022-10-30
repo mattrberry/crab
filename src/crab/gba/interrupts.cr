@@ -7,7 +7,7 @@ module GBA
     def initialize(@gba : GBA)
     end
 
-    def [](io_addr : Int) : Byte
+    def [](io_addr : UInt32) : UInt8
       case io_addr
       when 0x200 then 0xFF_u8 & @reg_ie.value
       when 0x201 then 0xFF_u8 & @reg_ie.value >> 8
@@ -19,7 +19,7 @@ module GBA
       end
     end
 
-    def []=(io_addr : Int, value : Byte) : Nil
+    def []=(io_addr : UInt32, value : UInt8) : Nil
       case io_addr
       when 0x200 then @reg_ie.value = (@reg_ie.value & 0xFF00) | value
       when 0x201 then @reg_ie.value = (@reg_ie.value & 0x00FF) | value.to_u16 << 8

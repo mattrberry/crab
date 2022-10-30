@@ -42,14 +42,14 @@ module GBA
       bool negative
     end
 
-    getter r = Slice(Word).new 16
+    getter r = Slice(UInt32).new 16
     getter cpsr : PSR = PSR.new CPU::Mode::SYS.value
     @spsr : PSR = PSR.new CPU::Mode::SYS.value
     getter pipeline = Pipeline.new
-    getter lut : Slice(Proc(Word, Nil)) { fill_lut }
-    getter thumb_lut : Slice(Proc(Word, Nil)) { fill_thumb_lut }
-    @reg_banks = Array(Array(Word)).new 6 { Array(GBA::Word).new 7, 0 }
-    @spsr_banks = Array(Word).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
+    getter lut : Slice(Proc(UInt32, Nil)) { fill_lut }
+    getter thumb_lut : Slice(Proc(UInt32, Nil)) { fill_thumb_lut }
+    @reg_banks = Array(Array(UInt32)).new 6 { Array(UInt32).new 7, 0 }
+    @spsr_banks = Array(UInt32).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
     property halted = false
 
     def initialize(@gba : GBA)
@@ -118,7 +118,7 @@ module GBA
       end
     end
 
-    def read_instr : Word
+    def read_instr : UInt32
       if @pipeline.size == 0
         if @cpsr.thumb
           @r[15] &= ~1
@@ -148,7 +148,7 @@ module GBA
       end
     end
 
-    def check_cond(cond : Word) : Bool
+    def check_cond(cond : UInt32) : Bool
       case cond
       when 0x0 then @cpsr.zero
       when 0x1 then !@cpsr.zero
@@ -178,20 +178,20 @@ module GBA
     end
 
     @[AlwaysInline]
-    def set_reg(reg : Int, value : Int) : UInt32
-      @r[reg] = value.to_u32!
+    def set_reg(reg : Int, value : UInt32) : UInt32
+      @r[reg] = value
       clear_pipeline if reg == 15
-      value.to_u32!
+      value
     end
 
     @[AlwaysInline]
-    def set_neg_and_zero_flags(value : Int) : Nil
+    def set_neg_and_zero_flags(value : UInt32) : Nil
       @cpsr.negative = bit?(value, 31)
       @cpsr.zero = value == 0
     end
 
     # Logical shift left
-    def lsl(word : Word, bits : Int, carry_out : Pointer(Bool)) : Word
+    def lsl(word : UInt32, bits : Int::Unsigned, carry_out : Pointer(Bool)) : UInt32
       log "lsl - word:#{hex_str word}, bits:#{bits}"
       return word if bits == 0
       carry_out.value = bit?(word, 32 - bits)
@@ -199,7 +199,7 @@ module GBA
     end
 
     # Logical shift right
-    def lsr(word : Word, bits : Int, immediate : Bool, carry_out : Pointer(Bool)) : Word
+    def lsr(word : UInt32, bits : Int::Unsigned, immediate : Bool, carry_out : Pointer(Bool)) : UInt32
       log "lsr - word:#{hex_str word}, bits:#{bits}"
       if bits == 0
         return word unless immediate
@@ -210,7 +210,7 @@ module GBA
     end
 
     # Arithmetic shift right
-    def asr(word : Word, bits : Int, immediate : Bool, carry_out : Pointer(Bool)) : Word
+    def asr(word : UInt32, bits : Int::Unsigned, immediate : Bool, carry_out : Pointer(Bool)) : UInt32
       log "asr - word:#{hex_str word}, bits:#{bits}"
       if bits == 0
         return word unless immediate
@@ -227,7 +227,7 @@ module GBA
     end
 
     # Rotate right
-    def ror(word : Word, bits : Int, immediate : Bool, carry_out : Pointer(Bool)) : Word
+    def ror(word : UInt32, bits : Int::Unsigned, immediate : Bool, carry_out : Pointer(Bool)) : UInt32
       log "ror - word:#{hex_str word}, bits:#{bits}"
       if bits == 0 # RRX #1
         return word unless immediate
@@ -243,7 +243,7 @@ module GBA
     end
 
     # Subtract two values
-    def sub(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
+    def sub(operand_1 : UInt32, operand_2 : UInt32, set_conditions : Bool) : UInt32
       log "sub - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
       res = operand_1 &- operand_2
       if set_conditions
@@ -255,7 +255,7 @@ module GBA
     end
 
     # Subtract two values with carry
-    def sbc(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
+    def sbc(operand_1 : UInt32, operand_2 : UInt32, set_conditions : Bool) : UInt32
       log "sbc - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
       res = operand_1 &- operand_2 &- 1 &+ @cpsr.carry.to_unsafe
       if set_conditions
@@ -267,7 +267,7 @@ module GBA
     end
 
     # Add two values
-    def add(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
+    def add(operand_1 : UInt32, operand_2 : UInt32, set_conditions : Bool) : UInt32
       log "add - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
       res = operand_1 &+ operand_2
       if set_conditions
@@ -279,7 +279,7 @@ module GBA
     end
 
     # Add two values with carry
-    def adc(operand_1 : Word, operand_2 : Word, set_conditions : Bool) : Word
+    def adc(operand_1 : UInt32, operand_2 : UInt32, set_conditions : Bool) : UInt32
       log "adc - operand_1:#{hex_str operand_1}, operand_2:#{hex_str operand_2}"
       res = operand_1 &+ operand_2 &+ @cpsr.carry.to_unsafe
       if set_conditions
@@ -290,8 +290,8 @@ module GBA
       res
     end
 
-    def print_state(instr : Word? = nil) : Nil
-      @r.each_with_index do |val, reg|
+    def print_state(instr : UInt32? = nil) : Nil
+      @r.each_with_address do |val, reg|
         print "#{hex_str reg == 15 ? val - (@cpsr.thumb ? 2 : 4) : val, prefix: false} "
       end
       instr ||= @pipeline.peek

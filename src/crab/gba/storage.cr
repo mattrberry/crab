@@ -49,20 +49,20 @@ module GBA
       end
     end
 
-    abstract def [](index : Int) : Byte
+    abstract def [](address : UInt32) : UInt8
 
-    def read_half(index : Int) : HalfWord
-      0x0101_u16 * self[index & ~1]
+    def read_half(address : UInt32) : UInt16
+      0x0101_u16 * self[address & ~1]
     end
 
-    def read_word(index : Int) : Word
-      0x01010101_u32 * self[index & ~3]
+    def read_word(address : UInt32) : UInt32
+      0x01010101_u32 * self[address & ~3]
     end
 
-    abstract def []=(index : Int, value : Byte) : Nil
+    abstract def []=(address : UInt32, value : UInt8) : Nil
 
-    def eeprom?(index : Int) : Bool
-      self.class == EEPROM && (0x0D000000..0x0DFFFFFF).includes? index
+    def eeprom?(address : UInt32) : Bool
+      self.class == EEPROM && (0x0D000000..0x0DFFFFFF).includes?(address)
     end
 
     private def self.find_type(file : File) : Type?

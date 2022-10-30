@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_long_branch_link(instr : Word) : Nil
+    def thumb_long_branch_link(instr : UInt32) : Nil
       second_instr = bit?(instr, 11)
       offset = bits(instr, 0..10)
       if second_instr

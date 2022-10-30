@@ -43,8 +43,8 @@ module GBA
       end
     end
 
-    def [](index : Int) : UInt8
-      case index
+    def [](address : UInt32) : UInt8
+      case address
       when 0x79 then read_NRx2
       when 0x7C then @clock_shift << 4 | @width_mode << 3 | @divisor_code
       when 0x7D then (@length_enable ? 0x40_u8 : 0_u8)
@@ -52,8 +52,8 @@ module GBA
       end
     end
 
-    def []=(index : Int, value : UInt8) : Nil
-      case index
+    def []=(address : UInt32, value : UInt8) : Nil
+      case address
       when 0x78
         @length_load = value & 0x3F
         # Internal values
@@ -93,7 +93,7 @@ module GBA
         end
       when 0x7E # not used
       when 0x7F # not used
-      else raise "Writing to invalid Channel4 register: #{hex_str index.to_u16}"
+      else raise "Writing to invalid Channel4 register: #{hex_str address.to_u16}"
       end
     end
   end

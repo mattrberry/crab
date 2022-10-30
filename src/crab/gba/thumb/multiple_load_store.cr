@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_multiple_load_store(instr : Word) : Nil
+    def thumb_multiple_load_store(instr : UInt32) : Nil
       load = bit?(instr, 11)
       rb = bits(instr, 8..10)
       list = bits(instr, 0..7)

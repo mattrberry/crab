@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_high_reg_branch_exchange(instr : Word) : Nil
+    def thumb_high_reg_branch_exchange(instr : UInt32) : Nil
       op = bits(instr, 8..9)
       h1 = bit?(instr, 7)
       h2 = bit?(instr, 6)

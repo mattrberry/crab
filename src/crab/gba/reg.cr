@@ -1,11 +1,11 @@
 module GBA
   module Reg
     module Base16
-      def read_byte(byte_num : Int) : Byte
+      def read_byte(byte_num : Int) : UInt8
         (value >> (8 * byte_num)).to_u8!
       end
 
-      def write_byte(byte_num : Int, byte : Byte) : Byte
+      def write_byte(byte_num : Int, byte : UInt8) : UInt8
         shift = 8 * byte_num
         mask = ~(0xFF_u16 << shift)
         self.value = (@value & mask) | byte.to_u16 << shift
@@ -14,11 +14,11 @@ module GBA
     end
 
     module Base32
-      def read_byte(byte_num : Int) : Byte
+      def read_byte(byte_num : Int) : UInt8
         (value >> (8 * byte_num)).to_u8!
       end
 
-      def write_byte(byte_num : Int, byte : Byte) : Byte
+      def write_byte(byte_num : Int, byte : UInt8) : UInt8
         shift = 8 * byte_num
         mask = ~(0xFF_u32 << shift)
         self.value = (@value & mask) | byte.to_u32 << shift

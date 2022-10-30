@@ -77,8 +77,8 @@ module GBA
       calculated
     end
 
-    def [](index : Int) : UInt8
-      case index
+    def [](address : UInt32) : UInt8
+      case address
       when 0x60 then @sweep_period << 4 | (@negate ? 0x08 : 0) | @shift
       when 0x62 then @duty << 6
       when 0x63 then read_NRx2
@@ -87,8 +87,8 @@ module GBA
       end
     end
 
-    def []=(index : Int, value : UInt8) : Nil
-      case index
+    def []=(address : UInt32, value : UInt8) : Nil
+      case address
       when 0x60
         @sweep_period = (value & 0x70) >> 4
         @negate = value & 0x08 > 0
@@ -139,7 +139,7 @@ module GBA
         end
       when 0x66 # not used
       when 0x67 # not used
-      else raise "Writing to invalid Channel1 register: #{hex_str index.to_u16}"
+      else raise "Writing to invalid Channel1 register: #{hex_str address.to_u16}"
       end
     end
   end

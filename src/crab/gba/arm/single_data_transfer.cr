@@ -1,8 +1,8 @@
 module GBA
   module ARM
-    def arm_single_data_transfer(instr : Word) : Nil
+    def arm_single_data_transfer(instr : UInt32) : Nil
       imm_flag = bit?(instr, 25)
-      pre_indexing = bit?(instr, 24)
+      pre_addressing = bit?(instr, 24)
       add_offset = bit?(instr, 23)
       byte_quantity = bit?(instr, 22)
       write_back = bit?(instr, 21)
@@ -19,7 +19,7 @@ module GBA
 
       address = @r[rn]
 
-      if pre_indexing
+      if pre_addressing
         if add_offset
           address &+= offset
         else
@@ -44,17 +44,17 @@ module GBA
         @gba.bus[address] &+= 4 if rd == 15
       end
 
-      unless pre_indexing
+      unless pre_addressing
         if add_offset
           address &+= offset
         else
           address &-= offset
         end
       end
-      # In the case of post-indexed addressing, the write back bit is redundant and is always set to
+      # In the case of post-addressed addressing, the write back bit is redundant and is always set to
       # zero, since the old base value can be retained by setting the offset to zero. Therefore
-      # post-indexed data transfers always write back the modified base.
-      set_reg(rn, address) if (write_back || !pre_indexing) && (rd != rn || !load)
+      # post-addressed data transfers always write back the modified base.
+      set_reg(rn, address) if (write_back || !pre_addressing) && (rd != rn || !load)
 
       step_arm unless load && rd == 15
     end

@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_move_compare_add_subtract(instr : Word) : Nil
+    def thumb_move_compare_add_subtract(instr : UInt32) : Nil
       op = bits(instr, 11..12)
       rd = bits(instr, 8..10)
       offset = bits(instr, 0..7)

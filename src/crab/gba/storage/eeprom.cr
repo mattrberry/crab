@@ -69,7 +69,7 @@ module GBA
       end
     end
 
-    def [](index : Int) : Byte
+    def [](address : UInt32) : UInt8
       case @state
       when .includes? State::READ_IGNORE
         if (@ignored_reads += 1) == 4
@@ -89,7 +89,7 @@ module GBA
       1_u8
     end
 
-    def []=(index : Int, value : Byte) : Nil
+    def []=(address : UInt32, value : UInt8) : Nil
       return if @state == State::READ || @state == State::READ_IGNORE
       value &= 1
       @buffer.push value

@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_load_store_halfword(instr : Word) : Nil
+    def thumb_load_store_UInt16(instr : UInt32) : Nil
       load = bit?(instr, 11)
       offset = bits(instr, 6..10)
       rb = bits(instr, 3..5)

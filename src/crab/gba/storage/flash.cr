@@ -11,7 +11,7 @@ module GBA
       SET_BANK
     end
 
-    enum Command : Byte
+    enum Command : UInt8
       ENTER_IDENT   = 0x90
       EXIT_IDENT    = 0xF0
       PREPARE_ERASE = 0x80
@@ -32,37 +32,37 @@ module GBA
             end
     end
 
-    def [](index : Int) : Byte
-      index &= 0xFFFF
-      if @state.includes?(State::IDENTIFICATION) && 0 <= index <= 1
-        (@id >> (8 * index) & 0xFF).to_u8!
+    def [](address : UInt32) : UInt8
+      address &= 0xFFFF
+      if @state.includes?(State::IDENTIFICATION) && 0 <= address <= 1
+        (@id >> (8 * address) & 0xFF).to_u8!
       else
-        @memory[0x10000 * @bank + index]
+        @memory[0x10000 * @bank + address]
       end
     end
 
-    def []=(index : Int, value : Byte) : Nil
-      index &= 0xFFFF
+    def []=(address : UInt32, value : UInt8) : Nil
+      address &= 0xFFFF
       case @state
       when .includes? State::PREPARE_WRITE
-        @memory[0x10000 * @bank + index] &= value
+        @memory[0x10000 * @bank + address] &= value
         @dirty = true
         @state ^= State::PREPARE_WRITE
       when .includes? State::SET_BANK
         @bank = value & 1
         @state ^= State::SET_BANK
       when .includes? State::READY
-        if index == 0x5555 && value == 0xAA
+        if address == 0x5555 && value == 0xAA
           @state ^= State::READY
           @state |= State::CMD_1
         end
       when .includes? State::CMD_1
-        if index == 0x2AAA && value == 0x55
+        if address == 0x2AAA && value == 0x55
           @state ^= State::CMD_1
           @state |= State::CMD_2
         end
       when .includes? State::CMD_2
-        if index == 0x5555
+        if address == 0x5555
           case Command.new(value)
           when Command::ENTER_IDENT   then @state |= State::IDENTIFICATION
           when Command::EXIT_IDENT    then @state ^= State::IDENTIFICATION
@@ -77,8 +77,8 @@ module GBA
           when Command::SET_BANK      then @state |= State::SET_BANK if @type == Type::FLASH1M
           else                             puts "Unsupported flash command #{hex_str value}"
           end
-        elsif @state.includes?(State::PREPARE_ERASE) && index & 0x0FFF == 0 && value == Command::ERASE_CHUNK.value
-          0x1000.times { |i| @memory[0x10000 * @bank + index + i] = 0xFF }
+        elsif @state.includes?(State::PREPARE_ERASE) && address & 0x0FFF == 0 && value == Command::ERASE_CHUNK.value
+          0x1000.times { |i| @memory[0x10000 * @bank + address + i] = 0xFF }
           @dirty = true
           @state ^= State::PREPARE_ERASE
         end

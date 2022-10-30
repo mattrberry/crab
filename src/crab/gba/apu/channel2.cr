@@ -43,8 +43,8 @@ module GBA
       end
     end
 
-    def [](index : Int) : UInt8
-      case index
+    def [](address : UInt32) : UInt8
+      case address
       when 0x68 then @duty << 6
       when 0x69 then read_NRx2
       when 0x6D then (@length_enable ? 0x40_u8 : 0_u8)
@@ -52,8 +52,8 @@ module GBA
       end
     end
 
-    def []=(index : Int, value : UInt8) : Nil
-      case index
+    def []=(address : UInt32, value : UInt8) : Nil
+      case address
       when 0x68
         @duty = (value & 0xC0) >> 6
         @length_load = value & 0x3F
@@ -91,7 +91,7 @@ module GBA
         end
       when 0x6E # not used
       when 0x6F # not used
-      else raise "Writing to invalid Channel2 register: #{hex_str index.to_u16}"
+      else raise "Writing to invalid Channel2 register: #{hex_str address.to_u16}"
       end
     end
   end

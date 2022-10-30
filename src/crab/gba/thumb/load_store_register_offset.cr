@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_load_store_register_offset(instr : Word) : Nil
+    def thumb_load_store_register_offset(instr : UInt32) : Nil
       load_and_byte_quantity = bits(instr, 10..11)
       ro = bits(instr, 6..8)
       rb = bits(instr, 3..5)

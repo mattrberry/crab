@@ -84,7 +84,7 @@ module GBA
 
     # Get the screen entry offset from the tile x, tile y, and background screen-size param using tonc algo
     @[AlwaysInline]
-    def se_index(tx : Int, ty : Int, screen_size : Int) : Int
+    def se_address(tx : Int, ty : Int, screen_size : Int) : Int
       n = tx + ty * 32
       n += 0x03E0 if tx >= 32
       n += 0x0400 if ty >= 32 && screen_size == 0b11
@@ -167,7 +167,7 @@ module GBA
         effective_col = (col + bghofs.offset) & bg_width
         tile_x = effective_col >> 3
 
-        se_idx = se_index(tile_x, tile_y, bgcnt.screen_size)
+        se_idx = se_address(tile_x, tile_y, bgcnt.screen_size)
         screen_entry = @vram[screen_base + se_idx * 2 + 1].to_u16 << 8 | @vram[screen_base + se_idx * 2]
 
         tile_id = bits(screen_entry, 0..9)
@@ -295,7 +295,7 @@ module GBA
               tile_id += offset
               palettes = @vram[base + tile_id * 0x20 + tile_y * 4 + (tile_x >> 1)]
               pal_idx = ((palettes >> ((tile_x & 1) * 4)) & 0xF)
-              pal_idx += (sprite.palette_bank << 4) if pal_idx > 0 # convert palette index to absolute value
+              pal_idx += (sprite.palette_bank << 4) if pal_idx > 0 # convert palette address to absolute value
             end
 
             if sprite.obj_mode == 0b10 # object window
@@ -396,7 +396,7 @@ module GBA
       end
     end
 
-    def [](io_addr : Int) : Byte
+    def [](io_addr : UInt32) : UInt8
       case io_addr
       when 0x000..0x001 then @dispcnt.read_byte(io_addr & 1)
       when 0x002..0x003 then 0_u8 # todo green swap
@@ -415,7 +415,7 @@ module GBA
       end
     end
 
-    def []=(io_addr : Int, value : Byte) : Nil
+    def []=(io_addr : UInt32, value : UInt8) : Nil
       case io_addr
       when 0x000..0x001 then @dispcnt.write_byte(io_addr & 1, value)
       when 0x002..0x003 # undocumented - green swap

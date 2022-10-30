@@ -1,6 +1,6 @@
 module GBA
   module ARM
-    def arm_single_data_swap(instr : Word) : Nil
+    def arm_single_data_swap(instr : UInt32) : Nil
       byte_quantity = bit?(instr, 22)
       rn = bits(instr, 16..19)
       rd = bits(instr, 12..15)

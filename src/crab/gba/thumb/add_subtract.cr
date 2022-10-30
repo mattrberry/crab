@@ -1,6 +1,6 @@
 module GBA
   module THUMB
-    def thumb_add_subtract(instr : Word) : Nil
+    def thumb_add_subtract(instr : UInt32) : Nil
       imm_flag = bit?(instr, 10)
       sub = bit?(instr, 9)
       imm = bits(instr, 6..8)

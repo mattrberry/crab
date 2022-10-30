@@ -49,8 +49,8 @@ module GBA
       end
     end
 
-    def [](index : Int) : UInt8
-      case index
+    def [](address : UInt32) : UInt8
+      case address
       when 0x70 then (@dac_enabled ? 0x80_u8 : 0_u8) | @wave_ram_bank << 6 | (@wave_ram_dimension ? 0x20 : 0)
       when 0x73 then (@volume_force ? 0x80_u8 : 0_u8) | @volume_code << 5
       when 0x75 then (@length_enable ? 0x40_u8 : 0_u8)
@@ -58,14 +58,14 @@ module GBA
         if @enabled
           @wave_ram[@wave_ram_bank][@wave_ram_position // 2]
         else
-          @wave_ram[@wave_ram_bank][index - WAVE_RAM_RANGE.begin]
+          @wave_ram[@wave_ram_bank][address - WAVE_RAM_RANGE.begin]
         end
       else 0_u8
       end
     end
 
-    def []=(index : Int, value : UInt8) : Nil
-      case index
+    def []=(address : UInt32, value : UInt8) : Nil
+      case address
       when 0x70
         @dac_enabled = value & 0x80 > 0
         @enabled = false if !@dac_enabled
@@ -116,9 +116,9 @@ module GBA
         if @enabled
           @wave_ram[@wave_ram_bank][@wave_ram_position // 2] = value
         else
-          @wave_ram[@wave_ram_bank][index - WAVE_RAM_RANGE.begin] = value
+          @wave_ram[@wave_ram_bank][address - WAVE_RAM_RANGE.begin] = value
         end
-      else raise "Writing to invalid Channel3 register: #{hex_str index.to_u16}"
+      else raise "Writing to invalid Channel3 register: #{hex_str address.to_u16}"
       end
     end
   end
