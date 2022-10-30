@@ -2,18 +2,18 @@ module GBA
   class DMAChannels
     RANGE = 0xA0..0xA7
 
-    @fifos = Array(Array(Int8)).new 2 { Array(Int8).new 32, 0 }
-    @positions = Array(Int32).new 2, 0
-    @sizes = Array(Int32).new 2, 0
-    @timers : Array(Proc(UInt16))
-    @latches = Array(Int16).new 2, 0
+    @fifos = Slice(Slice(Int8)).new 2 { Slice(Int8).new 32, 0 }
+    @positions = Slice(Int32).new 2, 0
+    @sizes = Slice(Int32).new 2, 0
+    @timers : Slice(Proc(UInt16))
+    @latches = Slice(Int16).new 2, 0
 
     def ===(other) : Bool
       other.is_a?(Int) && RANGE.includes?(other)
     end
 
     def initialize(@gba : GBA, @control : Reg::SOUNDCNT_H)
-      @timers = [
+      @timers = Slice[
         ->{ @control.dma_sound_a_timer },
         ->{ @control.dma_sound_b_timer },
       ]

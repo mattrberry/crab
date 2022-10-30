@@ -3,7 +3,7 @@ require "./gpio"
 module GBA
   class Bus
     # Timings for rom are estimated for game compatibility.
-    ACCESS_TIMING_TABLE = [
+    ACCESS_TIMING_TABLE = Slice[
       [1, 1, 3, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2], # 8-bit and 16-bit accesses
       [1, 1, 6, 1, 1, 2, 2, 1, 4, 4, 4, 4, 4, 4, 4, 4], # 32-bit accesses
     ]
@@ -172,7 +172,7 @@ module GBA
       when 0x5 then (@gba.ppu.pram.to_unsafe + (address & 0x3FE)).as(UInt16*).value = 0x0101_u16 * value
       when 0x6
         limit = @gba.ppu.bitmap? ? 0x13FFF : 0x0FFFF # (u8 write only) upper limit depends on display mode
-        address = 0x1FFFE_u32 & address                # (u8 write only) UInt16-aligned
+        address = 0x1FFFE_u32 & address              # (u8 write only) UInt16-aligned
         address -= 0x8000 if address > 0x17FFF       # todo: determine if this happens before or after the limit check
         (@gba.ppu.vram.to_unsafe + address).as(UInt16*).value = 0x0101_u16 * value if address <= limit
       when 0x7      # can't write bytes to oam

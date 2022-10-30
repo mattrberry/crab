@@ -4,7 +4,7 @@ module GBA
 
     getter framebuffer : Slice(UInt16) = Slice(UInt16).new 0x9600 # framebuffer as 16-bit xBBBBBGGGGGRRRRR
     property frame = false
-    @layer_palettes : Array(Bytes) = Array.new 4 { Bytes.new 240 }
+    @layer_palettes : Slice(Bytes) = Slice.new 4 { Bytes.new 240 }
     @sprite_pixels : Slice(SpritePixel) = Slice(SpritePixel).new 240, SPRITE_PIXEL
 
     getter pram = Bytes.new 0x400
@@ -14,12 +14,12 @@ module GBA
     @dispcnt = Reg::DISPCNT.new 0
     @dispstat = Reg::DISPSTAT.new 0
     @vcount : UInt16 = 0x0000_u16
-    @bgcnt = Array(Reg::BGCNT).new 4 { GBA::Reg::BGCNT.new 0 }
-    @bghofs = Array(Reg::BGOFS).new 4 { GBA::Reg::BGOFS.new 0 }
-    @bgvofs = Array(Reg::BGOFS).new 4 { GBA::Reg::BGOFS.new 0 }
-    @bgaff = Array(Array(Reg::BGAFF)).new 2 { Array(GBA::Reg::BGAFF).new 4 { GBA::Reg::BGAFF.new 0 } }
-    @bgref = Array(Array(Reg::BGREF)).new 2 { Array(GBA::Reg::BGREF).new 2 { GBA::Reg::BGREF.new 0 } }
-    @bgref_int = Array(Array(Int32)).new 2 { Array(Int32).new 2, 0 }
+    @bgcnt = Slice(Reg::BGCNT).new 4 { GBA::Reg::BGCNT.new 0 }
+    @bghofs = Slice(Reg::BGOFS).new 4 { GBA::Reg::BGOFS.new 0 }
+    @bgvofs = Slice(Reg::BGOFS).new 4 { GBA::Reg::BGOFS.new 0 }
+    @bgaff = Slice(Slice(Reg::BGAFF)).new 2 { Slice(GBA::Reg::BGAFF).new 4 { GBA::Reg::BGAFF.new 0 } }
+    @bgref = Slice(Slice(Reg::BGREF)).new 2 { Slice(GBA::Reg::BGREF).new 2 { GBA::Reg::BGREF.new 0 } }
+    @bgref_int = Slice(Slice(Int32)).new 2 { Slice(Int32).new 2, 0 }
     @win0h = Reg::WINH.new 0
     @win1h = Reg::WINH.new 0
     @win0v = Reg::WINV.new 0
@@ -454,25 +454,13 @@ module GBA
   end
 
   # SIZES[SHAPE][SIZE]
-  SIZES = [
-    [ # square
-      {8, 8},
-      {16, 16},
-      {32, 32},
-      {64, 64},
-    ],
-    [ # horizontal rectangle
-      {16, 8},
-      {32, 8},
-      {32, 16},
-      {64, 32},
-    ],
-    [ # vertical rectangle
-      {8, 16},
-      {8, 32},
-      {16, 32},
-      {32, 64},
-    ],
+  SIZES = Slice[
+    # square
+    Slice[{8, 8}, {16, 16}, {32, 32}, {64, 64}],
+    # horizontal rectangle
+    Slice[{16, 8}, {32, 8}, {32, 16}, {64, 32}],
+    # vertical rectangle
+    Slice[{8, 16}, {8, 32}, {16, 32}, {32, 64}],
   ]
 
   record Sprite, attr0 : UInt16, attr1 : UInt16, attr2 : UInt16, aff_param : Int16 do

@@ -1,6 +1,6 @@
 module GB
   class Channel2 < VolumeEnvelopeChannel
-    WAVE_DUTY = [
+    WAVE_DUTY = Slice[
       [0, 0, 0, 0, 0, 0, 0, 1], # 12.5%
       [1, 0, 0, 0, 0, 0, 0, 1], # 25%
       [1, 0, 0, 0, 0, 1, 1, 1], # 50%

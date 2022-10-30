@@ -48,8 +48,8 @@ module GBA
     getter pipeline = Pipeline.new
     getter lut : Slice(Proc(UInt32, Nil)) { fill_lut }
     getter thumb_lut : Slice(Proc(UInt32, Nil)) { fill_thumb_lut }
-    @reg_banks = Array(Array(UInt32)).new 6 { Array(UInt32).new 7, 0 }
-    @spsr_banks = Array(UInt32).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
+    @reg_banks = Slice(Slice(UInt32)).new 6 { Slice(UInt32).new 7, 0 }
+    @spsr_banks = Slice(UInt32).new 6, CPU::Mode::SYS.value # logically independent of typical register banks
     property halted = false
 
     def initialize(@gba : GBA)

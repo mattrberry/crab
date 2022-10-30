@@ -1,6 +1,6 @@
 module GBA
   class Channel2 < VolumeEnvelopeChannel
-    WAVE_DUTY = [
+    WAVE_DUTY = Slice[
       [-8, -8, -8, -8, -8, -8, -8, +8], # 12.5%
       [+8, -8, -8, -8, -8, -8, -8, +8], # 25%
       [+8, -8, -8, -8, -8, +8, +8, +8], # 50%

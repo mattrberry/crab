@@ -80,7 +80,7 @@ module GB
     end
   end
 
-  POST_BOOT_VRAM = [
+  POST_BOOT_VRAM = Slice[
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0xF0, 0x00, 0xF0, 0x00, 0xFC, 0x00, 0xFC, 0x00, 0xFC, 0x00, 0xFC, 0x00, 0xF3, 0x00, 0xF3, 0x00,
     0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00, 0x3C, 0x00,
@@ -116,7 +116,7 @@ module GB
     WIDTH  = 160
     HEIGHT = 144
 
-    DMG_COLORS = [0x6BDF_u16, 0x3ABF_u16, 0x35BD_u16, 0x2CEF_u16]
+    DMG_COLORS = Slice[0x6BDF_u16, 0x3ABF_u16, 0x35BD_u16, 0x2CEF_u16]
 
     getter framebuffer = Slice(UInt16).new WIDTH * HEIGHT
     property frame = false
@@ -129,7 +129,7 @@ module GB
     @obj_palette_index : UInt8 = 0
     @obj_auto_increment = false
 
-    @vram = Array(Bytes).new 2 { Bytes.new GB::Memory::VRAM.size } # 0x8000..0x9FFF
+    @vram = Slice(Bytes).new 2 { Bytes.new GB::Memory::VRAM.size } # 0x8000..0x9FFF
     @vram_bank : UInt8 = 0                                         # track which bank is active
     @sprite_table = Bytes.new Memory::OAM.size                     # 0xFE00..0xFE9F
     @lcd_control : UInt8 = 0x00_u8                                 # 0xFF40
@@ -139,9 +139,9 @@ module GB
     @ly : UInt8 = 0x00_u8                                          # 0xFF44
     @lyc : UInt8 = 0x00_u8                                         # 0xFF45
     @dma : UInt8 = 0x00_u8                                         # 0xFF46
-    @bgp : Array(UInt8) = Array(UInt8).new 4, 0                    # 0xFF47
-    @obp0 : Array(UInt8) = Array(UInt8).new 4, 0                   # 0xFF48
-    @obp1 : Array(UInt8) = Array(UInt8).new 4, 0                   # 0xFF49
+    @bgp : Slice(UInt8) = Slice(UInt8).new 4, 0                    # 0xFF47
+    @obp0 : Slice(UInt8) = Slice(UInt8).new 4, 0                   # 0xFF48
+    @obp1 : Slice(UInt8) = Slice(UInt8).new 4, 0                   # 0xFF49
     @wy : UInt8 = 0x00_u8                                          # 0xFF4A
     @wx : UInt8 = 0x00_u8                                          # 0xFF4B
 
@@ -247,9 +247,9 @@ module GB
       when 0xFF44 then @ly
       when 0xFF45 then @lyc
       when 0xFF46 then @dma
-      when 0xFF47 then palette_from_array @bgp
-      when 0xFF48 then palette_from_array @obp0
-      when 0xFF49 then palette_from_array @obp1
+      when 0xFF47 then palette_from_enumerable @bgp
+      when 0xFF48 then palette_from_enumerable @obp0
+      when 0xFF49 then palette_from_enumerable @obp1
       when 0xFF4A then @wy
       when 0xFF4B then @wx
       when 0xFF4F then @cgb_ptr.value ? 0xFE_u8 | @vram_bank : 0xFF_u8
@@ -289,9 +289,9 @@ module GB
         @lyc = value
         handle_stat_interrupt
       when 0xFF46 then @dma = value
-      when 0xFF47 then @bgp = palette_to_array value
-      when 0xFF48 then @obp0 = palette_to_array value
-      when 0xFF49 then @obp1 = palette_to_array value
+      when 0xFF47 then update_palette(@bgp, value)
+      when 0xFF48 then update_palette(@obp0, value)
+      when 0xFF49 then update_palette(@obp1, value)
       when 0xFF4A then @wy = value
       when 0xFF4B then @wx = value
       when 0xFF4F then @vram_bank = value & 1 if @cgb_ptr.value
@@ -400,11 +400,14 @@ module GB
 
     # palettes
 
-    def palette_to_array(palette : UInt8) : Array(UInt8)
-      [palette & 0x3, (palette >> 2) & 0x3, (palette >> 4) & 0x3, (palette >> 6) & 0x3]
+    def update_palette(palette : Indexable(UInt8), val : UInt8) : Nil
+      palette[0] = val & 0x3
+      palette[1] = (val >> 2) & 0x3
+      palette[2] = (val >> 4) & 0x3
+      palette[3] = (val >> 6) & 0x3
     end
 
-    def palette_from_array(palette_array : Array(UInt8)) : UInt8
+    def palette_from_enumerable(palette_array : Enumerable(UInt8)) : UInt8
       palette_array.each_with_index.reduce(0x00_u8) do |palette, (color, idx)|
         palette | color << (idx * 2)
       end

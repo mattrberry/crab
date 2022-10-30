@@ -22,7 +22,7 @@ module GB
     end
 
     # color idx, BG-to-OAM priority bit
-    @scanline_color_vals = Array(Tuple(UInt8, Bool)).new WIDTH, {0_u8, false}
+    @scanline_color_vals = Slice(Tuple(UInt8, Bool)).new WIDTH, {0_u8, false}
 
     def scanline
       @current_window_line = 0 if @ly == 0

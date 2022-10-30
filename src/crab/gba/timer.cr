@@ -1,19 +1,21 @@
 module GBA
   class Timer
-    PERIODS     = [1, 64, 256, 1024]
-    EVENT_TYPES = [Scheduler::EventType::Timer0, Scheduler::EventType::Timer1,
-                   Scheduler::EventType::Timer2, Scheduler::EventType::Timer3]
+    PERIODS     = Slice[1, 64, 256, 1024]
+    EVENT_TYPES = Slice[
+      Scheduler::EventType::Timer0, Scheduler::EventType::Timer1,
+      Scheduler::EventType::Timer2, Scheduler::EventType::Timer3]
 
-    @interrupt_flags : Array(Proc(Nil))
+    @interrupt_flags : Slice(Proc(Nil))
 
     def initialize(@gba : GBA)
-      @tmcnt = Array(Reg::TMCNT).new 4 { Reg::TMCNT.new 0 } # control registers
-      @tmd = Array(UInt16).new 4, 0                         # reload values
-      @tm = Array(UInt16).new 4, 0                          # counted values
-      @cycle_enabled = Array(UInt64).new 4, 0               # cycle that the timer was enabled
-      @events = Array(Proc(Nil)).new 4 { |i| overflow i }   # overflow closures for each timer
-      @interrupt_flags = [->{ @gba.interrupts.reg_if.timer0 = true }, ->{ @gba.interrupts.reg_if.timer1 = true },
-                          ->{ @gba.interrupts.reg_if.timer2 = true }, ->{ @gba.interrupts.reg_if.timer3 = true }]
+      @tmcnt = Slice(Reg::TMCNT).new 4 { Reg::TMCNT.new 0 } # control registers
+      @tmd = Slice(UInt16).new 4, 0                         # reload values
+      @tm = Slice(UInt16).new 4, 0                          # counted values
+      @cycle_enabled = Slice(UInt64).new 4, 0               # cycle that the timer was enabled
+      @events = Slice(Proc(Nil)).new 4 { |i| overflow i }   # overflow closures for each timer
+      @interrupt_flags = Slice[
+        ->{ @gba.interrupts.reg_if.timer0 = true }, ->{ @gba.interrupts.reg_if.timer1 = true },
+        ->{ @gba.interrupts.reg_if.timer2 = true }, ->{ @gba.interrupts.reg_if.timer3 = true }]
     end
 
     def overflow(num : Int) : Proc(Nil)

@@ -39,7 +39,7 @@ module GB
       SLEEP
     end
 
-    FETCHER_ORDER = [
+    FETCHER_ORDER = Slice[
       FetchStage::SLEEP, FetchStage::GET_TILE,
       FetchStage::SLEEP, FetchStage::GET_TILE_DATA_LOW,
       FetchStage::SLEEP, FetchStage::GET_TILE_DATA_HIGH,

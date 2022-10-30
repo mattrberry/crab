@@ -22,23 +22,24 @@ module GBA
       end
     end
 
-    SRC_MASK = [0x07FFFFFF_u32, 0x0FFFFFFF_u32, 0x0FFFFFFF_u32, 0x0FFFFFFF_u32]
-    DST_MASK = [0x07FFFFFF_u32, 0x07FFFFFF_u32, 0x07FFFFFF_u32, 0x0FFFFFFF_u32]
-    LEN_MASK = [0x3FFF_u16, 0x3FFF_u16, 0x3FFF_u16, 0xFFFF_u16]
+    SRC_MASK = Slice[0x07FFFFFF_u32, 0x0FFFFFFF_u32, 0x0FFFFFFF_u32, 0x0FFFFFFF_u32]
+    DST_MASK = Slice[0x07FFFFFF_u32, 0x07FFFFFF_u32, 0x07FFFFFF_u32, 0x0FFFFFFF_u32]
+    LEN_MASK = Slice[0x3FFF_u16, 0x3FFF_u16, 0x3FFF_u16, 0xFFFF_u16]
 
-    getter dmacnt_l : Array(UInt16)
+    getter dmacnt_l : Slice(UInt16)
 
-    @interrupt_flags : Array(Proc(Nil))
+    @interrupt_flags : Slice(Proc(Nil))
 
     def initialize(@gba : GBA)
-      @dmasad = Array(UInt32).new 4, 0
-      @dmadad = Array(UInt32).new 4, 0
-      @dmacnt_l = Array(UInt16).new 4, 0
-      @dmacnt_h = Array(Reg::DMACNT).new 4 { Reg::DMACNT.new 0 }
-      @src = Array(UInt32).new 4, 0
-      @dst = Array(UInt32).new 4, 0
-      @interrupt_flags = [->{ @gba.interrupts.reg_if.dma0 = true }, ->{ @gba.interrupts.reg_if.dma1 = true },
-                          ->{ @gba.interrupts.reg_if.dma2 = true }, ->{ @gba.interrupts.reg_if.dma3 = true }]
+      @dmasad = Slice(UInt32).new 4, 0
+      @dmadad = Slice(UInt32).new 4, 0
+      @dmacnt_l = Slice(UInt16).new 4, 0
+      @dmacnt_h = Slice(Reg::DMACNT).new 4 { Reg::DMACNT.new 0 }
+      @src = Slice(UInt32).new 4, 0
+      @dst = Slice(UInt32).new 4, 0
+      @interrupt_flags = Slice[
+        ->{ @gba.interrupts.reg_if.dma0 = true }, ->{ @gba.interrupts.reg_if.dma1 = true },
+        ->{ @gba.interrupts.reg_if.dma2 = true }, ->{ @gba.interrupts.reg_if.dma3 = true }]
     end
 
     def [](io_addr : UInt32) : UInt8

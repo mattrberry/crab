@@ -22,7 +22,7 @@ module GB
     @scheduler : Scheduler
     @cgb_ptr : Pointer(Bool)
 
-    @wram = Array(Bytes).new 8 { Bytes.new GB::Memory::WORK_RAM_N.size }
+    @wram = Slice(Bytes).new 8 { Bytes.new GB::Memory::WORK_RAM_N.size }
     @wram_bank : UInt8 = 1
     @hram = Bytes.new HRAM.size
     @ff72 : UInt8 = 0x00

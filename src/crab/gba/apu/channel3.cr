@@ -7,7 +7,7 @@ module GBA
       other.is_a?(Int) && RANGE.includes?(other) || WAVE_RAM_RANGE.includes?(other)
     end
 
-    @wave_ram = Array(Bytes).new 2, Bytes.new(WAVE_RAM_RANGE.size) { |idx| idx & 1 == 0 ? 0x00_u8 : 0xFF_u8 }
+    @wave_ram = Slice(Bytes).new 2, Bytes.new(WAVE_RAM_RANGE.size) { |idx| idx & 1 == 0 ? 0x00_u8 : 0xFF_u8 }
     @wave_ram_position : UInt8 = 0
     @wave_ram_sample_buffer : UInt8 = 0x00
 
