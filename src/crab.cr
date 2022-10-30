@@ -1,3 +1,19 @@
+{% if flag?(:release) %}
+  # Disables bounds checking in release mode.
+
+  struct Slice(T)
+    @[AlwaysInline]
+    def []=(index : Int, value : T) : T
+      @pointer[index] = value
+    end
+
+    @[AlwaysInline]
+    def [](index : Int) : T
+      @pointer[index]
+    end
+  end
+{% end %}
+
 require "colorize"
 require "option_parser"
 
