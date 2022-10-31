@@ -144,11 +144,7 @@ module GBA
       bool hblank_interval_free # (1=Allow access to OAM during H-Blank)
       bool obj_mapping_1d       # (0=Two dimensional, 1=One dimensional)
       bool forced_blank         # (1=Allow access to VRAM,Palette,OAM)
-      bool screen_display_bg0
-      bool screen_display_bg1
-      bool screen_display_bg2
-      bool screen_display_bg3
-      bool screen_display_obj
+      num default_enable_bits, 5
       bool window_0_display
       bool window_1_display
       bool obj_window_display
@@ -221,24 +217,20 @@ module GBA
 
     class WININ < BitField(UInt16)
       include Base16
-      num window_0_enable_bits, 4
-      bool window_0_obj_enable
+      num window_0_enable_bits, 5
       bool window_0_color_special_effect
       num not_used_0, 2, read_only: true
-      num window_1_enable_bits, 4
-      bool window_1_obj_enable
+      num window_1_enable_bits, 5
       bool window_1_color_special_effect
       num not_used_1, 2, read_only: true
     end
 
     class WINOUT < BitField(UInt16)
       include Base16
-      num outside_enable_bits, 4
-      bool outside_obj_enable
+      num outside_enable_bits, 5
       bool outside_color_special_effect
       num not_used_outside, 2, read_only: true
-      num obj_window_enable_bits, 4
-      bool obj_window_obj_enable
+      num obj_window_enable_bits, 5
       bool obj_window_color_special_effect
       num not_used_obj, 2, read_only: true
     end

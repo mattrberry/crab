@@ -219,7 +219,7 @@ module GBA
     end
 
     def render_sprites : Nil
-      return unless @dispcnt.screen_display_obj
+      return unless bit?(@dispcnt.value, 12)
       base = 0x10000_u32
       sprites = @oam.unsafe_slice_of(Sprite)
       sprites.each do |sprite|
@@ -312,15 +312,15 @@ module GBA
     # Returns a u16 representing the layer enable bits and a bool indicating whether effects are enabled.
     def get_enables(col : Int) : Tuple(UInt16, Bool)
       if @dispcnt.window_0_display && @win0h.x1 <= col < @win0h.x2 && @win0v.y1 <= @vcount < @win0v.y2 # win0
-        {bits(@winin.value, 0..4), @winin.window_0_color_special_effect}
+        {@winin.window_0_enable_bits, @winin.window_0_color_special_effect}
       elsif @dispcnt.window_1_display && @win1h.x1 <= col < @win1h.x2 && @win1v.y1 <= @vcount < @win1v.y2 # win1
-        {bits(@winin.value, 8..12), @winin.window_1_color_special_effect}
+        {@winin.window_1_enable_bits, @winin.window_1_color_special_effect}
       elsif @dispcnt.obj_window_display && @sprite_pixels[col].window # obj win
-        {bits(@winout.value, 8..12), @winout.obj_window_color_special_effect}
+        {@winout.obj_window_enable_bits, @winout.obj_window_color_special_effect}
       elsif @dispcnt.window_0_display || @dispcnt.window_1_display || @dispcnt.obj_window_display # winout
-        {bits(@winout.value, 0..4), @winout.outside_color_special_effect}
+        {@winout.outside_enable_bits, @winout.outside_color_special_effect}
       else # no windows
-        {bits(@dispcnt.value, 8..12), true}
+        {@dispcnt.default_enable_bits, true}
       end
     end
 
