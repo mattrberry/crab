@@ -1,6 +1,6 @@
 module GBA
   module ARM
-    def arm_UInt16_data_transfer_immediate(instr : UInt32) : Nil
+    def arm_halfword_data_transfer_immediate(instr : UInt32) : Nil
       pre_address = bit?(instr, 24)
       add = bit?(instr, 23)
       write_back = bit?(instr, 21)
@@ -24,7 +24,7 @@ module GBA
 
       case sh
       when 0b00 # swp, no docs on this?
-        abort "UInt16DataTransferReg swp #{hex_str instr}"
+        abort "HalfwordDataTransferReg swp #{hex_str instr}"
       when 0b01 # ldrh/strh
         if load
           set_reg(rd, @gba.bus.read_half_rotate address)

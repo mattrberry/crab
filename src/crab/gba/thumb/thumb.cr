@@ -26,7 +26,7 @@ module GBA
         elsif idx & 0b11110000 == 0b10010000
           lut[idx] = ->thumb_sp_relative_load_store(UInt32)
         elsif idx & 0b11110000 == 0b10000000
-          lut[idx] = ->thumb_load_store_UInt16(UInt32)
+          lut[idx] = ->thumb_load_store_halfword(UInt32)
         elsif idx & 0b11100000 == 0b01100000
           lut[idx] = ->thumb_load_store_immediate_offset(UInt32)
         elsif idx & 0b11110010 == 0b01010010
