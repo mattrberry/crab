@@ -18,16 +18,13 @@ module GB
     end
 
     def read : UInt8
-      array_to_uint8 [
-        1,
-        1,
-        !@button_keys,
-        !@direction_keys,
-        !((@down && @direction_keys) || (@start && @button_keys)),
-        !((@up && @direction_keys) || (@select && @button_keys)),
-        !((@left && @direction_keys) || (@b && @button_keys)),
-        !((@right && @direction_keys) || (@a && @button_keys)),
-      ]
+      ~(0x00_u8 |
+        @button_keys.to_unsafe << 5 |
+        @direction_keys.to_unsafe << 4 |
+        ((@down && @direction_keys) || (@start && @button_keys)).to_unsafe << 3 |
+        ((@up && @direction_keys) || (@select && @button_keys)).to_unsafe << 2 |
+        ((@left && @direction_keys) || (@b && @button_keys)).to_unsafe << 1 |
+        ((@right && @direction_keys) || (@a && @button_keys)).to_unsafe)
     end
 
     def write(value : UInt8) : Nil
