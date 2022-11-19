@@ -20,49 +20,32 @@ module GBA
     end
 
     def fill_lut : Slice(Proc(UInt32, Nil))
-      lut = Slice(Proc(UInt32, Nil)).new 4096, ->arm_unimplemented(UInt32)
-      4096.times do |idx|
-        if idx & 0b111100000000 == 0b111100000000
-          lut[idx] = ->arm_software_interrupt(UInt32)
-        elsif idx & 0b111100000001 == 0b111000000001
-          # coprocessor register transfer
-        elsif idx & 0b111100000001 == 0b111000000001
-          # coprocessor data operation
-        elsif idx & 0b111000000000 == 0b110000000000
-          # coprocessor data transfer
-        elsif idx & 0b111000000000 == 0b101000000000
-          lut[idx] = ->arm_branch(UInt32)
-        elsif idx & 0b111000000000 == 0b100000000000
-          lut[idx] = ->arm_block_data_transfer(UInt32)
-        elsif idx & 0b111000000001 == 0b011000000001
-          # undefined
-        elsif idx & 0b110000000000 == 0b010000000000
-          lut[idx] = ->arm_single_data_transfer(UInt32)
-        elsif idx & 0b111111111111 == 0b000100100001
-          lut[idx] = ->arm_branch_exchange(UInt32)
-        elsif idx & 0b111110111111 == 0b000100001001
-          lut[idx] = ->arm_single_data_swap(UInt32)
-        elsif idx & 0b111110001111 == 0b000010001001
-          lut[idx] = ->arm_multiply_long(UInt32)
-        elsif idx & 0b111111001111 == 0b000000001001
-          lut[idx] = ->arm_multiply(UInt32)
-        elsif idx & 0b111001001001 == 0b000001001001
-          lut[idx] = ->arm_halfword_data_transfer_immediate(UInt32)
-        elsif idx & 0b111001001001 == 0b000000001001
-          lut[idx] = ->arm_halfword_data_transfer_register(UInt32)
-        elsif idx & 0b110110010000 == 0b000100000000
-          lut[idx] = ->arm_psr_transfer(UInt32)
-        elsif idx & 0b110000000000 == 0b000000000000
-          lut[idx] = ->arm_data_processing(UInt32)
-        else
-          lut[idx] = ->arm_unused(UInt32)
+      Slice(Proc(UInt32, Nil)).new(4096) do |idx|
+        case
+        when idx & 0b111100000000 == 0b111100000000 then ->arm_software_interrupt(UInt32)
+        when idx & 0b111100000001 == 0b111000000001 then ->arm_unimplemented(UInt32) # coprocessor register transfer
+        when idx & 0b111100000001 == 0b111000000001 then ->arm_unimplemented(UInt32) # coprocessor data operation
+        when idx & 0b111000000000 == 0b110000000000 then ->arm_unimplemented(UInt32) # coprocessor data transfer
+        when idx & 0b111000000000 == 0b101000000000 then ->arm_branch(UInt32)
+        when idx & 0b111000000000 == 0b100000000000 then ->arm_block_data_transfer(UInt32)
+        when idx & 0b111000000001 == 0b011000000001 then ->arm_unimplemented(UInt32) # undefined
+        when idx & 0b110000000000 == 0b010000000000 then ->arm_single_data_transfer(UInt32)
+        when idx & 0b111111111111 == 0b000100100001 then ->arm_branch_exchange(UInt32)
+        when idx & 0b111110111111 == 0b000100001001 then ->arm_single_data_swap(UInt32)
+        when idx & 0b111110001111 == 0b000010001001 then ->arm_multiply_long(UInt32)
+        when idx & 0b111111001111 == 0b000000001001 then ->arm_multiply(UInt32)
+        when idx & 0b111001001001 == 0b000001001001 then ->arm_halfword_data_transfer_immediate(UInt32)
+        when idx & 0b111001001001 == 0b000000001001 then ->arm_halfword_data_transfer_register(UInt32)
+        when idx & 0b110110010000 == 0b000100000000 then ->arm_psr_transfer(UInt32)
+        when idx & 0b110000000000 == 0b000000000000 then ->arm_data_processing(UInt32)
+        else                                             ->arm_unused(UInt32)
         end
       end
-      lut
     end
 
     def arm_unimplemented(instr : UInt32) : Nil
-      abort "Unimplemented instruction: #{hex_str instr}"
+      # "if true" is a hack until https://github.com/crystal-lang/crystal/issues/12758 is patched
+      abort "Unimplemented instruction: #{hex_str instr}" if true
     end
 
     def arm_unused(instr : UInt32) : Nil
