@@ -106,7 +106,7 @@ module GBA
     end
 
     @[AlwaysInline]
-    private def read_half_internal(address : UInt32) : UInt16
+    def read_half_internal(address : UInt32) : UInt16
       address &= ~1
       case bits(address, 24..27)
       when 0x0 then (@bios.to_unsafe + (address & 0x3FFF)).as(UInt16*).value

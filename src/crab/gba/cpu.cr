@@ -1,11 +1,13 @@
 require "./arm/*"
 require "./thumb/*"
 require "./pipeline"
+require "./waitloop"
 
 module GBA
   class CPU
     include ARM
     include THUMB
+    include Waitloop
 
     CLOCK_SPEED = 2**24
 
@@ -142,7 +144,12 @@ module GBA
           arm_execute instr
         end
         cycles, @gba.bus.cycles = @gba.bus.cycles, 0
-        @gba.scheduler.tick cycles
+        if @entered_waitloop
+          @gba.scheduler.fast_forward
+          @entered_waitloop = false
+        else
+          @gba.scheduler.tick cycles
+        end
       else
         @gba.scheduler.fast_forward
       end

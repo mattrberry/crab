@@ -9,6 +9,7 @@ class GBAController < Controller
 
   @debug_window = false
   @scheduler_window = false
+  @experimental_settings = false
 
   def initialize(config : Config, bios : String?, rom : String)
     @emu = GBA::GBA.new(bios || config.gba.bios, rom, config.run_bios)
@@ -26,6 +27,7 @@ class GBAController < Controller
   def render_debug_items : Nil
     ImGui.menu_item("Video", "", pointerof(@debug_window))
     ImGui.menu_item("Scheduler", "", pointerof(@scheduler_window))
+    ImGui.menu_item("Experimental Settings", "", pointerof(@experimental_settings))
   end
 
   def render_windows : Nil
@@ -52,6 +54,12 @@ class GBAController < Controller
             ImGui.text_unformatted event.type.to_s
           end
         end
+      end
+    end
+    if @experimental_settings
+      ImGui.window("Experimental Settings", pointerof(@experimental_settings)) do
+        ImGui.checkbox("Attempt waitloop detection", pointerof(@emu.cpu.attempt_waitloop_detection))
+        ImGui.checkbox("Cache waitloop results", pointerof(@emu.cpu.cache_waitloop_results))
       end
     end
   end
