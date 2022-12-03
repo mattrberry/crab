@@ -291,7 +291,7 @@ module GBA
     end
 
     def print_state(instr : UInt32? = nil) : Nil
-      @r.each_with_address do |val, reg|
+      @r.each_with_index do |val, reg|
         print "#{hex_str reg == 15 ? val - (@cpsr.thumb ? 2 : 4) : val, prefix: false} "
       end
       instr ||= @pipeline.peek
