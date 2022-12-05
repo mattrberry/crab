@@ -10,16 +10,19 @@ module GBA
     @branch_dest = 0_u32
 
     # Collection of branch destinations identified as waitloops.
-    @identified_waitloops = Array(UInt32).new
+    @identified_waitloops = Array(UInt32).new(10)
 
     # Collection of branch destinations identified as non-waitloops.
-    @identified_non_waitloops = Array(UInt32).new
+    @identified_non_waitloops = Array(UInt32).new(10)
 
     # Flags when a waitloop is detected. Used by the CPU to fast-forward.
     @entered_waitloop = false
 
     # Table to quickly look up an instruction's class.
     getter waitloop_instr_lut : Slice(Instruction.class) { build_lut }
+
+    # Instructions that waitloop detection fails to parse. Used temporarily for debugging until all instructions are implemented.
+    @waitloop_parse_failures = Set(Instruction.class).new
 
     # Attempt to detect a waitloop. Assumes thumb instructions.
     def analyze_loop(start_addr : UInt32, end_addr : UInt32) : Nil
@@ -37,15 +40,25 @@ module GBA
       written_bits = never_write = 0_u16
       (start_addr...end_addr).step(2) do |addr|
         instr = @gba.bus.read_half_internal(addr)
-        parsed_instr = waitloop_instr_lut[instr >> 8].parse?(instr)
+        instr_struct = waitloop_instr_lut[instr >> 8]
+        parsed_instr = instr_struct.parse?(instr)
 
         unless parsed_instr && parsed_instr.read_only?
+          if parsed_instr == nil && !@waitloop_parse_failures.includes?(instr_struct)
+            puts "Failed to parse a #{instr_struct} while checking for a waitloop"
+            @waitloop_parse_failures.add(instr_struct)
+          end
           @identified_non_waitloops.push(start_addr) if @cache_waitloop_results
           return
         end
 
         never_write |= parsed_instr.read_bits & ~written_bits
         if written_bits & never_write > 0 # first write to a register was after a read, which could indicate an impure loop.
+          @identified_non_waitloops.push(start_addr) if @cache_waitloop_results
+          return
+        end
+
+        if parsed_instr.write_bits & 1_u16 << 15 > 0 # instruction might branch, which could indicate an impure loop.
           @identified_non_waitloops.push(start_addr) if @cache_waitloop_results
           return
         end
@@ -125,11 +138,11 @@ module GBA
       end
 
       def read_bits : UInt16
-        0_u16
+        1_u16 << 15
       end
 
       def write_bits : UInt16
-        0_u16
+        1_u16 << 15
       end
 
       def self.parse?(instr : UInt16) : ConditionalBranch
@@ -140,6 +153,43 @@ module GBA
     end
 
     struct MultipleLoadStore < Instruction
+      def initialize(@load : Bool, @rb : UInt16, @list : UInt16)
+      end
+
+      def read_only? : Bool
+        @load
+      end
+
+      def read_bits : UInt16
+        res = 1_u16 << @rb # always read
+        unless @load
+          if @list == 0
+            res |= 1_u16 << 15
+          else
+            res |= @list
+          end
+        end
+        res
+      end
+
+      def write_bits : UInt16
+        res = 1_u16 << @rb # always written to
+        if @load
+          if @list == 0
+            res |= 1_u16 << 15
+          else
+            res |= @list
+          end
+        end
+        res
+      end
+
+      def self.parse?(instr : UInt16) : MultipleLoadStore
+        load = bit?(instr, 11)
+        rb = bits(instr, 8..10)
+        list = bits(instr, 0..7)
+        new(load, rb, list)
+      end
     end
 
     struct PushPopRegisters < Instruction
@@ -186,6 +236,35 @@ module GBA
     end
 
     struct LoadStoreImmediateOffset < Instruction
+      def initialize(@byte_quantity : Bool, @load : Bool, @offset : UInt16, @rb : UInt16, @rd : UInt16)
+      end
+
+      def read_only? : Bool
+        @load
+      end
+
+      def read_bits : UInt16
+        res = 1_u16 << @rb
+        res |= 1_u16 << @rd unless @load
+        res
+      end
+
+      def write_bits : UInt16
+        if @load
+          1_u16 << @rd
+        else
+          0_u16
+        end
+      end
+
+      def self.parse?(instr : UInt16) : LoadStoreImmediateOffset
+        byte_quantity = bit?(instr, 12)
+        load = bit?(instr, 11)
+        offset = bits(instr, 6..10)
+        rb = bits(instr, 3..5)
+        rd = bits(instr, 0..2)
+        new(byte_quantity, load, offset, rb, rd)
+      end
     end
 
     struct LoadStoreSignExtended < Instruction
@@ -280,6 +359,28 @@ module GBA
     end
 
     struct MoveShiftedRegister < Instruction
+      def initialize(op : UInt16, @offset : UInt16, @rs : UInt16, @rd : UInt16)
+      end
+
+      def read_only? : Bool
+        true
+      end
+
+      def read_bits : UInt16
+        1_u16 << @rs
+      end
+
+      def write_bits : UInt16
+        1_u16 << @rd
+      end
+
+      def self.parse?(instr : UInt16) : MoveShiftedRegister
+        op = bits(instr, 11..12)
+        offset = bits(instr, 6..10)
+        rs = bits(instr, 3..5)
+        rd = bits(instr, 0..2)
+        new(op, offset, rs, rd)
+      end
     end
 
     struct Unimplemented < Instruction
