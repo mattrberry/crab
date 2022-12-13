@@ -134,6 +134,8 @@ module GBA
       end
     end
 
+    property count_cycles = 0
+
     def tick : Nil
       unless @halted
         instr = read_instr
@@ -144,6 +146,7 @@ module GBA
           arm_execute instr
         end
         cycles, @gba.bus.cycles = @gba.bus.cycles, 0
+        @count_cycles += cycles
         if @entered_waitloop
           @gba.scheduler.fast_forward
           @entered_waitloop = false

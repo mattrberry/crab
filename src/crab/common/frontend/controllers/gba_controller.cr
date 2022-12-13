@@ -60,6 +60,8 @@ class GBAController < Controller
       ImGui.window("Experimental Settings", pointerof(@experimental_settings)) do
         ImGui.checkbox("Attempt waitloop detection", pointerof(@emu.cpu.attempt_waitloop_detection))
         ImGui.checkbox("Cache waitloop results", pointerof(@emu.cpu.cache_waitloop_results))
+        progress = emu.cpu.count_cycles.to_f32 / 280896_f32
+        ImGui.progress_bar(progress, ImGui::ImVec2.new(0, 0));
       end
     end
   end

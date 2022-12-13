@@ -49,6 +49,7 @@ module GBA
     end
 
     def run_until_frame : Nil
+      cpu.count_cycles = 0
       until ppu.frame
         cpu.tick
       end
