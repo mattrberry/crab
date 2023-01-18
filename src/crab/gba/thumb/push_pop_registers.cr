@@ -21,7 +21,7 @@ module GBA
           address &-= 4
           @gba.bus[address] = @r[14]
         end
-        7.downto(0).each do |idx|
+        7.downto(0) do |idx|
           if bit?(list, idx)
             address &-= 4
             @gba.bus[address] = @r[idx]
