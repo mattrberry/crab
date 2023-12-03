@@ -7,8 +7,8 @@ module GBA
       FLASH512
       FLASH1M
 
-      def regex : Regex # don't rely on the 3 digits after this string
-        /#{self}_V/
+      def match_str : String # don't rely on the 3 digits after this string
+        "#{self}_V"
       end
 
       def bytes : Int
@@ -67,7 +67,7 @@ module GBA
 
     private def self.find_type(file : File) : Type?
       str = file.gets_to_end
-      Type.each { |type| return type if type.regex.matches?(str) }
+      Type.each { |type| return type if str.includes?(type.match_str) }
     end
   end
 end
